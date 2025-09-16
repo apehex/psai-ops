@@ -9,8 +9,9 @@ packages = [{include = "psaiops"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10, <3.14"
+deformers = ">=0.0"
 gradio = ">=5.0"
-transformers = ">=4.0"
+requests = ">=2.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
