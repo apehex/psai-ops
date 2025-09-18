@@ -13,11 +13,13 @@ def create_intro_block(intro: str) -> None:
 
 # MODEL ########################################################################
 
+def update_slider_range(model: str) -> dict:
+    return gradio.update(maximum=35, value=18) if '120b' in model else gradio.update(maximum=23, value=12)
+
 def create_model_block() -> None:
-    gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b', 'openai/gpt-oss-120b'], allow_custom_value=False, multiselect=False, interactive=True)
-    gradio.Slider(label='Layer Depth', value=8, minimum=0, maximum=24, step=1, interactive=True)
-    # gradio.Dropdown(label='Layer', value='', choices=[''], allow_custom_value=False, multiselect=False, interactive=True)
-    # gradio.Dropdown(label='Tokenizer', value='o200k_harmony', choices=['o200k_harmony'], allow_custom_value=False, multiselect=False, interactive=True)
+    __model_dd = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b', 'openai/gpt-oss-120b'], allow_custom_value=False, multiselect=False, interactive=True)
+    __layer_sl = gradio.Slider(label='Layer Depth', value=12, minimum=0, maximum=23, step=1, interactive=True)
+    __model_dd.change(fn=update_slider_range, inputs=__model_dd, outputs=__layer_sl, queue=False, show_progress='hidden')
 
 # SAMPLING #####################################################################
 
