@@ -2,8 +2,8 @@ import gradio
 
 # META #########################################################################
 
-TITLE = '''Token Scoring'''
-INTRO = '''Score each token according to a given metric.'''
+TITLE = '''Attention Scoring'''
+INTRO = '''Score each token according to the weights of the attention layers.'''
 STYLE = ''''''
 
 # INTRO ########################################################################
@@ -15,8 +15,9 @@ def create_intro_block(intro: str) -> None:
 
 def create_model_block() -> None:
     gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b', 'openai/gpt-oss-120b'], allow_custom_value=False, multiselect=False, interactive=True)
-    gradio.Dropdown(label='Layer', value='', choices=[''], allow_custom_value=False, multiselect=False, interactive=True)
-    gradio.Dropdown(label='Tokenizer', value='o200k_harmony', choices=['o200k_harmony'], allow_custom_value=False, multiselect=False, interactive=True)
+    gradio.Slider(label='Layer Depth', value=8, minimum=0, maximum=24, step=1, interactive=True)
+    # gradio.Dropdown(label='Layer', value='', choices=[''], allow_custom_value=False, multiselect=False, interactive=True)
+    # gradio.Dropdown(label='Tokenizer', value='o200k_harmony', choices=['o200k_harmony'], allow_custom_value=False, multiselect=False, interactive=True)
 
 # SAMPLING #####################################################################
 
@@ -27,8 +28,8 @@ def create_sampling_block() -> None:
 
 # MODE #########################################################################
 
-def create_metric_block() -> None:
-    gradio.Radio(label='Mode', value='Attention', choices=['Attention', 'Shapley', 'Similarity'], interactive=True)
+# def create_metric_block() -> None:
+#     gradio.Radio(label='Mode', value='Attention', choices=['Attention', 'Shapley', 'Similarity'], interactive=True)
 
 # DISPLAY ######################################################################
 
@@ -43,7 +44,7 @@ def create_inputs_block() -> None:
 # OUTPUTS ######################################################################
 
 def create_outputs_block() -> None:
-    gradio.Textbox(label='Scores', value='', placeholder='A string of tokens to score.', lines=4, interactive=False)
+    gradio.HighlightedText(label='Scores', value='', interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=True)
 
 # ACTIONS ######################################################################
 
@@ -71,7 +72,7 @@ def create_layout(title: str=TITLE, intro: str=INTRO, style: str=STYLE) -> gradi
                     with gradio.Row():
                         create_sampling_block()
                     with gradio.Row():
-                        create_metric_block()
+                        # create_metric_block()
                         create_display_block()
         return __app
 
