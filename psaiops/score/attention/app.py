@@ -18,7 +18,8 @@ def update_slider_range(model: str) -> dict:
 
 def create_model_block() -> None:
     __model_dd = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b', 'openai/gpt-oss-120b'], allow_custom_value=False, multiselect=False, interactive=True)
-    __layer_sl = gradio.Slider(label='Layer Depth', value=12, minimum=0, maximum=23, step=1, interactive=True)
+    __layer_sl = gradio.Slider(label='Layer Depth', value=12, minimum=-1, maximum=23, step=1, interactive=True) # info='-1 to average on all layers'
+    __head_sl = gradio.Slider(label='Attention Head', value=-1, minimum=-1, maximum=63, step=1, interactive=True) # info='-1 to average on all heads'
     __model_dd.change(fn=update_slider_range, inputs=__model_dd, outputs=__layer_sl, queue=False, show_progress='hidden')
 
 # SAMPLING #####################################################################
@@ -52,6 +53,7 @@ def create_outputs_block() -> None:
 
 def create_actions_block() -> None:
     gradio.Button('Process', variant='primary', size='lg', interactive=True)
+    gradio.Slider(label='Position', value=-1, minimum=-1, maximum=128, step=1, interactive=True) # info='-1 to average on all tokens'
 
 # LAYOUT #######################################################################
 
