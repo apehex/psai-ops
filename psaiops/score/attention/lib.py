@@ -142,16 +142,17 @@ def postprocess_token_ids(
 # COMPUTE ########################################################################
 
 def score_tokens(
+    prompt_str: str,
+    token_num: int,
+    topk_num: int,
+    topp_num: float,
+    token_idx: int,
+    layer_idx: int,
+    head_idx: int,
+    *,
+    device_str: str,
     model_obj: object,
     tokenizer_obj: object,
-    prompt_str: str,
-    token_num: int=32,
-    topk_num: int = 4,
-    topp_num: float = 0.9,
-    token_idx: int=-1, # -1 => avg over all tokens
-    layer_idx: int=-1,   # -1 => avg over layers
-    head_idx: int=-1,    # -1 => avg over heads
-    device_str: str='cuda',
 ) -> list:
     # dictionary {'input_ids': _, 'attention_mask': _}
     __inputs = preprocess_token_ids(
