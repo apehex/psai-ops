@@ -142,9 +142,10 @@ def postprocess_token_ids(
 # COMPUTE ########################################################################
 
 def score_tokens(
-    model_str: str,
+    model_obj: object,
+    tokenizer_obj: object,
     prompt_str: str,
-    token_num: int,
+    token_num: int=32,
     topk_num: int = 4,
     topp_num: float = 0.9,
     token_idx: int, # -1 => avg over all tokens
@@ -152,26 +153,23 @@ def score_tokens(
     head_idx: int,    # -1 => avg over heads
     device_str: str='cuda',
 ) -> list:
-    # load the model
-    __tokenizer = get_tokenizer(name=model_str, device=device_str)
-    __model = get_model(name=model_str, device=device_str)
     # dictionary {'input_ids': _, 'attention_mask': _}
     __inputs = preprocess_token_ids(
-        tokenizer_obj=__tokenizer,
+        tokenizer_obj=tokenizer_obj,
         prompt_str=prompt_str,
         device_str=device_str)
     # parse the inputs
     __input_dim = int(__inputs['input_ids'].shape[-1])
     # tensor (1, T)
     __outputs = generate_token_ids(
-        model_obj=__model,
+        model_obj=model_obj,
         input_args=__inputs,
         token_num=token_num,
         topk_num=topk_num,
         topp_num=topp_num)
     # tensor (L, S, H, T, T)
     __attentions = compute_attention_weights(
-        model_obj=__model,
+        model_obj=model_obj,
         token_obj=__outputs)
     # reduce the layer, sample, head and output token axes => tensor (T,)
     __scores = reduce_attention_weights(
