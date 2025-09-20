@@ -148,9 +148,9 @@ def score_tokens(
     token_num: int=32,
     topk_num: int = 4,
     topp_num: float = 0.9,
-    token_idx: int, # -1 => avg over all tokens
-    layer_idx: int,   # -1 => avg over layers
-    head_idx: int,    # -1 => avg over heads
+    token_idx: int=-1, # -1 => avg over all tokens
+    layer_idx: int=-1,   # -1 => avg over layers
+    head_idx: int=-1,    # -1 => avg over heads
     device_str: str='cuda',
 ) -> list:
     # dictionary {'input_ids': _, 'attention_mask': _}
