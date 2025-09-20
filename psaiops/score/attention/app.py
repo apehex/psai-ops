@@ -1,4 +1,6 @@
 import gradio
+import torch
+import torch.cuda
 
 import psaiops.score.attention.lib
 
