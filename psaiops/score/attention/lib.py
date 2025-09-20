@@ -9,19 +9,20 @@ import deformers.models.openai.gptoss
 
 @functools.lru_cache(maxsize=4)
 def get_tokenizer(name: str, device: str='cpu'):
-    __tokenizer = transformers.AutoTokenizer.from_pretrained(name, use_fast=True)
-    # move to the main device
-    __tokenizer.to(device)
-    # matchin tokenizer
-    return __tokenizer
+    return transformers.AutoTokenizer.from_pretrained(
+        name,
+        use_fast=True,
+        dtype='auto',
+        device_map=device)
 
 @functools.lru_cache(maxsize=2)
 def get_model(name: str, device: str='cpu'):
-    __model = deformers.models.openai.gptoss.GptOssForCausalInference.from_pretrained(name) # torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+    __model = deformers.models.openai.gptoss.GptOssForCausalInference.from_pretrained(
+        name,
+        dtype='auto',
+        device_map=device)
     # toggle the inference mode (not training)
     __model.eval()
-    # move to the GPU
-    __model.to(device)
     # transformers model
     return __model
 
