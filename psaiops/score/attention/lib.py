@@ -8,44 +8,52 @@ import deformers.models.openai.gptoss
 # LOAD #########################################################################
 
 @functools.lru_cache(maxsize=4)
-def get_tokenizer(name: str):
-    return transformers.AutoTokenizer.from_pretrained(name, use_fast=True)
+def get_tokenizer(name: str, device: str='cpu'):
+    __tokenizer = transformers.AutoTokenizer.from_pretrained(name, use_fast=True)
+    # move to the main device
+    __tokenizer.to(device)
+    # matchin tokenizer
+    return __tokenizer
 
 @functools.lru_cache(maxsize=2)
-def get_model(name: str):
+def get_model(name: str, device: str='cpu'):
     __model = deformers.models.openai.gptoss.GptOssForCausalInference.from_pretrained(name) # torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
     # toggle the inference mode (not training)
     __model.eval()
     # move to the GPU
-    if torch.cuda.is_available(): __model.to('cuda')
+    __model.to(device)
     # transformers model
     return __model
 
-# COMPUTE ########################################################################
+# PREPROCESS #####################################################################
 
-def compute_attention_weights(
-    model_str: str,
+def preprocess_token_ids(
+    tokenizer_obj: object,
     prompt_str: str,
+    device_str: str='cpu'
+) -> dict:
+    # tokenize
+    __inputs = tokenizer_obj(prompt_str, return_tensors='pt')
+    # move to the main device
+    return {__k: __v.to(device_str) for __k, __v in __inputs.items()}
+
+# GENERATE #######################################################################
+
+def generate_token_ids(
+    model_obj: object,
+    input_args: dict,
     token_num: int,
     topk_num: int = 4,
     topp_num: float = 0.9,
-    device_str: str='cuda',
-) -> list:
-    # load the model
-    __tokenizer = get_tokenizer(model_str)
-    __model = get_model(model_str)
-    # tokenize
-    __inputs = __tokenizer(prompt_str, return_tensors='pt')
-    # hardware
-    __inputs = {__k: __v.to(device_str) for __k, __v in __inputs.items()}
+) -> torch.Tensor:
     # generate completion
     with torch.no_grad():
-        __outputs = __model.generate(
-            **__inputs,
+        __outputs = model_obj.generate(
+            **input_args,
             max_new_tokens=token_num,
-            do_sample=True if (0.0 < topp_num < 1.0) or (topk_num > 0) else False,
-            top_k=topk_num,
-            top_p=topp_num,
+            do_sample=(0.0 < topp_num < 1.0) or (topk_num > 0),
+            top_k=topk_num if (topk_num > 0) else None,
+            top_p=topp_num if (0.0 < topp_num < 1.0) else None,
             return_dict_in_generate=True,
             output_hidden_states=False,
             output_attentions=False,
@@ -53,11 +61,18 @@ def compute_attention_weights(
             early_stopping=True,
             use_cache=True)
     # full sequence
-    __output_idx = __outputs.sequences # (1, T)
+    return __outputs.sequences # (1, T)
+
+# COMPUTE ########################################################################
+
+def compute_attention_weights(
+    model_obj: object,
+    token_obj: torch.Tensor,
+) -> torch.Tensor:
     # process the full sequence
     with torch.no_grad():
-        __outputs = __model(
-            input_ids=__output_idx,
+        __outputs = model_obj(
+            input_ids=token_obj,
             output_attentions=True,
             return_dict=True)
     # parse the outputs
@@ -89,7 +104,7 @@ def reduce_attention_weights(
 
 # FORMAT #########################################################################
 
-def format_attention_scores(
+def postprocess_attention_scores(
     attention_data: torch.Tensor, # (T,)
     input_dim: int,
     token_idx: int,
@@ -110,6 +125,19 @@ def format_attention_scores(
     # native list of integers
     return __input_scores.tolist() + __output_scores.tolist() # (I,) + (O,) = (T,)
 
+# POSTPROCESS ####################################################################
+
+def postprocess_token_ids(
+    tokenizer_obj: object,
+    token_obj: torch.Tensor,
+) -> list:
+    # remove the batch axis
+    __indices = token_obj.squeeze().tolist()
+    # back to token strings
+    __tokens = tokenizer_obj.convert_ids_to_tokens(__indices)
+    # normalize the tokens
+    return [__t.replace('Ġ', ' ') for __t in __tokens]
+
 # COMPUTE ########################################################################
 
 def score_tokens(
@@ -123,27 +151,42 @@ def score_tokens(
     head_idx: int,    # -1 => avg over heads
     device_str: str='cuda',
 ) -> list:
-    __data = compute_attention_weights(
-        model_str=model_str,
-        prompt_str=prompt_len,
+    # load the model
+    __tokenizer = get_tokenizer(name=model_str, device=device_str)
+    __model = get_model(name=model_str, device=device_str)
+    # dictionary {'input_ids': _, 'attention_mask': _}
+    __inputs = preprocess_token_ids(
+        tokenizer_obj=__tokenizer,
+        prompt_str=prompt_str,
+        device_str=device_str)
+    # parse the inputs
+    __input_dim = int(__inputs['input_ids'].shape[-1])
+    # tensor (1, T)
+    __outputs = generate_token_ids(
+        model_obj=__model,
+        input_args=__inputs,
         token_num=token_num,
         topk_num=topk_num,
-        topp_num=topp_num,
-        device_str=device_str)
-    # reduce the layer, sample and head axes
+        topp_num=topp_num)
+    # tensor (L, S, H, T, T)
+    __attentions = compute_attention_weights(
+        model_obj=__model,
+        token_obj=__outputs)
+    # reduce the layer, sample, head and output token axes => tensor (T,)
     __scores = reduce_attention_weights(
-        __data,
+        __attentions,
         token_idx=token_idx,
         layer_idx=layer_idx,
         head_idx=head_idx,
-        input_dim=__input_dim) # TODO
+        input_dim=__input_dim)
     # translate the scores into integer labels
-    __labels = format_attention_scores(
+    __labels = postprocess_attention_scores(
         __scores,
         input_dim=__input_dim,
         token_idx=token_idx)
-    # TODO detokenize
-    # prompt_ids = __inputs['input_ids'][0][:prompt_len].tolist()
-    # tokens = __tokenizer.convert_ids_to_tokens(prompt_ids)
-    # format for the HighlightedText field => [(token, label), ...]
+    # detokenize the IDs
+    __tokens = postprocess_token_ids(
+        tokenizer_obj=__tokenizer,
+        token_obj=__outputs)
+    # match tokens and labels for the HighlightedText field
     return list(zip(__tokens, __labels))
