@@ -59,7 +59,7 @@ def generate_token_ids(
             output_hidden_states=False,
             output_attentions=False,
             output_scores=False,
-            early_stopping=True,
+            # early_stopping=True,
             use_cache=True)
     # full sequence
     return __outputs.sequences # (1, T)
@@ -186,7 +186,7 @@ def score_tokens(
         token_idx=token_idx)
     # detokenize the IDs
     __tokens = postprocess_token_ids(
-        tokenizer_obj=__tokenizer,
+        tokenizer_obj=tokenizer_obj,
         token_obj=__outputs)
     # match tokens and labels for the HighlightedText field
     return list(zip(__tokens, __labels))
