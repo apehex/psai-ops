@@ -18,14 +18,11 @@ def create_intro_block(intro: str) -> dict:
 
 # MODEL ########################################################################
 
-def update_slider_range(model: str) -> dict:
-    return gradio.update(maximum=35, value=18) if '120b' in model else gradio.update(maximum=23, value=12)
-
 def create_model_block() -> dict:
     __model_dd = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
     __layer_sl = gradio.Slider(label='Layer Depth', value=12, minimum=-1, maximum=23, step=1, interactive=True) # info='-1 to average on all layers'
     __head_sl = gradio.Slider(label='Attention Head', value=-1, minimum=-1, maximum=63, step=1, interactive=True) # info='-1 to average on all heads'
-    __model_dd.change(fn=update_slider_range, inputs=__model_dd, outputs=__layer_sl, queue=False, show_progress='hidden')
+    __model_dd.change(fn=update_layer_range, inputs=[__layer_sl, __model_dd], outputs=__layer_sl, queue=False, show_progress='hidden')
     return {
         'model_block': __model_dd,
         'layer_block': __layer_sl,
@@ -102,8 +99,8 @@ def create_layout(intro: str=INTRO) -> dict:
 
 # EVENTS #######################################################################
 
-def update_data() -> torch.Tensor:
-    return
+def update_layer_range(value: int, model: str) -> dict:
+    return gradio.update(maximum=35, value=min(35, int(value))) if '120b' in model else gradio.update(maximum=23, value=min(23, int(value)))
 
 # APP ##########################################################################
 
