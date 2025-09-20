@@ -123,8 +123,8 @@ def postprocess_attention_scores(
     __input_scores = torch.round(100.0 * __input_scores, decimals=0).type(torch.int32)
     # the generated tokens are not scored
     __output_scores = torch.where(__output_mask, -1, 0).type(torch.int32)
-    # native list of integers
-    return __input_scores.tolist() + __output_scores.tolist() # (I,) + (O,) = (T,)
+    # native list of serialized integers
+    return [str(__i) for __i in __input_scores.tolist() + __output_scores.tolist()] # (I,) + (O,) = (T,)
 
 # POSTPROCESS ####################################################################
 
