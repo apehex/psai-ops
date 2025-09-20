@@ -10,6 +10,13 @@ STYLE = ''''''
 
 MODEL = 'openai/gpt-oss-20b'
 
+# COLORS #######################################################################
+
+def create_color_map() -> dict:
+    return {
+        '-1': '#00ff00',
+        **{str(__i): '#{:02x}0000'.format(__i) for __i in range(101)}}
+
 # INTRO ########################################################################
 
 def create_intro_block(intro: str) -> dict:
@@ -54,7 +61,7 @@ def create_inputs_block() -> dict:
 # OUTPUTS ######################################################################
 
 def create_outputs_block() -> dict:
-    __output = gradio.HighlightedText(label='Scores', value='', interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=True)
+    __output = gradio.HighlightedText(label='Scores', value='', interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=True, color_map=create_color_map())
     return {'output_block': __output}
 
 # ACTIONS ######################################################################
