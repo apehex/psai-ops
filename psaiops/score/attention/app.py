@@ -51,7 +51,7 @@ def create_display_block() -> dict:
 # INPUTS #######################################################################
 
 def create_inputs_block() -> dict:
-    __input = gradio.Textbox(label='Prompt', value='', placeholder='A string of tokens to score.', lines=4, interactive=True)
+    __input = gradio.Textbox(label='Prompt', value='', placeholder='A string of tokens to score.', lines=4, show_copy_button=True, interactive=True)
     return {'input_block': __input}
 
 # OUTPUTS ######################################################################
