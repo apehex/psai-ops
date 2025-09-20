@@ -86,24 +86,26 @@ def create_state(model: str=MODEL) -> dict:
 
 def create_layout(intro: str=INTRO) -> dict:
     __fields = {}
-    fields.update(create_intro_block(intro=intro))
+    __fields.update(create_intro_block(intro=intro))
     with gradio.Tabs():
-        with gradio.Tab('Score Tokens'):
+        with gradio.Tab('Score Tokens') as __main_tab:
+            __fields.update({'main_tab': __main_tab})
             with gradio.Row():
                 with gradio.Column(scale=1):
-                    fields.update(create_inputs_block())
+                    __fields.update(create_inputs_block())
                 with gradio.Column(scale=1):
-                    fields.update(create_outputs_block())
+                    __fields.update(create_outputs_block())
             with gradio.Row():
-                fields.update(create_actions_block())
-        with gradio.Tab('Settings'):
+                __fields.update(create_actions_block())
+        with gradio.Tab('Settings') as __settings_tab:
+            __fields.update({'settings_tab': __settings_tab})
             with gradio.Column(scale=1):
                 with gradio.Row():
-                    fields.update(create_model_block())
+                    __fields.update(create_model_block())
                 with gradio.Row():
-                    fields.update(create_sampling_block())
+                    __fields.update(create_sampling_block())
                 with gradio.Row():
-                    fields.update(create_display_block())
+                    __fields.update(create_display_block())
     return __fields
 
 # EVENTS #######################################################################
