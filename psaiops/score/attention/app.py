@@ -19,7 +19,7 @@ MODEL = 'openai/gpt-oss-20b'
 def create_color_map() -> dict:
     return {
         '-1': '#00ff00',
-        **{str(__i): '#{:02x}0000'.format(__i) for __i in range(101)}}
+        **{str(__i): '#{:02x}0000'.format(int(2.55 * __i)) for __i in range(101)}}
 
 # INTRO ########################################################################
 
