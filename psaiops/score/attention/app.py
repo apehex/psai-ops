@@ -69,7 +69,7 @@ def create_actions_block() -> dict:
 # STATE ########################################################################
 
 def create_state() -> dict:
-    return {'data_state': gradio.State(None),}
+    return {'attention_state': gradio.State(None), 'token_state': gradio.State(None)}
 
 # LAYOUT #######################################################################
 
@@ -101,6 +101,14 @@ def create_layout(intro: str=INTRO) -> dict:
 
 def update_layer_range(value: int, model: str) -> dict:
     return gradio.update(maximum=35, value=min(35, int(value))) if '120b' in model else gradio.update(maximum=23, value=min(23, int(value)))
+
+def update_position_range(value: int, dimension: int) -> dict:
+    return gradio.update(maximum=dimension - 1, value=min(dimension - 1, value))
+
+def update_output_value(
+    attention_data: torch.Tensor=None,
+    token_data: torch.Tensor=None,) -> torch.Tensor:
+    return
 
 # APP ##########################################################################
 
