@@ -5,7 +5,7 @@ import psaiops.score.attention.lib
 # META #########################################################################
 
 TITLE = '''Attention Scoring'''
-INTRO = '''Score each token according to the weights of the attention layers.'''
+INTRO = '''Score each token according to the weights of the attention layers.\nThe model is fixed to "openai/gpt-oss-20b" for now.'''
 STYLE = ''''''
 
 MODEL = 'openai/gpt-oss-20b'
@@ -22,7 +22,7 @@ def update_slider_range(model: str) -> dict:
     return gradio.update(maximum=35, value=18) if '120b' in model else gradio.update(maximum=23, value=12)
 
 def create_model_block() -> dict:
-    __model_dd = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b', 'openai/gpt-oss-120b'], allow_custom_value=False, multiselect=False, interactive=True)
+    __model_dd = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
     __layer_sl = gradio.Slider(label='Layer Depth', value=12, minimum=-1, maximum=23, step=1, interactive=True) # info='-1 to average on all layers'
     __head_sl = gradio.Slider(label='Attention Head', value=-1, minimum=-1, maximum=63, step=1, interactive=True) # info='-1 to average on all heads'
     __model_dd.change(fn=update_slider_range, inputs=__model_dd, outputs=__layer_sl, queue=False, show_progress='hidden')
@@ -71,16 +71,8 @@ def create_actions_block() -> dict:
 
 # STATE ########################################################################
 
-def create_state(model: str=MODEL) -> dict:
-    __device = gradio.State('cuda' if torch.cuda.is_available() else 'cpu')
-    __model = gradio.State(psaiops.score.attention.lib.get_model(name=model, device=str(__device)))
-    __tokenizer = gradio.State(psaiops.score.attention.lib.get_tokenizer(name=model, device=str(__device)))
-    __data = gradio.State(None)
-    return {
-        'device_state': __device,
-        'model_state': __model,
-        'tokenizer_state': __tokenizer,
-        'data_state': __data,}
+def create_state() -> dict:
+    return {'data_state': gradio.State(None),}
 
 # LAYOUT #######################################################################
 
@@ -110,13 +102,24 @@ def create_layout(intro: str=INTRO) -> dict:
 
 # EVENTS #######################################################################
 
+def update_data() -> torch.Tensor:
+    return
+
 # APP ##########################################################################
 
-def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE) -> gradio.Blocks:
+def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=MODEL) -> gradio.Blocks:
     __fields = {}
     with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
-        fields.update(create_layout(intro=intro))
-        fields.update(create_state(model=str(fields['model_block'])))
+        # init
+        __device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        __model = psaiops.score.attention.lib.get_model(name=model, device=__device)
+        __tokenizer = psaiops.score.attention.lib.get_tokenizer(name=model, device=__device)
+        # create the UI
+        __fields.update(create_layout(intro=intro))
+        # init the state
+        __fields.update(create_state())
+        # wire the input fields
+        # gradio application
         return __app
 
 # MAIN #########################################################################
