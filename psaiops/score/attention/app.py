@@ -123,7 +123,15 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         __fields.update(create_layout(intro=intro))
         # init the state
         __fields.update(create_state())
+        # fetch the relevant fields
+        __button = __fields['process_block']
         # wire the input fields
+        __button.click(
+            fn=psaiops.score.attention.lib.score_tokens,
+            inputs=[__model, __tokenizer] + [__fields[__k] for __k in ['input_block', 'tokens_block', 'topk_block', 'topp_block', 'position_block', 'layer_block', 'head_block']] + [__device],
+            outputs=__fields['output_block'],
+            queue=False,
+            show_progress='full')
         # gradio application
         return __app
 
