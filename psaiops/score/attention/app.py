@@ -1,3 +1,5 @@
+import functools
+
 import gradio
 import torch
 import torch.cuda
@@ -124,10 +126,12 @@ def update_output_value(
 def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=MODEL) -> gradio.Blocks:
     __fields = {}
     with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
-        # init
+        # load the model
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
         __model = psaiops.score.attention.lib.get_model(name=model, device=__device)
         __tokenizer = psaiops.score.attention.lib.get_tokenizer(name=model, device=__device)
+        # adapt the scoring function
+        __score = functools.partial(psaiops.score.attention.lib.score_tokens, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
@@ -136,8 +140,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         __button = __fields['process_block']
         # wire the input fields
         __button.click(
-            fn=psaiops.score.attention.lib.score_tokens,
-            inputs=[__model, __tokenizer] + [__fields[__k] for __k in ['input_block', 'tokens_block', 'topk_block', 'topp_block', 'position_block', 'layer_block', 'head_block']] + [__device],
+            fn=__score,
+            inputs=[__fields[__k] for __k in ['input_block', 'tokens_block', 'topk_block', 'topp_block', 'position_block', 'layer_block', 'head_block']],
             outputs=__fields['output_block'],
             queue=False,
             show_progress='full')
