@@ -30,14 +30,8 @@ def create_intro_block(intro: str) -> dict:
 # MODEL ########################################################################
 
 def create_model_block() -> dict:
-    __model_dd = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
-    __layer_sl = gradio.Slider(label='Layer Depth', value=12, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
-    __head_sl = gradio.Slider(label='Attention Head', value=-1, minimum=-1, maximum=63, step=1, scale=1, interactive=True) # info='-1 to average on all heads'
-    __model_dd.change(fn=update_layer_range, inputs=[__layer_sl, __model_dd], outputs=__layer_sl, queue=False, show_progress='hidden')
-    return {
-        'model_block': __model_dd,
-        'layer_block': __layer_sl,
-        'head_block': __head_sl}
+    __model = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
+    return {'model_block': __model,}
 
 # SAMPLING #####################################################################
 
@@ -74,14 +68,22 @@ def create_outputs_block() -> dict:
     __output = gradio.HighlightedText(label='Scores', value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=True, color_map=create_color_map(), elem_classes='white-text')
     return {'output_block': __output}
 
+# SELECT #######################################################################
+
+def create_selection_block() -> dict:
+    __position = gradio.Slider(label='Position', value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
+    __layer = gradio.Slider(label='Layer Depth', value=12, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
+    __head = gradio.Slider(label='Attention Head', value=-1, minimum=-1, maximum=63, step=1, scale=1, interactive=True) # info='-1 to average on all heads'
+    return {
+        'position_block': __position,
+        'layer_block': __layer,
+        'head_block': __head,}
+
 # ACTIONS ######################################################################
 
 def create_actions_block() -> dict:
     __process = gradio.Button('Process', variant='primary', size='lg', scale=1, interactive=True)
-    __position = gradio.Slider(label='Position', value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
-    return {
-        'process_block': __process,
-        'position_block': __position}
+    return {'process_block': __process,}
 
 # STATE ########################################################################
 
@@ -102,6 +104,8 @@ def create_layout(intro: str=INTRO) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block())
                 __fields.update(create_outputs_block())
+            with gradio.Row(equal_height=True):
+                __fields.update(create_selection_block())
             with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
         with gradio.Tab('Settings') as __settings_tab:
@@ -250,19 +254,37 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         # init the state
         __fields.update(create_state())
         # wire the input fields
-        __fields['process_block'].click(
-            fn=__compute,
-            inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'position_block', 'layer_block', 'head_block', 'input_block']],
-            outputs=[__fields[__k] for __k in ['output_block', 'input_state', 'output_state', 'attention_state']],
-            queue=False,
-            show_progress='full')
         __fields['tokens_block'].change(
             fn=update_position_range,
             inputs=[__fields[__k] for __k in ['position_block', 'tokens_block']],
             outputs=__fields['position_block'],
             queue=False,
             show_progress='hidden')
+        __fields['model_block'].change(
+            fn=update_layer_range,
+            inputs=[__fields[__k] for __k in ['layer_block', 'model_block']],
+            outputs=__fields['layer_block'],
+            queue=False,
+            show_progress='hidden')
+        __fields['process_block'].click(
+            fn=__compute,
+            inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'position_block', 'layer_block', 'head_block', 'input_block']],
+            outputs=[__fields[__k] for __k in ['output_block', 'input_state', 'output_state', 'attention_state']],
+            queue=False,
+            show_progress='full')
         __fields['position_block'].change(
+            fn=update_text_highlight,
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'head_block', 'input_state', 'output_state', 'attention_state']],
+            outputs=__fields['output_block'],
+            queue=False,
+            show_progress='hidden')
+        __fields['layer_block'].change(
+            fn=update_text_highlight,
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'head_block', 'input_state', 'output_state', 'attention_state']],
+            outputs=__fields['output_block'],
+            queue=False,
+            show_progress='hidden')
+        __fields['head_block'].change(
             fn=update_text_highlight,
             inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'head_block', 'input_state', 'output_state', 'attention_state']],
             outputs=__fields['output_block'],
