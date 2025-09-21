@@ -98,7 +98,7 @@ def reduce_attention_weights(
     __layer_slice = slice(None) if (__layer_idx < 0) else slice(__layer_idx, __layer_idx + 1)
     __sample_slice = slice(None)
     __head_slice = slice(None) if (__head_idx < 0) else slice(__head_idx, __head_idx + 1)
-    __token_slice = slice(input_dim, __output_dim) if (__token_idx < 0) else slice(input_dim + __token_idx, input_dim + __token_idx + 1)
+    __token_slice = slice(input_dim - 1, __output_dim) if (__token_idx < 0) else slice(input_dim + __token_idx - 1, input_dim + __token_idx)
     # filter the data
     __data = attention_data[__layer_slice, __sample_slice, __head_slice, __token_slice, slice(None)]
     # reduce all the axes but the last
