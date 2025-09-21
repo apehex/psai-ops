@@ -24,7 +24,7 @@ def create_color_map() -> dict:
 # INTRO ########################################################################
 
 def create_intro_block(intro: str) -> dict:
-    __intro = gradio.Markdown(intro, scale=1)
+    __intro = gradio.Markdown(intro)
     return {'intro_block': __intro}
 
 # MODEL ########################################################################
