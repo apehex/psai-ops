@@ -65,7 +65,7 @@ def create_inputs_block() -> dict:
 # OUTPUTS ######################################################################
 
 def create_outputs_block() -> dict:
-    __output = gradio.HighlightedText(label='Scores', value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=True, color_map=create_color_map(), elem_classes='white-text')
+    __output = gradio.HighlightedText(label='Scores', value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=False, color_map=create_color_map(), elem_classes='white-text')
     return {'output_block': __output}
 
 # SELECT #######################################################################
