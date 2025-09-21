@@ -9,7 +9,7 @@ import psaiops.score.attention.lib
 # META #########################################################################
 
 TITLE = '''Attention Scoring'''
-INTRO = '''Score each token according to the weights of the attention layers.\nThe model is fixed to "openai/gpt-oss-20b" for now.'''
+INTRO = '''Score each token according to the weights of the attention layers. The model is fixed to "openai/gpt-oss-20b" for now.'''
 STYLE = '''.white-text span { color: white; }'''
 
 MODEL = 'openai/gpt-oss-20b'
@@ -78,7 +78,7 @@ def create_outputs_block() -> dict:
 
 def create_actions_block() -> dict:
     __process = gradio.Button('Process', variant='primary', size='lg', scale=1, interactive=True)
-    __position = gradio.Slider(label='Position', value=-1, minimum=-1, maximum=128, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
+    __position = gradio.Slider(label='Position', value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
     return {
         'process_block': __process,
         'position_block': __position}
