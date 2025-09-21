@@ -242,7 +242,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             show_progress='full')
         __output_state.change(
             fn=update_position_range,
-            inputs=[__position_block, __output],
+            inputs=[__position_block, __output_state],
             outputs=__position_block,
             queue=False,
             show_progress='hidden')
