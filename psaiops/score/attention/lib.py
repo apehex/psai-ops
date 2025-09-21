@@ -28,6 +28,7 @@ def get_model(name: str, device: str='cpu'):
 
 # PREPROCESS #####################################################################
 
+@functools.lru_cache(maxsize=4)
 def preprocess_token_ids(
     tokenizer_obj: object,
     prompt_str: str,
@@ -149,7 +150,6 @@ def score_tokens(
     token_idx: int,
     layer_idx: int,
     head_idx: int,
-    *,
     device_str: str,
     model_obj: object,
     tokenizer_obj: object,
