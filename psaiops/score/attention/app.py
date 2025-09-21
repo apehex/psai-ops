@@ -183,10 +183,10 @@ def update_computation_state(
             token_obj=__output_data)
         # update each component => (input, output, attention, highligh) states
         return (
-            gradio.update(value=__tokens[:__input_dim]),
-            gradio.update(value=__tokens[__input_dim:]),
-            gradio.update(value=__attention_data),
-            gradio.update(value=list(zip(__tokens, __labels))))
+            __tokens[:__input_dim],
+            __tokens[__input_dim:],
+            __attention_data,
+            list(zip(__tokens, __labels)))
     except:
         raise Exception('Attention generation aborted with an error.')
 
@@ -197,7 +197,7 @@ def update_text_highlight(
     input_data: list,
     output_data: list,
     attention_data: torch.Tensor,
-) -> dict:
+) -> list:
     # sanitize the inputs
     __input_data = input_data or []
     __output_data = output_data or []
@@ -227,7 +227,7 @@ def update_text_highlight(
             input_dim=__input_dim,
             token_idx=__token_idx)
         # update the component with [(token, label), ...]
-        return gradio.update(value=list(zip(__tokens, __labels)))
+        return list(zip(__tokens, __labels))
     except:
         raise Exception('Attention reduction aborted with an error.')
 
