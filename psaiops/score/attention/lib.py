@@ -137,7 +137,7 @@ def postprocess_token_ids(
     # back to token strings
     __tokens = tokenizer_obj.convert_ids_to_tokens(__indices)
     # normalize the tokens
-    return [__t.replace('Ġ', ' ') for __t in __tokens]
+    return [__t.replace(chr(0x0120), ' ').replace(chr(0x010a), '\n') for __t in __tokens]
 
 # COMPUTE ########################################################################
 
