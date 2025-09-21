@@ -145,6 +145,9 @@ def update_computation_state(
     __head_idx = max(-1, int(head_idx))
     __prompt_str = prompt_str.strip()
     __device_str = device_str if (device_str in ['cpu', 'cuda']) else 'cpu'
+    # exit if some values are missing
+    if (not __prompt_str) or (model_obj is None) or (tokenizer_obj is None):
+        return ([], [], [], torch.empty(0))
     # handle all exceptions at once
     try:
         # dictionary {'input_ids': _, 'attention_mask': _}
@@ -183,10 +186,10 @@ def update_computation_state(
             token_obj=__output_data)
         # update each component => (input, output, attention, highligh) states
         return (
+            list(zip(__tokens, __labels)),
             __tokens[:__input_dim],
             __tokens[__input_dim:],
-            __attention_data,
-            list(zip(__tokens, __labels)))
+            __attention_data,)
     except:
         raise Exception('Attention generation aborted with an error.')
 
@@ -250,7 +253,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         __fields['process_block'].click(
             fn=__compute,
             inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'position_block', 'layer_block', 'head_block', 'input_block']],
-            outputs=[__fields[__k] for __k in ['input_state', 'output_state', 'attention_state', 'output_block']],
+            outputs=[__fields[__k] for __k in ['output_block', 'input_state', 'output_state', 'attention_state']],
             queue=False,
             show_progress='full')
         __fields['tokens_block'].change(
