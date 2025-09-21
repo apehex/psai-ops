@@ -33,7 +33,7 @@ def create_model_block() -> dict:
     __model_dd = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
     __layer_sl = gradio.Slider(label='Layer Depth', value=12, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
     __head_sl = gradio.Slider(label='Attention Head', value=-1, minimum=-1, maximum=63, step=1, scale=1, interactive=True) # info='-1 to average on all heads'
-    __model_dd.change(fn=update_layer_range, inputs=[__layer_sl, __model_dd], outputs=__layer_sl, scale=1, queue=False, show_progress='hidden')
+    __model_dd.change(fn=update_layer_range, inputs=[__layer_sl, __model_dd], outputs=__layer_sl, queue=False, show_progress='hidden')
     return {
         'model_block': __model_dd,
         'layer_block': __layer_sl,
