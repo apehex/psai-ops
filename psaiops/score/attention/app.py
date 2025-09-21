@@ -189,8 +189,6 @@ def update_computation_state(
             gradio.update(value=list(zip(__tokens, __labels))))
     except:
         raise Exception('Attention generation aborted with an error.')
-    finally:
-        return (gradio.update(), gradio.update(), gradio.update(), gradio.update())
 
 def update_text_highlight(
     token_idx: float,
@@ -232,8 +230,6 @@ def update_text_highlight(
         return gradio.update(value=list(zip(__tokens, __labels)))
     except:
         raise Exception('Attention reduction aborted with an error.')
-    finally:
-        return gradio.update()
 
 # APP ##########################################################################
 
