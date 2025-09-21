@@ -47,14 +47,14 @@ def create_sampling_block() -> dict:
 # TARGET #######################################################################
 
 def create_target_block() -> dict:
-    __target = gradio.Radio(label='Score', value='Inputs', choices=['Inputs', 'Outputs', 'Both'], scale=1, interactive=True)
+    __target = gradio.Radio(label='Score', value='Inputs', choices=['Inputs', 'Everything'], scale=1, interactive=True)
     return {'target_block': __target}
 
 # DISPLAY ######################################################################
 
-def create_display_block() -> dict:
-    __display = gradio.Radio(label='Display', value='Tokens', choices=['Tokens', 'Indexes'], scale=1, interactive=True)
-    return {'display_block': __display}
+# def create_display_block() -> dict:
+#     __display = gradio.Radio(label='Display', value='Tokens', choices=['Tokens', 'Indexes'], scale=1, interactive=True)
+#     return {'display_block': __display}
 
 # INPUTS #######################################################################
 
@@ -117,7 +117,7 @@ def create_layout(intro: str=INTRO) -> dict:
                     __fields.update(create_sampling_block())
                 with gradio.Row(equal_height=True):
                     __fields.update(create_target_block())
-                    __fields.update(create_display_block())
+                    # __fields.update(create_display_block())
     return __fields
 
 # EVENTS #######################################################################
