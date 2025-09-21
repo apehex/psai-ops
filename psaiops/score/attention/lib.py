@@ -119,7 +119,7 @@ def postprocess_attention_scores(
     __output_range = list(range(__output_dim - input_dim)) if (__token_idx < 0) else [__token_idx]
     __output_mask = torch.BoolTensor([__i in __output_range for __i in range(__output_dim - input_dim)])
     # normalize the scores
-    __input_scores = attention_data[__input_slice] / (attention_data[__input_slice].mean() + 1e-5)
+    __input_scores = attention_data[__input_slice] / (attention_data[__input_slice].max() + 1e-5)
     # round to obtain integer labels from 0 to 100
     __input_scores = torch.round(100.0 * __input_scores, decimals=0).type(torch.int32)
     # the generated tokens are not scored
