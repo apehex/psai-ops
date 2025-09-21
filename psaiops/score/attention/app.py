@@ -128,50 +128,69 @@ def update_computation_state(
     token_num: float,
     topk_num: float,
     topp_num: float,
+    token_idx: float,
+    layer_idx: float,
+    head_idx: float,
     prompt_str: str,
     device_str: str,
     model_obj: object,
     tokenizer_obj: object,
 ) -> tuple:
     # sanitize the inputs
-    __limit = max(1, min(128, int(token_num)))
-    __topk = max(1, min(128, int(token_num)))
-    __topp = max(0.0, min(1.0, float(token_num)))
-    __prompt = prompt_str.strip()
-    __device = device_str if (device_str in ['cpu', 'cuda']) else 'cpu'
+    __token_num = max(1, min(128, int(token_num)))
+    __topk_num = max(1, min(8, int(topk_num)))
+    __topp_num = max(0.0, min(1.0, float(topp_num)))
+    __token_idx = max(0, min(__token_num, int(token_idx)))
+    __layer_idx = max(0, int(layer_idx))
+    __head_idx = max(0, int(head_idx))
+    __prompt_str = prompt_str.strip()
+    __device_str = device_str if (device_str in ['cpu', 'cuda']) else 'cpu'
     # handle all exceptions at once
     try:
         # dictionary {'input_ids': _, 'attention_mask': _}
-        __inputs = psaiops.score.attention.lib.preprocess_token_ids(
+        __input_data = psaiops.score.attention.lib.preprocess_token_ids(
             tokenizer_obj=tokenizer_obj,
-            prompt_str=__prompt,
-            device_str=__device)
+            prompt_str=__prompt_str,
+            device_str=__device_str)
         # parse the inputs
-        __input_dim = int(__inputs['input_ids'].shape[-1])
+        __input_dim = int(__input_data['input_ids'].shape[-1])
         # tensor (1, T)
-        __outputs = psaiops.score.attention.lib.generate_token_ids(
+        __output_data = psaiops.score.attention.lib.generate_token_ids(
             model_obj=model_obj,
-            input_args=__inputs,
-            token_num=__limit,
-            topk_num=__topk,
-            topp_num=__topp)
+            input_args=__input_data,
+            token_num=__token_num,
+            topk_num=__topk_num,
+            topp_num=__topp_num)
         # tensor (L, S, H, T, T)
-        __attentions = psaiops.score.attention.lib.compute_attention_weights(
+        __attention_data = psaiops.score.attention.lib.compute_attention_weights(
             model_obj=model_obj,
-            token_obj=__outputs)
+            token_obj=__output_data)
+        # reduce the layer, sample, head and output token axes => tensor (T,)
+        __score_data = psaiops.score.attention.lib.reduce_attention_weights(
+            attention_data=__attention_data,
+            token_idx=__token_idx,
+            layer_idx=__layer_idx,
+            head_idx=__head_idx,
+            input_dim=__input_dim)
+        # translate the scores into integer labels
+        __labels = psaiops.score.attention.lib.postprocess_attention_scores(
+            attention_data=__score_data,
+            input_dim=__input_dim,
+            token_idx=__token_idx)
         # detokenize the IDs
         __tokens = psaiops.score.attention.lib.postprocess_token_ids(
             tokenizer_obj=tokenizer_obj,
-            token_obj=__outputs)
-        # update each component => (input, output, attention) states
+            token_obj=__output_data)
+        # update each component => (input, output, attention, highligh) states
         return (
             gradio.update(value=__tokens[:__input_dim]),
             gradio.update(value=__tokens[__input_dim:]),
-            gradio.update(value=__attentions),)
+            gradio.update(value=__attention_data),
+            gradio.update(value=list(zip(__tokens, __labels))))
     except:
         raise Exception('Attention generation aborted with an error.')
     finally:
-        return (gradio.update(), gradio.update(), gradio.update())
+        return (gradio.update(), gradio.update(), gradio.update(), gradio.update())
 
 def update_text_highlight(
     token_idx: float,
@@ -236,20 +255,14 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         # wire the input fields
         __button_block.click(
             fn=__compute,
-            inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'input_block']],
-            outputs=[__fields[__k] for __k in ['input_state', 'output_state', 'attention_state']],
+            inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'position_block', 'layer_block', 'head_block', 'input_block']],
+            outputs=[__fields[__k] for __k in ['input_state', 'output_state', 'attention_state', 'output_block']],
             queue=False,
             show_progress='full')
         __output_state.change(
             fn=update_position_range,
             inputs=[__position_block, __output_state],
             outputs=__position_block,
-            queue=False,
-            show_progress='hidden')
-        __attention_state.change(
-            fn=update_text_highlight,
-            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'head_block', 'input_state', 'output_state', 'attention_state']],
-            outputs=__output_block,
             queue=False,
             show_progress='hidden')
         __position_block.change(
