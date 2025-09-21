@@ -24,16 +24,16 @@ def create_color_map() -> dict:
 # INTRO ########################################################################
 
 def create_intro_block(intro: str) -> dict:
-    __intro = gradio.Markdown(intro)
+    __intro = gradio.Markdown(intro, scale=1)
     return {'intro_block': __intro}
 
 # MODEL ########################################################################
 
 def create_model_block() -> dict:
-    __model_dd = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
-    __layer_sl = gradio.Slider(label='Layer Depth', value=12, minimum=-1, maximum=23, step=1, interactive=True) # info='-1 to average on all layers'
-    __head_sl = gradio.Slider(label='Attention Head', value=-1, minimum=-1, maximum=63, step=1, interactive=True) # info='-1 to average on all heads'
-    __model_dd.change(fn=update_layer_range, inputs=[__layer_sl, __model_dd], outputs=__layer_sl, queue=False, show_progress='hidden')
+    __model_dd = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
+    __layer_sl = gradio.Slider(label='Layer Depth', value=12, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
+    __head_sl = gradio.Slider(label='Attention Head', value=-1, minimum=-1, maximum=63, step=1, scale=1, interactive=True) # info='-1 to average on all heads'
+    __model_dd.change(fn=update_layer_range, inputs=[__layer_sl, __model_dd], outputs=__layer_sl, scale=1, queue=False, show_progress='hidden')
     return {
         'model_block': __model_dd,
         'layer_block': __layer_sl,
@@ -42,37 +42,43 @@ def create_model_block() -> dict:
 # SAMPLING #####################################################################
 
 def create_sampling_block() -> dict:
-    __tokens = gradio.Slider(label='Tokens', value=32, minimum=0, maximum=128, step=1, interactive=True)
-    __topk = gradio.Slider(label='Top K', value=4, minimum=1, maximum=8, step=1, interactive=True)
-    __topp = gradio.Slider(label='Top P', value=0.8, minimum=0.0, maximum=1.0, step=0.1, interactive=True)
+    __tokens = gradio.Slider(label='Tokens', value=32, minimum=0, maximum=128, step=1, scale=1, interactive=True)
+    __topk = gradio.Slider(label='Top K', value=4, minimum=1, maximum=8, step=1, scale=1, interactive=True)
+    __topp = gradio.Slider(label='Top P', value=0.8, minimum=0.0, maximum=1.0, step=0.1, scale=1, interactive=True)
     return {
         'tokens_block': __tokens,
         'topk_block': __topk,
         'topp_block': __topp}
 
+# TARGET #######################################################################
+
+def create_target_block() -> dict:
+    __target = gradio.Radio(label='Score', value='Inputs', choices=['Inputs', 'Outputs', 'Both'], scale=1, interactive=True)
+    return {'target_block': __target}
+
 # DISPLAY ######################################################################
 
 def create_display_block() -> dict:
-    __display = gradio.Radio(label='Display', value='Tokens', choices=['Tokens', 'Indexes'], interactive=True)
+    __display = gradio.Radio(label='Display', value='Tokens', choices=['Tokens', 'Indexes'], scale=1, interactive=True)
     return {'display_block': __display}
 
 # INPUTS #######################################################################
 
 def create_inputs_block() -> dict:
-    __input = gradio.Textbox(label='Prompt', value='', placeholder='A string of tokens to score.', lines=4, show_copy_button=True, interactive=True)
+    __input = gradio.Textbox(label='Prompt', value='', placeholder='A string of tokens to score.', lines=4, scale=1, show_copy_button=True, interactive=True)
     return {'input_block': __input}
 
 # OUTPUTS ######################################################################
 
 def create_outputs_block() -> dict:
-    __output = gradio.HighlightedText(label='Scores', value='', interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=True, color_map=create_color_map(), elem_classes='white-text')
+    __output = gradio.HighlightedText(label='Scores', value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=True, color_map=create_color_map(), elem_classes='white-text')
     return {'output_block': __output}
 
 # ACTIONS ######################################################################
 
 def create_actions_block() -> dict:
-    __process = gradio.Button('Process', variant='primary', size='lg', interactive=True)
-    __position = gradio.Slider(label='Position', value=-1, minimum=-1, maximum=128, step=1, interactive=True) # info='-1 to average on all tokens'
+    __process = gradio.Button('Process', variant='primary', size='lg', scale=1, interactive=True)
+    __position = gradio.Slider(label='Position', value=-1, minimum=-1, maximum=128, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
     return {
         'process_block': __process,
         'position_block': __position}
@@ -90,21 +96,20 @@ def create_layout(intro: str=INTRO) -> dict:
     with gradio.Tabs():
         with gradio.Tab('Score Tokens') as __main_tab:
             __fields.update({'main_tab': __main_tab})
-            with gradio.Row():
-                with gradio.Column(scale=1):
-                    __fields.update(create_inputs_block())
-                with gradio.Column(scale=1):
-                    __fields.update(create_outputs_block())
-            with gradio.Row():
+            with gradio.Row(equal_height=True):
+                __fields.update(create_inputs_block())
+                __fields.update(create_outputs_block())
+            with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
         with gradio.Tab('Settings') as __settings_tab:
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Column(scale=1):
-                with gradio.Row():
+                with gradio.Row(equal_height=True):
                     __fields.update(create_model_block())
-                with gradio.Row():
+                with gradio.Row(equal_height=True):
                     __fields.update(create_sampling_block())
-                with gradio.Row():
+                with gradio.Row(equal_height=True):
+                    __fields.update(create_target_block())
                     __fields.update(create_display_block())
     return __fields
 
