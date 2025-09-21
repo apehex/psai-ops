@@ -121,8 +121,8 @@ def create_layout(intro: str=INTRO) -> dict:
 def update_layer_range(value: float, model: str) -> dict:
     return gradio.update(maximum=35, value=min(35, int(value))) if '120b' in model else gradio.update(maximum=23, value=min(23, int(value)))
 
-def update_position_range(value: float, tokens: list) -> dict:
-    return gradio.update(maximum=len(tokens) - 1, value=min(len(tokens) - 1, int(value)))
+def update_position_range(value: float, tokens: float) -> dict:
+    return gradio.update(maximum=int(tokens) - 1, value=min(int(tokens) - 1, int(value)))
 
 def update_computation_state(
     token_num: float,
@@ -246,26 +246,23 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         __fields.update(create_layout(intro=intro))
         # init the state
         __fields.update(create_state())
-        # fetch the relevant fields
-        __button_block, __position_block, __output_block = (__fields['process_block'], __fields['position_block'], __fields['output_block'])
-        __output_state, __attention_state = (__fields['output_state'], __fields['attention_state'])
         # wire the input fields
-        __button_block.click(
+        __fields['process_block'].click(
             fn=__compute,
             inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'position_block', 'layer_block', 'head_block', 'input_block']],
             outputs=[__fields[__k] for __k in ['input_state', 'output_state', 'attention_state', 'output_block']],
             queue=False,
             show_progress='full')
-        __output_state.change(
+        __fields['tokens_block'].change(
             fn=update_position_range,
-            inputs=[__position_block, __output_state],
-            outputs=__position_block,
+            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block']],
+            outputs=__fields['position_block'],
             queue=False,
             show_progress='hidden')
-        __position_block.change(
+        __fields['position_block'].change(
             fn=update_text_highlight,
             inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'head_block', 'input_state', 'output_state', 'attention_state']],
-            outputs=__output_block,
+            outputs=__fields['output_block'],
             queue=False,
             show_progress='hidden')
         # gradio application
