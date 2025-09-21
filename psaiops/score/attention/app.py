@@ -140,9 +140,9 @@ def update_computation_state(
     __token_num = max(1, min(128, int(token_num)))
     __topk_num = max(1, min(8, int(topk_num)))
     __topp_num = max(0.0, min(1.0, float(topp_num)))
-    __token_idx = max(0, min(__token_num, int(token_idx)))
-    __layer_idx = max(0, int(layer_idx))
-    __head_idx = max(0, int(head_idx))
+    __token_idx = max(-1, min(__token_num, int(token_idx)))
+    __layer_idx = max(-1, int(layer_idx))
+    __head_idx = max(-1, int(head_idx))
     __prompt_str = prompt_str.strip()
     __device_str = device_str if (device_str in ['cpu', 'cuda']) else 'cpu'
     # handle all exceptions at once
@@ -203,11 +203,12 @@ def update_text_highlight(
     # sanitize the inputs
     __input_data = input_data or []
     __output_data = output_data or []
-    __attention_data = attention_data or torch.empty(0)
+    __attention_data = torch.empty(0) if (attention_data is None) else attention_data
     __input_dim = len(__input_data)
-    __token_idx = max(0, min(__input_dim, int(token_idx)))
-    __layer_idx = max(0, int(layer_idx))
-    __head_idx = max(0, int(head_idx))
+    __output_dim = len(__output_data)
+    __token_idx = max(-1, min(__output_dim, int(token_idx)))
+    __layer_idx = max(-1, int(layer_idx))
+    __head_idx = max(-1, int(head_idx))
     # exit if the data has not yet been computed
     if (not __input_data) or (not __output_data) or (attention_data is None) or (len(attention_data) == 0):
         return gradio.update()
