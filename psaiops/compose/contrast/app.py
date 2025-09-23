@@ -128,8 +128,6 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
         __model = psaiops.score.attention.lib.get_model(name=model, device=__device)
         __tokenizer = psaiops.score.attention.lib.get_tokenizer(name=model, device=__device)
-        # adapt the computing function
-        __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
