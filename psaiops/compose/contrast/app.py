@@ -53,16 +53,12 @@ def create_display_block() -> dict:
 
 # INPUTS #######################################################################
 
-def create_prompts_row(operation: str='', index: int=0, show: bool=True) -> dict:
-    __operation = gradio.Dropdown(label=f'operation-{index}', value='', choices=['', '+ (add)', '- (sub)', '. (dot)', '= (rev)'], scale=1, show_label=False, allow_custom_value=False, multiselect=False, interactive=False)
-    __input = gradio.Textbox(label=f'input-{index}', value='', placeholder='Some text.', lines=1, scale=4, show_label=False, show_copy_button=True, interactive=True)
-    __arrow = gradio.Markdown(label=f'arrow-{index}', value=' => ')
-    __output = gradio.Textbox(label=f'output-{index}', value='', placeholder='Some text.', lines=1, scale=4, show_label=False, show_copy_button=True, interactive=False)
+def create_inputs_row(operation: str='', index: int=0) -> dict:
+    __operation = gradio.Dropdown(label=f'operation-{index}', value=operation, choices=['', '+ (add)', '- (sub)', '. (dot)', '= (rev)'], scale=1, show_label=False, allow_custom_value=False, multiselect=False, interactive=False)
+    __input = gradio.Textbox(label=f'input-{index}', value='', placeholder='Some text.', lines=1, scale=7, show_label=False, show_copy_button=True, interactive=True)
     return {
         f'operation_{index}_block': __operation,
-        f'input_{index}_block': __input,
-        f'arrow_{index}_block': __arrow,
-        f'output_{index}_block': __output,}
+        f'input_{index}_block': __input,}
 
 # OUTPUTS ######################################################################
 
@@ -90,11 +86,11 @@ def create_layout(intro: str=INTRO) -> dict:
         with gradio.Tab('Equation') as __main_tab:
             __fields.update({'main_tab': __main_tab})
             with gradio.Row(equal_height=True):
-                __fields.update(create_prompts_row(operation='', index=0))
+                __fields.update(create_inputs_row(operation='', index=0))
             with gradio.Row(equal_height=True):
-                __fields.update(create_prompts_row(operation='- (sub)', index=1))
+                __fields.update(create_inputs_row(operation='- (sub)', index=1))
             with gradio.Row(equal_height=True):
-                __fields.update(create_prompts_row(operation='+ (add)', index=2))
+                __fields.update(create_inputs_row(operation='+ (add)', index=2))
             with gradio.Row(equal_height=True):
                 __fields.update(create_outputs_block())
             with gradio.Row(equal_height=True):
