@@ -55,7 +55,7 @@ def create_display_block() -> dict:
 
 def create_inputs_row(operation: str='', index: int=0) -> dict:
     __operation = gradio.Dropdown(label=f'operation-{index}', value=operation, choices=['', '+ (add)', '- (sub)', '. (dot)', '= (rev)'], scale=1, show_label=False, allow_custom_value=False, multiselect=False, interactive=False)
-    __input = gradio.Textbox(label=f'input-{index}', value='', placeholder='Some text.', lines=1, scale=7, show_label=False, show_copy_button=True, interactive=True)
+    __input = gradio.Textbox(label=f'input-{index}', value='', placeholder='Some text.', lines=1, max_length=256, scale=7, show_label=False, show_copy_button=True, interactive=True)
     return {
         f'operation_{index}_block': __operation,
         f'input_{index}_block': __input,}
@@ -69,8 +69,14 @@ def create_outputs_block() -> dict:
 # ACTIONS ######################################################################
 
 def create_actions_block() -> dict:
-    __process = gradio.Button('Process', variant='primary', size='lg', scale=1, interactive=True)
+    __process = gradio.Button(value='Process', variant='primary', size='lg', scale=1, interactive=True)
     return {'process_block': __process,}
+
+# ACTIONS ######################################################################
+
+def create_table_block() -> dict:
+    __table = gradio.DataFrame(label='Summary', type='numpy', headers=None,  row_count=4, col_count=256, scale=1, interactive=False)
+    return {'table_block': __table,}
 
 # STATE ########################################################################
 
@@ -97,7 +103,7 @@ def create_layout(intro: str=INTRO) -> dict:
                 __fields.update(create_actions_block())
         with gradio.Tab('Details') as __details_tab:
             with gradio.Row(equal_height=True):
-                pass
+                __fields.update(create_table_block())
         with gradio.Tab('Settings') as __settings_tab:
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Column(scale=1):
