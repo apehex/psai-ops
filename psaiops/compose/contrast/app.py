@@ -63,7 +63,8 @@ def create_reduction_block() -> dict:
 # INPUTS #######################################################################
 
 def create_inputs_row(operation: str='', index: int=0) -> dict:
-    __operation = gradio.Dropdown(label=f'operation-{index}', value=operation, choices=['', '+ (add)', '- (sub)', '. (dot)', '= (rev)'], scale=1, show_label=False, allow_custom_value=False, multiselect=False, interactive=False)
+    # __operation = gradio.Dropdown(label=f'operation-{index}', value=operation, choices=['', '+ (add)', '- (sub)', '. (dot)', '= (rev)'], scale=1, show_label=False, allow_custom_value=False, multiselect=False, interactive=False)
+    __operation = gradio.Button(value=operation, variant='primary', size='lg', scale=1, interactive=False)
     __input = gradio.Textbox(label=f'input-{index}', value='', placeholder='Some text.', lines=1, max_length=256, scale=7, show_label=False, show_copy_button=True, interactive=True)
     return {
         f'operation_{index}_block': __operation,
@@ -103,9 +104,9 @@ def create_layout(intro: str=INTRO) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_row(operation='', index=0))
             with gradio.Row(equal_height=True):
-                __fields.update(create_inputs_row(operation='- (sub)', index=1))
+                __fields.update(create_inputs_row(operation='-', index=1))
             with gradio.Row(equal_height=True):
-                __fields.update(create_inputs_row(operation='+ (add)', index=2))
+                __fields.update(create_inputs_row(operation='+', index=2))
             with gradio.Row(equal_height=True):
                 __fields.update(create_outputs_block())
             with gradio.Row(equal_height=True):
