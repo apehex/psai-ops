@@ -47,9 +47,18 @@ def create_sampling_block() -> dict:
 
 # DISPLAY ######################################################################
 
-def create_display_block() -> dict:
-    __display = gradio.Radio(label='Intermediate Results', value='Show', choices=['Show', 'Hide'], scale=1, interactive=True)
-    return {'display_block': __display}
+# def create_display_block() -> dict:
+#     __display = gradio.Radio(label='Intermediate Results', value='Show', choices=['Show', 'Hide'], scale=1, interactive=True)
+#     return {'display_block': __display}
+
+# DISPLAY ######################################################################
+
+def create_reduction_block() -> dict:
+    __from = gradio.Slider(label='Average From', value=0, minimum=0, maximum=256, step=1, scale=1, interactive=True)
+    __to = gradio.Slider(label='Average To', value=256, minimum=0, maximum=256, step=1, scale=1, interactive=True)
+    return {
+        'from_block': __from,
+        'to_block': __to,}
 
 # INPUTS #######################################################################
 
@@ -112,7 +121,7 @@ def create_layout(intro: str=INTRO) -> dict:
                 with gradio.Row(equal_height=True):
                     __fields.update(create_sampling_block())
                 with gradio.Row(equal_height=True):
-                    __fields.update(create_display_block())
+                    __fields.update(create_reduction_block())
                     # __fields.update(create_display_block())
     return __fields
 
