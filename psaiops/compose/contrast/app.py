@@ -47,13 +47,7 @@ def create_sampling_block() -> dict:
         'topk_block': __topk,
         'topp_block': __topp,}
 
-# DISPLAY ######################################################################
-
-# def create_display_block() -> dict:
-#     __display = gradio.Radio(label='Intermediate Results', value='Show', choices=['Show', 'Hide'], scale=1, interactive=True)
-#     return {'display_block': __display}
-
-# DISPLAY ######################################################################
+# REDUCTION ####################################################################
 
 def create_reduction_block() -> dict:
     __from = gradio.Slider(label='Average From', value=0, minimum=0, maximum=256, step=1, scale=1, interactive=True)
@@ -84,7 +78,7 @@ def create_actions_block() -> dict:
     __process = gradio.Button(value='Process', variant='primary', size='lg', scale=1, interactive=True)
     return {'process_block': __process,}
 
-# ACTIONS ######################################################################
+# TABLE ########################################################################
 
 def create_table_block() -> dict:
     __table = gradio.DataFrame(label='Summary', type='numpy', headers=None,  row_count=4, col_count=256, scale=1, interactive=False)
