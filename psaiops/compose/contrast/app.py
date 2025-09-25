@@ -52,9 +52,11 @@ def create_sampling_block() -> dict:
 def create_reduction_block() -> dict:
     __from = gradio.Slider(label='Average From', value=0, minimum=0, maximum=256, step=1, scale=1, interactive=True)
     __to = gradio.Slider(label='Average To', value=256, minimum=0, maximum=256, step=1, scale=1, interactive=True)
+    __alpha = gradio.Slider(label='Steering Factor', value=1.0, minimum=0.0, maximum=8.0, step=0.1, scale=1, interactive=True)
     return {
         'from_block': __from,
-        'to_block': __to,}
+        'to_block': __to,
+        'alpha_block': __alpha,}
 
 # INPUTS #######################################################################
 
