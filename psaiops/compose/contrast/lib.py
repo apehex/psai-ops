@@ -112,7 +112,7 @@ def steer_model_output(
     # store hidden states
     __captured = {}
     # tokenize the 2 prompts and pad to same length
-    __inputs = preprocess_token_ids(tokenizer=tokenizer_obj, prompts=[positive_str, negative_str], device=device_str)
+    __inputs = preprocess_token_ids(tokenizer=tokenizer_obj, prompts=(positive_str, negative_str), device=device_str)
     # forward hook to capture output hidden state
     __hook = functools.partial(capture_hidden_activation, index=__index, captured=__captured)
     # attach to the model
@@ -131,7 +131,7 @@ def steer_model_output(
     # attach to the model
     __handle = model_obj.model.layers[index].register_forward_hook(__hook)
     # now process the user input
-    __inputs = preprocess_token_ids(tokenizer=tokenizer_obj, prompts=[prompt_str], device=device_str)
+    __inputs = preprocess_token_ids(tokenizer=tokenizer_obj, prompts=(prompt_str,), device=device_str)
     # generate the new with tampered activations
     with torch.no_grad():
         __outputs = model_obj.generate(
