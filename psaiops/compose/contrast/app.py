@@ -10,7 +10,7 @@ import psaiops.compose.contrast.lib
 
 TITLE = '''Contrastive Steering'''
 INTRO = '''Add a delta of activation to a prompt to steer the model output in a specific latent direction.'''
-STYLE = '''.white-text span { color: white; }'''
+STYLE = '''.giga-text { font-size: 32px; }'''
 
 MODEL = 'openai/gpt-oss-20b'
 
@@ -59,8 +59,8 @@ def create_reduction_block() -> dict:
 # INPUTS #######################################################################
 
 def create_inputs_row(operation: str='', index: int=0) -> dict:
-    # __operation = gradio.Dropdown(label=f'operation-{index}', value=operation, choices=['', '+ (add)', '- (sub)', '. (dot)', '= (rev)'], scale=1, show_label=False, allow_custom_value=False, multiselect=False, interactive=False)
-    __operation = gradio.Button(value=operation, variant='primary', size='lg', scale=1, interactive=False)
+    # __operation = gradio.Button(value=operation, variant='primary', size='lg', elem_classes='white-text', scale=1, interactive=False)
+    __operation = gradio.Dropdown(label=f'operation-{index}', value=operation, choices=['', '+', '-', 'x', '.', '='], elem_classes='giga-text', scale=1, show_label=False, allow_custom_value=False, multiselect=False, interactive=False)
     __input = gradio.Textbox(label=f'input-{index}', value='', placeholder='Some text.', lines=1, max_length=256, scale=9, show_label=False, show_copy_button=True, interactive=True)
     return {
         f'operation_{index}_block': __operation,
