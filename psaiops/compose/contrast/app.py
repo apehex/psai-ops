@@ -138,6 +138,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
         __model = psaiops.compose.contrast.lib.get_model(name=model, device=__device)
         __tokenizer = psaiops.compose.contrast.lib.get_tokenizer(name=model, device=__device)
+        # adapt the computing function
+        __compute = functools.partial(psaiops.compose.contrast.lib.steer_model_output, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
@@ -149,6 +151,12 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             outputs=__fields['layer_block'],
             queue=False,
             show_progress='hidden')
+        __fields['process_block'].click(
+            fn=__compute,
+            inputs=[__fields[__k] for __k in ['input_0_block', 'input_1_block', 'input_2_block', 'tokens_block', 'topk_block', 'topp_block', 'alpha_block', 'layer_block']],
+            outputs=__fields['output_block'],
+            queue=False,
+            show_progress='full')
         # gradio application
         return __app
 
