@@ -129,6 +129,10 @@ def create_layout(intro: str=INTRO) -> dict:
 def update_layer_range(value: float, model: str) -> dict:
     return gradio.update(maximum=35, value=min(35, int(value))) if '120b' in model else gradio.update(maximum=23, value=min(23, int(value)))
 
+def update_table_data(positive: str, negative: str, prompt: str, output: str, tokenizer: object) -> list:
+    __outputs = tokenizer([positive, negative, prompt, output], padding=True)
+    return [tokenizer.convert_ids_to_tokens(__s) for __s in __outputs['input_ids']]
+
 # APP ##########################################################################
 
 def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=MODEL) -> gradio.Blocks:
@@ -138,8 +142,9 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
         __model = psaiops.compose.contrast.lib.get_model(name=model, device=__device)
         __tokenizer = psaiops.compose.contrast.lib.get_tokenizer(name=model, device=__device)
-        # adapt the computing function
+        # adapt the computing functions
         __compute = functools.partial(psaiops.compose.contrast.lib.steer_model_output, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
+        __format = functools.partial(update_table_data, tokenizer=__tokenizer)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
@@ -149,6 +154,12 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             fn=update_layer_range,
             inputs=[__fields[__k] for __k in ['layer_block', 'model_block']],
             outputs=__fields['layer_block'],
+            queue=False,
+            show_progress='hidden')
+        __fields['output_block'].change(
+            fn=__format,
+            inputs=[__fields[__k] for __k in ['prompt_0_block', 'prompt_1_block', 'prompt_2_block', 'output_block']],
+            outputs=__fields['table_block'],
             queue=False,
             show_progress='hidden')
         __fields['process_block'].click(
