@@ -52,21 +52,21 @@ def create_sampling_block() -> dict:
 def create_reduction_block() -> dict:
     __from = gradio.Slider(label='Average From', value=0, minimum=0, maximum=256, step=1, scale=1, interactive=True)
     __to = gradio.Slider(label='Average To', value=256, minimum=0, maximum=256, step=1, scale=1, interactive=True)
-    __alpha = gradio.Slider(label='Steering Factor', value=1.0, minimum=0.0, maximum=8.0, step=0.1, scale=1, interactive=True)
     return {
         'from_block': __from,
-        'to_block': __to,
-        'alpha_block': __alpha,}
+        'to_block': __to,}
 
 # INPUTS #######################################################################
 
 def create_inputs_row(operation: str='', index: int=0) -> dict:
     # __operation = gradio.Button(value=operation, variant='primary', size='lg', elem_classes='white-text', scale=1, interactive=False)
-    __operation = gradio.Dropdown(label=f'operation-{index}', value=operation, choices=['', '+', '-', 'x', '.', '='], elem_classes='giga-text', scale=1, show_label=False, allow_custom_value=False, multiselect=False, interactive=False)
-    __input = gradio.Textbox(label=f'input-{index}', value='', placeholder='Some text.', lines=2, max_lines=2, scale=9, show_label=False, show_copy_button=True, interactive=True)
+    __operation = gradio.Dropdown(label=f'Operation', value=operation, choices=['', '+', '-', 'x', '.', '='], elem_classes='giga-text', scale=1, show_label=False, allow_custom_value=False, multiselect=False, interactive=False)
+    __alpha = gradio.Slider(label='Factor', value=1.0, minimum=0.0, maximum=16.0, step=0.1, scale=1, interactive=True)
+    __input = gradio.Textbox(label=f'Prompt', value='', placeholder='Some text.', lines=2, max_lines=2, scale=8, show_label=False, show_copy_button=True, interactive=True)
     return {
         f'operation_{index}_block': __operation,
-        f'input_{index}_block': __input,}
+        f'factor_{index}_block': __alpha,
+        f'prompt_{index}_block': __input,}
 
 # OUTPUTS ######################################################################
 
@@ -153,7 +153,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             show_progress='hidden')
         __fields['process_block'].click(
             fn=__compute,
-            inputs=[__fields[__k] for __k in ['input_0_block', 'input_1_block', 'input_2_block', 'tokens_block', 'topk_block', 'topp_block', 'alpha_block', 'layer_block']],
+            inputs=[__fields[__k] for __k in ['prompt_0_block', 'prompt_1_block', 'prompt_2_block', 'factor_0_block', 'factor_1_block', 'factor_2_block', 'tokens_block', 'topk_block', 'topp_block', 'layer_block']],
             outputs=__fields['output_block'],
             queue=False,
             show_progress='full')

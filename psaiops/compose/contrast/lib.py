@@ -82,11 +82,12 @@ def add_delta_activation(
     outputs: torch.Tensor,
     delta: torch.Tensor,
     alpha: torch.Tensor,
+    beta: torch.Tensor,
 ) -> torch.Tensor:
     # expand the single feature axis of the delta
     __shape = mlable.shapes.filter(outputs.shape, axes=[-1])
     # rescale the delta
-    return outputs + alpha * delta.view(__shape)
+    return alpha * outputs + beta * delta.view(__shape)
 
 # MAIN #########################################################################
 
@@ -94,25 +95,35 @@ def steer_model_output(
     positive_str: str,
     negative_str: str,
     prompt_str: str,
+    positive_rate: float,
+    negative_rate: float,
+    prompt_rate: float,
     token_num: int,
     topk_num: int,
     topp_num: float,
-    alpha_num: float,
     layer_idx: int,
     device_str: str,
     model_obj: object,
     tokenizer_obj: object,
 ) -> str:
-    # parse
-    __index = max(0, int(layer_idx))
-    __alpha = max(0.0, float(alpha_num))
-    __limit = max(1, int(token_num))
+    # parse & sanitize
+    __prompt0 = positive_str.strip()
+    __prompt1 = negative_str.strip()
+    __prompt2 = prompt_str.strip()
+    __alpha0 = max(0.0, float(alpha_num))
+    __alpha1 = max(0.0, float(alpha_num))
+    __alpha2 = max(0.0, float(alpha_num))
+    __count = max(1, int(token_num))
     __topk = max(1, int(topk_num))
     __topp = max(0.0, float(topp_num))
+    __index = max(0, int(layer_idx))
     # store hidden states
     __captured = {}
+    # stop if inputs are missing
+    if not (__prompt0 and __prompt1 and __prompt2):
+        return ''
     # tokenize the 2 prompts and pad to same length
-    __inputs = preprocess_token_ids(tokenizer=tokenizer_obj, prompts=(positive_str, negative_str), device=device_str)
+    __inputs = preprocess_token_ids(tokenizer=tokenizer_obj, prompts=(__prompt0, __prompt1), device=device_str)
     # forward hook to capture output hidden state
     __hook = functools.partial(capture_hidden_activation, index=__index, captured=__captured)
     # attach to the model
@@ -127,7 +138,7 @@ def steer_model_output(
     # activation delta at layer L
     __delta = compute_delta_activation(data=__captured[__index], masks=__inputs['attention_mask'], signs=torch.Tensor([1, -1]), keepdim=False)
     # add the delta on every forward pass
-    __hook = functools.partial(add_delta_activation, alpha=__alpha, delta=__delta)
+    __hook = functools.partial(add_delta_activation, alpha=__alpha2, beta=0.5 * (__alpha0 + __alpha1), delta=__delta)
     # attach to the model
     __handle = model_obj.model.layers[__index].register_forward_hook(__hook)
     # now process the user input
@@ -136,7 +147,7 @@ def steer_model_output(
     with torch.no_grad():
         __outputs = model_obj.generate(
             **__inputs,
-            max_new_tokens=__limit,
+            max_new_tokens=__count,
             do_sample=(0.0 < __topp < 1.0) or (__topk > 0),
             top_k=__topk if (__topk > 0) else None,
             top_p=__topp if (0.0 < __topp <= 1.0) else None,
