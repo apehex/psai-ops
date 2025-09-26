@@ -53,11 +53,22 @@ def capture_hidden_activation(
 ) -> None:
     captured[index] = outputs # (B, S, E)
 
+# MASKS ########################################################################
+
+def compute_sequence_mask(
+    tokens: torch.Tensor, # (B, S)
+    masks: torch.Tensor, # (B, S)
+) -> torch.Tensor:
+    # keep the intersection of the masks
+    __masks = masks.prod(dim=0, keepdim=False)
+    # and only the positions that differ between positive and negative prompts
+    return __masks * (tokens[0] != tokens[1])
+
 # REDUCTION ####################################################################
 
 def compute_delta_activation(
     data: torch.Tensor, # (B, S, E)
-    masks: torch.Tensor, # (B, S)
+    masks: torch.Tensor, # (S,)
     signs: torch.Tensor, # (B,)
     keepdim: bool=True,
 ) -> torch.Tensor:
@@ -68,9 +79,9 @@ def compute_delta_activation(
     __signs = signs.to(dtype=__dtype, device=__device).view(__shape)
     # combine along the batch axis to keep the shortest mask on the sequence axis
     __shape = tuple(mlable.shapes.filter(data.shape, axes=[1]))
-    __masks = torch.prod(masks, dim=0, keepdim=True).to(dtype=__dtype, device=__device).view(__shape)
+    __masks = masks.to(dtype=__dtype, device=__device).view(__shape)
     # mean factor: half the signs size along the batch axis and the number of positions kept along the sequence axis
-    __factor = (0.5 * __signs.abs().sum() * __masks.sum()).clamp(min=1e-8)
+    __factor = (0.5 * float(len(__signs)) * __masks.sum()).clamp(min=1e-8)
     # take the difference along the batch axis and the average along the sequence axis
     return (data * __signs * __masks).sum(dim=[0, 1], keepdim=keepdim) / __factor
 
@@ -110,9 +121,9 @@ def steer_model_output(
     __prompt0 = positive_str.strip()
     __prompt1 = negative_str.strip()
     __prompt2 = prompt_str.strip()
-    __alpha0 = max(0.0, float(alpha_num))
-    __alpha1 = max(0.0, float(alpha_num))
-    __alpha2 = max(0.0, float(alpha_num))
+    __alpha0 = max(0.0, float(positive_rate))
+    __alpha1 = max(0.0, float(negative_rate))
+    __alpha2 = max(0.0, float(prompt_rate))
     __count = max(1, int(token_num))
     __topk = max(1, int(topk_num))
     __topp = max(0.0, float(topp_num))
@@ -135,8 +146,10 @@ def steer_model_output(
         __outputs = model_obj(**__inputs, use_cache=True, output_attentions=False, output_hidden_states=False, return_dict=True)
     # stop capturing activations
     __handle.remove()
+    # select only the positions where the tokens differ
+    __masks = compute_sequence_mask(tokens=__inputs['input_ids'], masks=__inputs['attention_mask'])
     # activation delta at layer L
-    __delta = compute_delta_activation(data=__captured[__index], masks=__inputs['attention_mask'], signs=torch.Tensor([1, -1]), keepdim=False)
+    __delta = compute_delta_activation(data=__captured[__index], masks=__masks, signs=torch.Tensor([1, -1]), keepdim=False)
     # add the delta on every forward pass
     __hook = functools.partial(add_delta_activation, alpha=__alpha2, beta=0.5 * (__alpha0 + __alpha1), delta=__delta)
     # attach to the model
