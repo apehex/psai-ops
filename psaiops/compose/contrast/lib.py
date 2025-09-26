@@ -121,7 +121,7 @@ def steer_model_output(
         # inference mode
         model_obj.eval().to(device_str)
         # prefill with a single forward
-        __outputs = model(**__inputs, use_cache=True, output_attentions=False, output_hidden_states=False, return_dict=True)
+        __outputs = model_obj(**__inputs, use_cache=True, output_attentions=False, output_hidden_states=False, return_dict=True)
     # stop capturing activations
     __handle.remove()
     # activation delta at layer L
@@ -129,7 +129,7 @@ def steer_model_output(
     # add the delta on every forward pass
     __hook = functools.partial(add_delta_activation, alpha=__alpha, delta=__delta)
     # attach to the model
-    __handle = model_obj.model.layers[index].register_forward_hook(__hook)
+    __handle = model_obj.model.layers[__index].register_forward_hook(__hook)
     # now process the user input
     __inputs = preprocess_token_ids(tokenizer=tokenizer_obj, prompts=(prompt_str,), device=device_str)
     # generate the new with tampered activations
