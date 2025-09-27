@@ -131,7 +131,8 @@ def update_layer_range(value: float, model: str) -> dict:
 
 def update_table_data(positive: str, negative: str, prompt: str, output: str, tokenizer: object) -> list:
     __outputs = tokenizer([positive, negative, prompt, output], padding=True)
-    return [tokenizer.convert_ids_to_tokens(__s) for __s in __outputs['input_ids']]
+    __tokens = [tokenizer.convert_ids_to_tokens(__s) for __s in __outputs['input_ids']]
+    return [[__t.replace(chr(0x0120), ' ').replace(chr(0x010a), '\\n') for __t in __s] for __s in __tokens]
 
 # APP ##########################################################################
 
