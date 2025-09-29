@@ -57,33 +57,37 @@ def capture_hidden_activation(
 
 def compute_sequence_mask(
     tokens: torch.Tensor, # (B, S)
-    masks: torch.Tensor, # (B, S)
+    # masks: torch.Tensor, # (B, S)
 ) -> torch.Tensor:
-    # keep the intersection of the masks
-    __masks = masks.prod(dim=0, keepdim=False)
-    # and only the positions that differ between positive and negative prompts
-    return __masks * (tokens[0] != tokens[1])
+    __shape = mlable.shapes.divide(tokens.shape, axis=0, factor=2, insert=True)
+    # group the samples two by two
+    __data = tokens.reshape(__shape)
+    # compare each sample with its neighbor
+    __masks = __data[:, :1]  != __data[:, 1:]
+    # apply the same mask to both samples
+    return __masks.expand(__shape).reshape(tokens.shape)
 
 # REDUCTION ####################################################################
 
 def compute_delta_activation(
     data: torch.Tensor, # (B, S, E)
-    masks: torch.Tensor, # (S,)
+    masks: torch.Tensor, # (B, S,)
     signs: torch.Tensor, # (B,)
     keepdim: bool=True,
 ) -> torch.Tensor:
     __dtype = data.dtype
     __device = data.device
+    __dim0, __dim1, __dim2 = tuple(data.shape)
     # sign each sample along the batch axis
     __shape = tuple(mlable.shapes.filter(data.shape, axes=[0]))
     __signs = signs.to(dtype=__dtype, device=__device).view(__shape)
     # combine along the batch axis to keep the shortest mask on the sequence axis
-    __shape = tuple(mlable.shapes.filter(data.shape, axes=[1]))
+    __shape = tuple(mlable.shapes.filter(data.shape, axes=[0, 1]))
     __masks = masks.to(dtype=__dtype, device=__device).view(__shape)
     # mean factor: half the signs size along the batch axis and the number of positions kept along the sequence axis
-    __factor = (0.5 * float(len(__signs)) * __masks.sum()).clamp(min=1e-8)
+    __factor = (0.5 * float(__dim0) * __masks.sum(dim=1, keepdim=True)).clamp(min=1.0)
     # take the difference along the batch axis and the average along the sequence axis
-    return (data * __signs * __masks).sum(dim=[0, 1], keepdim=keepdim) / __factor
+    return (data * __signs * __masks / __factor).sum(dim=[0, 1], keepdim=keepdim)
 
 # DELTA ########################################################################
 
@@ -147,7 +151,7 @@ def steer_model_output(
     # stop capturing activations
     __handle.remove()
     # select only the positions where the tokens differ
-    __masks = compute_sequence_mask(tokens=__inputs['input_ids'], masks=__inputs['attention_mask'])
+    __masks = compute_sequence_mask(tokens=__inputs['input_ids'])
     # activation delta at layer L
     __delta = compute_delta_activation(data=__captured[__index], masks=__masks, signs=torch.Tensor([1, -1]), keepdim=False)
     # add the delta on every forward pass
