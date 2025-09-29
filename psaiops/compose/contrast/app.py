@@ -40,7 +40,7 @@ def create_model_block() -> dict:
 # SAMPLING #####################################################################
 
 def create_sampling_block() -> dict:
-    __tokens = gradio.Slider(label='Tokens', value=16, minimum=1, maximum=128, step=1, scale=1, interactive=True)
+    __tokens = gradio.Slider(label='Tokens', value=32, minimum=1, maximum=128, step=1, scale=1, interactive=True)
     __topk = gradio.Slider(label='Top K', value=4, minimum=1, maximum=8, step=1, scale=1, interactive=True)
     __topp = gradio.Slider(label='Top P', value=0.9, minimum=0.0, maximum=1.0, step=0.1, scale=1, interactive=True)
     return {
