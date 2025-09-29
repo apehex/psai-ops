@@ -1,6 +1,7 @@
 import functools
 
 import gradio
+import pandas
 import torch
 import torch.cuda
 
@@ -129,10 +130,22 @@ def create_layout(intro: str=INTRO) -> dict:
 def update_layer_range(value: float, model: str) -> dict:
     return gradio.update(maximum=35, value=min(35, int(value))) if '120b' in model else gradio.update(maximum=23, value=min(23, int(value)))
 
-def update_table_data(positive: str, negative: str, prompt: str, output: str, tokenizer: object) -> list:
-    __outputs = tokenizer([positive, negative, prompt, output], padding=True)
+def update_table_data(positive: str, negative: str, prompt: str, output: str, tokenizer: object) -> pandas.DataFrame:
+    # array of token IDs
+    __outputs = tokenizer([positive, negative, prompt, output], return_tensors='pt', padding=True)
+    # array of token strings
     __tokens = [tokenizer.convert_ids_to_tokens(__s) for __s in __outputs['input_ids']]
-    return [[__t.replace(chr(0x0120), ' ').replace(chr(0x010a), '\\n') for __t in __s] for __s in __tokens]
+    # shift the special characters
+    __tokens = [[__t.replace(chr(0x0120), ' ').replace(chr(0x010a), '\\n') for __t in __s] for __s in __tokens]
+    # mask the tokens that differ between positive and negative prompts
+    __masks = psaiops.compose.contrast.lib.compute_sequence_mask(tokens=__outputs['input_ids'])
+    # convert into a data frame
+    __data = pandas.DataFrame(__tokens)
+    # color the background in red for the positions marked by the mask
+    return __data.style.apply(update_table_style, masks=pandas.DataFrame(__masks), axis=None)
+
+def update_table_style(data: pandas.DataFrame, masks: pandas.DataFrame) -> pandas.DataFrame:
+    return pandas.DataFrame(masks.replace({True: 'background-color: rgb(255, 0, 0, 64%)', False: 'background-color: rgb(0, 0, 0, 0%)',}))
 
 # APP ##########################################################################
 
