@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "psaiops"
-version = "0.2.1"
+version = "0.2.2"
 description = "Web apps to inspect & engineer NN activations."
 license = ".github/LICENSE.md"
 readme = ".github/README.md"
