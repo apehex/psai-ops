@@ -225,13 +225,13 @@ def update_input_cache(cache: list, value: any, index: int, field: str) -> list:
     return __cache
 
 def update_operation_cache(cache: list, index: int, value: any) -> list:
-    return update_input_cache(cache=cache, index=index, value=value, field='operation')
+    return update_input_cache(cache=cache, index=int(index), value=str(value), field='operation')
 
 def update_factor_cache(cache: list, index: int, value: any) -> list:
-    return update_input_cache(cache=cache, index=index, value=value, field='factor')
+    return update_input_cache(cache=cache, index=int(index), value=float(value), field='factor')
 
 def update_prompt_cache(cache: list, index: int, value: any) -> list:
-    return update_input_cache(cache=cache, index=index, value=value, field='prompt')
+    return update_input_cache(cache=cache, index=int(index), value=str(value), field='prompt')
 
 def update_table_data(positive: str, negative: str, prompt: str, output: str, tokenizer: object) -> pandas.DataFrame:
     # array of token IDs
@@ -279,6 +279,24 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, limit: int=
             show_progress='hidden')
         # hide the target row
         for __i in range(limit):
+            __inputs[f'operation_{__i}_block'].change(
+                fn=update_operation_cache,
+                inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'operation_{__i}_block']],
+                outputs=__inputs['cache_block'],
+                queue=False,
+                show_progress='hidden')
+            __inputs[f'factor_{__i}_block'].change(
+                fn=update_factor_cache,
+                inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'factor_{__i}_block']],
+                outputs=__inputs['cache_block'],
+                queue=False,
+                show_progress='hidden')
+            __inputs[f'prompt_{__i}_block'].change(
+                fn=update_prompt_cache,
+                inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'prompt_{__i}_block']],
+                outputs=__inputs['cache_block'],
+                queue=False,
+                show_progress='hidden')
             __inputs[f'button_{__i}_block'].click(
                 fn=hide_input_row,
                 inputs=[__inputs['cache_block'], gradio.State(__i)],
