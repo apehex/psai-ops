@@ -8,9 +8,10 @@ import psaiops.score.attention.lib
 
 # META #########################################################################
 
-TITLE = '''Attention Scoring'''
-INTRO = '''Score each token according to the weights of the attention layers. The model is fixed to "openai/gpt-oss-20b" for now.'''
 STYLE = '''.white-text span { color: white; }'''
+TITLE = '''Attention Scoring'''
+INTRO = '''Score each token according to the weights of the attention layers.
+Under construction: the model is fixed to "openai/gpt-oss-20b" for now.'''
 
 MODEL = 'openai/gpt-oss-20b'
 

@@ -9,9 +9,10 @@ import psaiops.compose.contrast.lib
 
 # META #########################################################################
 
-TITLE = '''Contrastive Steering'''
-INTRO = '''Add a delta of activation to a prompt to steer the model output in a specific latent direction.'''
 STYLE = '''.giga-text input { font-size: 32px; }'''
+TITLE = '''Contrastive Steering'''
+INTRO = '''Add a delta of activation to a prompt to steer the model output in a specific latent direction.
+Under construction: the model is fixed to "openai/gpt-oss-20b" for now.'''
 
 MODEL = 'openai/gpt-oss-20b'
 
