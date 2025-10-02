@@ -111,6 +111,7 @@ def create_layout(intro: str=INTRO) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
         with gradio.Tab('Details') as __details_tab:
+            __fields.update({'details_tab': __details_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_table_block())
         with gradio.Tab('Settings') as __settings_tab:
@@ -170,7 +171,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             outputs=__fields['layer_block'],
             queue=False,
             show_progress='hidden')
-        __fields['output_block'].change(
+        __fields['details_tab'].select(
             fn=__format,
             inputs=[__fields[__k] for __k in ['prompt_0_block', 'prompt_1_block', 'prompt_2_block', 'output_block']],
             outputs=__fields['table_block'],
