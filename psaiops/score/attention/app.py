@@ -10,8 +10,7 @@ import psaiops.score.attention.lib
 
 STYLE = '''.white-text span { color: white; }'''
 TITLE = '''Attention Scoring'''
-INTRO = '''Score each token according to the weights of the attention layers.
-Under construction: the model is fixed to "openai/gpt-oss-20b" for now.'''
+INTRO = '''Score each token according to the weights of the attention layers.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
 
 MODEL = 'openai/gpt-oss-20b'
 
@@ -25,7 +24,7 @@ def create_color_map() -> dict:
 # INTRO ########################################################################
 
 def create_intro_block(intro: str) -> dict:
-    __intro = gradio.Markdown(intro)
+    __intro = gradio.Markdown(intro, line_breaks=True)
     return {'intro_block': __intro}
 
 # MODEL ########################################################################

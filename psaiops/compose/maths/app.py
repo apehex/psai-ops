@@ -14,8 +14,7 @@ MODEL = 'openai/gpt-oss-20b'
 
 STYLE = '''.giga-text input { font-size: 32px; }'''
 TITLE = '''Activation Maths'''
-INTRO = '''Compose prompts in the latent space.
-Under construction: the model is fixed to "openai/gpt-oss-20b" for now.'''
+INTRO = '''Compose prompts in the latent space.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
 
 COUNT = 8
 
@@ -29,7 +28,7 @@ def create_color_map() -> dict:
 # INTRO ########################################################################
 
 def create_intro_block(intro: str) -> dict:
-    __intro = gradio.Markdown(intro)
+    __intro = gradio.Markdown(intro, line_breaks=True)
     return {'intro_block': __intro}
 
 # MODEL ########################################################################

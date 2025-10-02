@@ -11,8 +11,7 @@ import psaiops.compose.contrast.lib
 
 STYLE = '''.giga-text input { font-size: 32px; }'''
 TITLE = '''Contrastive Steering'''
-INTRO = '''Add a delta of activation to a prompt to steer the model output in a specific latent direction.
-Under construction: the model is fixed to "openai/gpt-oss-20b" for now.'''
+INTRO = '''Add a delta of activation to a prompt to steer the model output in a specific latent direction.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
 
 MODEL = 'openai/gpt-oss-20b'
 
@@ -26,7 +25,7 @@ def create_color_map() -> dict:
 # INTRO ########################################################################
 
 def create_intro_block(intro: str) -> dict:
-    __intro = gradio.Markdown(intro)
+    __intro = gradio.Markdown(intro, line_breaks=True)
     return {'intro_block': __intro}
 
 # MODEL ########################################################################
