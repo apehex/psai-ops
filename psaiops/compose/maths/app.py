@@ -6,7 +6,7 @@ import pandas
 import torch
 import torch.cuda
 
-import psaiops.compose.contrast.lib
+import psaiops.compose.maths.lib
 
 # META #########################################################################
 
@@ -232,22 +232,17 @@ def update_factor_cache(cache: list, index: int, value: any) -> list:
 def update_prompt_cache(cache: list, index: int, value: any) -> list:
     return update_input_cache(cache=cache, index=int(index), value=str(value), field='prompt')
 
-def update_table_data(positive: str, negative: str, prompt: str, output: str, tokenizer: object) -> pandas.DataFrame:
-    # array of token IDs
-    __outputs = tokenizer([positive, negative, prompt, output], return_tensors='pt', padding=True)
-    # array of token strings
-    __tokens = [tokenizer.convert_ids_to_tokens(__s) for __s in __outputs['input_ids']]
-    # shift the special characters
-    __tokens = [[__t.replace(chr(0x0120), ' ').replace(chr(0x010a), '\\n') for __t in __s] for __s in __tokens]
-    # mask the tokens that differ between positive and negative prompts
-    __masks = psaiops.compose.contrast.lib.compute_sequence_mask(tokens=__outputs['input_ids'])
-    # convert into a data frame
-    __data = pandas.DataFrame(__tokens)
-    # color the background in red for the positions marked by the mask
-    return __data.style.apply(update_table_style, masks=pandas.DataFrame(__masks), axis=None)
-
-def update_table_style(data: pandas.DataFrame, masks: pandas.DataFrame) -> pandas.DataFrame:
-    return pandas.DataFrame(masks.replace({True: 'background-color: rgb(255, 0, 0, 64%)', False: 'background-color: rgb(0, 0, 0, 0%)',}))
+def update_table_data(tokenizer: object) -> callable:
+    # called with unpacked arguments
+    def __update_table_data(*prompts: list) -> list:
+        # array of token IDs
+        __outputs = tokenizer(prompts, return_tensors='pt', padding=True)
+        # array of token strings
+        __tokens = [tokenizer.convert_ids_to_tokens(__s) for __s in __outputs['input_ids']]
+        # shift the special characters
+        return [[__t.replace(chr(0x0120), ' ').replace(chr(0x010a), '\\n') for __t in __s] for __s in __tokens]
+    # fixed to a given tokenizer
+    return __update_table_data
 
 # APP ##########################################################################
 
@@ -256,12 +251,14 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, limit: int=
     with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
         # load the model
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        # __model = psaiops.compose.contrast.lib.get_model(name=model, device=__device)
-        # __tokenizer = psaiops.compose.contrast.lib.get_tokenizer(name=model, device=__device)
+        # __model = psaiops.compose.maths.lib.get_model(name=model, device=__device)
+        __tokenizer = psaiops.compose.maths.lib.get_tokenizer(name=model, device=__device)
         # create the UI
         __inputs.update(create_layout(intro=intro, limit=limit))
         # init the state
         __inputs.update(create_state(limit=limit))
+        # apply the configuration
+        __format = update_table_data(tokenizer=__tokenizer)
         # change the depth of the model
         __inputs['model_block'].change(
             fn=update_layer_range,
@@ -276,26 +273,37 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, limit: int=
             outputs=[__inputs['cache_block']] + get_input_rows(inputs=__inputs, limit=limit),
             queue=False,
             show_progress='hidden')
-        # hide the target row
+        # update the table
+        __inputs['details_tab'].select(
+            fn=__format,
+            inputs=[__inputs[f'prompt_{__i}_block'] for __i in range(limit)] + [__inputs['output_block']],
+            outputs=__inputs['table_block'],
+            queue=False,
+            show_progress='hidden')
+        # link each row of inputs to the cache
         for __i in range(limit):
+            # update the target operation in the cache
             __inputs[f'operation_{__i}_block'].change(
                 fn=update_operation_cache,
                 inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'operation_{__i}_block']],
                 outputs=__inputs['cache_block'],
                 queue=False,
                 show_progress='hidden')
+            # update the target factor in the cache
             __inputs[f'factor_{__i}_block'].change(
                 fn=update_factor_cache,
                 inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'factor_{__i}_block']],
                 outputs=__inputs['cache_block'],
                 queue=False,
                 show_progress='hidden')
+            # update the target prompt in the cache
             __inputs[f'prompt_{__i}_block'].change(
                 fn=update_prompt_cache,
                 inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'prompt_{__i}_block']],
                 outputs=__inputs['cache_block'],
                 queue=False,
                 show_progress='hidden')
+            # hide the target row
             __inputs[f'button_{__i}_block'].click(
                 fn=hide_input_row,
                 inputs=[__inputs['cache_block'], gradio.State(__i)],
