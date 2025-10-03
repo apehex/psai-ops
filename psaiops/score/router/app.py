@@ -9,7 +9,7 @@ import psaiops.score.router.lib
 # META #########################################################################
 
 STYLE = '''.white-text span { color: white; }'''
-TITLE = '''Attention Scoring'''
+TITLE = '''Router Scoring'''
 INTRO = '''Plot the logits of the router for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
 
 MODEL = 'openai/gpt-oss-20b'

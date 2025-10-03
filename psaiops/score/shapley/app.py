@@ -9,7 +9,7 @@ import psaiops.score.shapley.lib
 # META #########################################################################
 
 STYLE = '''.white-text span { color: white; }'''
-TITLE = '''Attention Scoring'''
+TITLE = '''Shapley Scoring'''
 INTRO = '''Score each token according to their [Shapley value](https://en.wikipedia.org/wiki/Shapley_value).\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
 
 MODEL = 'openai/gpt-oss-20b'
