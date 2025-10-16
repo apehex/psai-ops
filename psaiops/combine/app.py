@@ -135,11 +135,13 @@ def create_table_block() -> dict:
 
 # STATE ########################################################################
 
+def default_state(visible: bool=False) -> dict:
+    return {'visible': visible, 'role': 'user', 'channel': 'final', 'column': 'none', 'content': ''}
+
 def create_state(limit: int=COUNT) -> dict:
     return {
         'cache_block': gradio.State(
-            [{'visible': True, 'role': 'user', 'channel': 'final', 'column': 'none', 'content': ''}]
-            + max(0, limit - 1) * [{'visible': False, 'role': 'user', 'channel': 'final', 'column': 'none', 'content': ''}])}
+            [default_state(True)] + [default_state(False) for _ in range(limit - 1)])}
 
 # LAYOUT #######################################################################
 
