@@ -49,6 +49,7 @@ def create_dataset_block() -> dict:
 def create_inputs_row(index: int=0) -> dict:
     with gradio.Row(equal_height=True, visible=(index == 0)) as __row:
         __role = gradio.Dropdown(
+            type='value',
             label=f'Role',
             value='user',
             choices=[__r for __r in ROLES],
@@ -60,6 +61,7 @@ def create_inputs_row(index: int=0) -> dict:
             interactive=True,
             visible=(index == 0))
         __channel = gradio.Dropdown(
+            type='value',
             label=f'Channel',
             value='final',
             choices=[__c for __c in CHANNELS],
@@ -71,6 +73,7 @@ def create_inputs_row(index: int=0) -> dict:
             interactive=True,
             visible=(index == 0))
         __column = gradio.Dropdown(
+            type='value',
             label=f'Column',
             value='none',
             choices=['none'],
@@ -100,6 +103,7 @@ def create_inputs_row(index: int=0) -> dict:
             interactive=True,
             visible=(index == 0))
     return {
+        f'row_{index}_block': __row,
         f'role_{index}_block': __role,
         f'channel_{index}_block': __channel,
         f'column_{index}_block': __column,
@@ -169,6 +173,7 @@ def create_layout(intro: str=INTRO, limit: int=COUNT) -> dict:
 def get_input_rows(inputs: dict, limit: int=COUNT) -> list:
     return list(itertools.chain.from_iterable([
         [
+            inputs.get(f'row_{__i}_block', None),
             inputs.get(f'role_{__i}_block', None),
             inputs.get(f'channel_{__i}_block', None),
             inputs.get(f'column_{__i}_block', None),
@@ -179,6 +184,7 @@ def get_input_rows(inputs: dict, limit: int=COUNT) -> list:
 def render_input_rows(rows: list) -> list:
     return list(itertools.chain.from_iterable([
         [
+            gradio.update(visible=__r.get('visible', False)),
             gradio.update(visible=__r.get('visible', False), value=__r.get('role', 'user')),
             gradio.update(visible=__r.get('visible', False), value=__r.get('channel', 'final')),
             gradio.update(visible=__r.get('visible', False), value=__r.get('column', 'none')),
