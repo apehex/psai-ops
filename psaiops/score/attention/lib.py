@@ -91,8 +91,8 @@ def reduce_attention_weights(
 ) -> torch.Tensor:
     # parse
     __layer_dim, __batch_dim, __head_dim, __output_dim, __output_dim = tuple(attention_data.shape) # L, B, H, T, T
-    __layer_idx = min(layer_idx, __layer_dim)
-    __head_idx = min(head_idx, __head_dim)
+    __layer_idx = min(layer_idx, __layer_dim - 1)
+    __head_idx = min(head_idx, __head_dim - 1)
     __token_idx = min(token_idx, __output_dim - input_dim - 1) # T = I + O
     # select the relevant data along each axis
     __layer_slice = slice(None) if (__layer_idx < 0) else slice(__layer_idx, __layer_idx + 1)
