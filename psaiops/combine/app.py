@@ -139,8 +139,6 @@ def create_inputs_row(index: int=0) -> dict:
         f'content_{index}_block': __content,
         f'button_{index}_block': __hide,}
 
-# 
-
 # OUTPUTS ######################################################################
 
 def create_outputs_block() -> dict:
