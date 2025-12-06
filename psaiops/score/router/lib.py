@@ -69,12 +69,12 @@ def generate_token_ids(
 
 def compute_router_weights(
     model_obj: object,
-    token_obj: torch.Tensor,
+    token_data: torch.Tensor,
 ) -> torch.Tensor:
     # process the full sequence
     with torch.no_grad():
         __outputs = model_obj(
-            input_ids=token_obj,
+            input_ids=token_data,
             output_attentions=False,
             output_router_logits=True,
             return_dict=True)
@@ -104,17 +104,27 @@ def reduce_router_weights(
 def postprocess_router_weights(
     router_data: torch.Tensor, # (L, E)
 ) -> list:
-    return 100.0 * torch.softmax(router_data, dim=-1)
+    return torch.softmax(router_data, dim=-1)
 
 # POSTPROCESS ####################################################################
 
 def postprocess_token_ids(
     tokenizer_obj: object,
-    token_obj: torch.Tensor,
+    token_data: torch.Tensor,
 ) -> list:
     # remove the batch axis
-    __indices = token_obj.squeeze().tolist()
+    __indices = token_data.squeeze().tolist()
     # back to token strings
     __tokens = tokenizer_obj.convert_ids_to_tokens(__indices)
     # normalize the tokens
     return [__t.replace(chr(0x0120), ' ').replace(chr(0x010a), '\n') for __t in __tokens]
+
+def postprocess_token_cls(
+    token_idx: int,
+    token_dim: int,
+) -> list:
+    __token_idx = max(-1, min(token_dim, token_idx))
+    # class 1 for the focused token(s) 0 for the rest
+    __token_cls = [str(int(__i == token_idx)) for __i in range(token_dim)]
+    # average on all the tokens when the idx is negative
+    return token_dim * ['1'] if (token_idx < 0) else __token_cls
