@@ -3,6 +3,7 @@ import functools
 import gradio
 import torch
 import torch.cuda
+import matplotlib.pyplot
 
 import psaiops.score.router.lib
 
@@ -18,8 +19,8 @@ MODEL = 'openai/gpt-oss-20b'
 
 def create_color_map() -> dict:
     return {
-        '-1': '#004444',
-        **{str(__i): '#{:02x}0000'.format(int(2.55 * __i)) for __i in range(101)}}
+        '0': '#000000',
+        '1': '#004444',}
 
 # INTRO ########################################################################
 
@@ -78,7 +79,9 @@ def create_actions_block() -> dict:
 # STATE ########################################################################
 
 def create_state() -> dict:
-    return {}
+    return {
+        'output_state': gradio.State(None),
+        'router_state': gradio.State(None),}
 
 # LAYOUT #######################################################################
 
@@ -112,6 +115,87 @@ def create_layout(intro: str=INTRO) -> dict:
 def update_position_range(value: float, tokens: float) -> dict:
     return gradio.update(maximum=int(tokens) - 1, value=min(int(tokens) - 1, int(value)))
 
+def update_computation_state(
+    token_num: float,
+    topk_num: float,
+    topp_num: float,
+    token_idx: float,
+    prompt_str: str,
+    device_str: str,
+    model_obj: object,
+    tokenizer_obj: object,
+) -> tuple:
+    # sanitize the inputs
+    __token_num = max(1, min(128, int(token_num)))
+    __topk_num = max(1, min(8, int(topk_num)))
+    __topp_num = max(0.0, min(1.0, float(topp_num)))
+    __token_idx = max(-1, min(__token_num, int(token_idx)))
+    __prompt_str = prompt_str.strip()
+    __device_str = device_str if (device_str in ['cpu', 'cuda']) else 'cpu'
+    # exit if some values are missing
+    if (not __prompt_str) or (model_obj is None) or (tokenizer_obj is None):
+        return (torch.empty(0), torch.empty(0))
+    # dictionary {'input_ids': _, 'attention_mask': _}
+    __input_data = psaiops.score.router.lib.preprocess_token_ids(
+        tokenizer_obj=tokenizer_obj,
+        prompt_str=__prompt_str,
+        device_str=__device_str)
+    # tensor (1, T)
+    __output_data = psaiops.score.router.lib.generate_token_ids(
+        model_obj=model_obj,
+        input_args=__input_data,
+        token_num=__token_num,
+        topk_num=__topk_num,
+        topp_num=__topp_num)
+    # tensor (L, S, H, T, T)
+    __router_data = psaiops.score.router.lib.compute_router_weights(
+        model_obj=model_obj,
+        token_data=__output_data)
+    # update each component => (highlight, plot) states
+    return (
+        __output_data,
+        __router_data,)
+
+def update_router_plot(
+    token_idx: float,
+    router_data: torch.Tensor,
+) -> tuple:
+    # exit if some values are missing
+    if (router_data is None) or (len(router_data) == 0):
+        return None
+    # reduce the batch and token axes => tensor (L, E)
+    __plot_data = psaiops.score.router.lib.reduce_router_weights(
+        router_data=router_data,
+        token_idx=int(token_idx),)
+    # translate the scores into integer labels
+    __plot_data = psaiops.score.router.lib.postprocess_router_weights(
+        router_data=__plot_data,)
+    # plot the data
+    __figure, __axes = matplotlib.pyplot.subplots()
+    __axes.imshow(__plot_data, vmin=0.0, vmax=1.0, cmap='viridis')
+    __figure.tight_layout()
+    # update each component => (highlight, plot) states
+    return __figure
+
+def update_text_highlight(
+    token_idx: float,
+    output_data: torch.Tensor,
+    tokenizer_obj: object,
+) -> list:
+    # exit if some values are missing
+    if (output_data is None) or (len(output_data) == 0):
+        return None
+    # detokenize the IDs
+    __token_str = psaiops.score.router.lib.postprocess_token_ids(
+        tokenizer_obj=tokenizer_obj,
+        token_data=output_data)
+    # list of string classes
+    __token_cls = psaiops.score.router.lib.postprocess_token_cls(
+        token_idx=int(token_idx),
+        token_dim=len(__token_str))
+    # pairs of token and class
+    return list(zip(__token_str, __token_cls))
+
 # APP ##########################################################################
 
 def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=MODEL) -> gradio.Blocks:
@@ -119,17 +203,55 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
     with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
         # load the model
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        # __model = psaiops.score.router.lib.get_model(name=model, device=__device)
+        __model = psaiops.score.router.lib.get_model(name=model, device=__device)
         __tokenizer = psaiops.score.router.lib.get_tokenizer(name=model, device=__device)
+        # adapt the event handlers
+        __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
+        __highlight = functools.partial(update_text_highlight, tokenizer_obj=__tokenizer)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
         __fields.update(create_state())
-        # wire the input fields
+        # update the range of the position slider when the settings change
         __fields['tokens_block'].change(
             fn=update_position_range,
             inputs=[__fields[__k] for __k in ['position_block', 'tokens_block']],
             outputs=__fields['position_block'],
+            queue=False,
+            show_progress='hidden')
+        # update the data after clicking process
+        __fields['process_block'].click(
+            fn=__compute,
+            inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'position_block', 'input_block']],
+            outputs=[__fields[__k] for __k in ['output_state', 'router_state']],
+            queue=False,
+            show_progress='full')
+        # update the plot when the focus changes
+        __fields['position_block'].change(
+            fn=update_router_plot,
+            inputs=[__fields[__k] for __k in ['position_block', 'router_state']],
+            outputs=__fields['plot_block'],
+            queue=False,
+            show_progress='hidden')
+        # update the plot when the router data changes
+        __fields['router_state'].change(
+            fn=update_router_plot,
+            inputs=[__fields[__k] for __k in ['position_block', 'router_state']],
+            outputs=__fields['plot_block'],
+            queue=False,
+            show_progress='hidden')
+        # update the token highlight when the token focus changes
+        __fields['position_block'].change(
+            fn=__highlight,
+            inputs=[__fields[__k] for __k in ['position_block', 'output_state']],
+            outputs=__fields['output_block'],
+            queue=False,
+            show_progress='hidden')
+        # update the token highlight when the output data changes
+        __fields['output_state'].change(
+            fn=__highlight,
+            inputs=[__fields[__k] for __k in ['position_block', 'output_state']],
+            outputs=__fields['output_block'],
             queue=False,
             show_progress='hidden')
         # gradio application
