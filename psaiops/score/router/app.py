@@ -112,8 +112,17 @@ def create_layout(intro: str=INTRO) -> dict:
 
 # EVENTS #######################################################################
 
-def update_position_range(value: float, tokens: float) -> dict:
-    return gradio.update(maximum=int(tokens) - 1, value=min(int(tokens) - 1, int(value)))
+def update_position_range(
+    current_val: float,
+    token_num: float,
+    output_data: torch.Tensor,
+) -> dict:
+    # take the generated tokens into account
+    __max = int(token_num) - 1 if (output_data is None) else int(output_data.shape[-1])
+    # keep the previous value if possible
+    __val = min(int(current_val), __max)
+    # return a gradio update dictionary
+    return gradio.update(maximum=__max, value=__val)
 
 def update_computation_state(
     token_num: float,
