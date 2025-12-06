@@ -221,43 +221,47 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         __fields.update(create_layout(intro=intro))
         # init the state
         __fields.update(create_state())
-        # update the range of the position slider when the settings change
-        __fields['tokens_block'].change(
-            fn=update_position_range,
-            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block']],
-            outputs=__fields['position_block'],
-            queue=False,
-            show_progress='hidden')
         # update the data after clicking process
         __fields['process_block'].click(
             fn=__compute,
             inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'position_block', 'input_block']],
             outputs=[__fields[__k] for __k in ['output_state', 'router_state']],
             queue=False,
+            show_progress='full').then(
+        # update the range of the position slider when the output changes
+            fn=update_position_range,
+            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['position_block'],
+            queue=False,
+            show_progress='hidden').then(
+        # update the token highlight when the output data changes
+            fn=__highlight,
+            inputs=[__fields[__k] for __k in ['position_block', 'output_state']],
+            outputs=__fields['output_block'],
+            queue=False,
+            show_progress='full').then(
+        # update the plot when the router data changes
+            fn=update_router_plot,
+            inputs=[__fields[__k] for __k in ['position_block', 'router_state']],
+            outputs=__fields['plot_block'],
+            queue=False,
             show_progress='full')
+        # update the range of the position slider when the settings change
+        __fields['tokens_block'].change(
+            fn=update_position_range,
+            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['position_block'],
+            queue=False,
+            show_progress='hidden')
         # update the plot when the focus changes
         __fields['position_block'].change(
             fn=update_router_plot,
             inputs=[__fields[__k] for __k in ['position_block', 'router_state']],
             outputs=__fields['plot_block'],
             queue=False,
-            show_progress='hidden')
-        # update the plot when the router data changes
-        __fields['router_state'].change(
-            fn=update_router_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'router_state']],
-            outputs=__fields['plot_block'],
-            queue=False,
-            show_progress='hidden')
+            show_progress='full')
         # update the token highlight when the token focus changes
         __fields['position_block'].change(
-            fn=__highlight,
-            inputs=[__fields[__k] for __k in ['position_block', 'output_state']],
-            outputs=__fields['output_block'],
-            queue=False,
-            show_progress='hidden')
-        # update the token highlight when the output data changes
-        __fields['output_state'].change(
             fn=__highlight,
             inputs=[__fields[__k] for __k in ['position_block', 'output_state']],
             outputs=__fields['output_block'],
