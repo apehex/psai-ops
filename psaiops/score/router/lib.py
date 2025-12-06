@@ -104,7 +104,10 @@ def reduce_router_weights(
 def postprocess_router_weights(
     router_data: torch.Tensor, # (L, E)
 ) -> list:
-    return torch.softmax(router_data, dim=-1)
+    # the averaging over tokens may have broken the scaling
+    __probs = torch.softmax(router_data, dim=-1)
+    # enforce the output range [0; 1] with 1 included
+    return __probs / __probs.amax(dim=-1, keepdim=True)
 
 # POSTPROCESS ####################################################################
 
