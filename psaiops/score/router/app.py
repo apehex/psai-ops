@@ -153,8 +153,8 @@ def update_computation_state(
         token_data=__output_data)
     # update each component => (highlight, plot) states
     return (
-        __output_data,
-        __router_data,)
+        __output_data.cpu(),
+        __router_data.cpu(),)
 
 def update_router_plot(
     token_idx: float,
@@ -172,7 +172,7 @@ def update_router_plot(
         router_data=__plot_data,)
     # plot the data
     __figure, __axes = matplotlib.pyplot.subplots()
-    __axes.imshow(__plot_data, vmin=0.0, vmax=1.0, cmap='viridis')
+    __axes.imshow(__plot_data.float().numpy(), vmin=0.0, vmax=1.0, cmap='viridis')
     __figure.tight_layout()
     # update each component => (highlight, plot) states
     return __figure
