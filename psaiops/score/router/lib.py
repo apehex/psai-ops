@@ -78,7 +78,7 @@ def compute_router_weights(
             output_attentions=False,
             output_router_logits=True,
             return_dict=True)
-    # stack all the layer outputs L * (B, T, E) => (L, B, T, E)
+    # stack all the layer outputs L * (T, E) => (L, T, E)
     __logits = torch.stack(__outputs.router_logits, dim=0)
     # turn the logits into expert probabilities
     return torch.softmax(__logits, dim=-1)
@@ -90,14 +90,14 @@ def reduce_router_weights(
     token_idx: int, # -1 => avg over all tokens
 ) -> torch.Tensor:
     # parse
-    __layer_dim, __batch_dim, __token_dim, __expert_dim = tuple(router_data.shape) # L, B, T, E
+    __layer_dim, __token_dim, __expert_dim = tuple(router_data.shape) # L, T, E
     __token_idx = min(token_idx, __token_dim - 1)
     # select the relevant data along each axis
     __token_slice = slice(0, __token_dim) if (__token_idx < 0) else slice(__token_idx, __token_idx + 1)
     # filter the data
-    __data = router_data[slice(None), slice(None), __token_slice, slice(None)]
+    __data = router_data[slice(None), __token_slice, slice(None)]
     # reduce all the axes but the last
-    return __data.mean(dim=(1, 2), keepdim=False)
+    return __data.mean(dim=1, keepdim=False)
 
 # FORMAT #########################################################################
 
