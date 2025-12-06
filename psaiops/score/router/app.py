@@ -50,16 +50,23 @@ def create_inputs_block() -> dict:
     __input = gradio.Textbox(label='Prompt', value='', placeholder='A string of tokens to score.', lines=4, scale=1, show_copy_button=True, interactive=True)
     return {'input_block': __input}
 
+# PLOTS ########################################################################
+
+def create_plot_block() -> dict:
+    __plot = gradio.Plot(label='Router', scale=1)
+    return {'plot_block': __plot,}
+
 # OUTPUTS ######################################################################
 
 def create_outputs_block() -> dict:
-    __output = gradio.Plot(label='Logits', scale=1)
-    return {'output_block': __output,}
+    __output = gradio.HighlightedText(label='Output', value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=False, color_map=create_color_map(), elem_classes='white-text')
+    return {'output_block': __output}
 
 # SELECT #######################################################################
 
 def create_selection_block() -> dict:
-    __position = gradio.Slider(label='Token Position', value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
+    # __play = gradio.Button('>', variant='primary', size='lg', scale=1, interactive=True)
+    __position = gradio.Slider(label='Token', value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
     return {'position_block': __position,}
 
 # ACTIONS ######################################################################
@@ -83,6 +90,8 @@ def create_layout(intro: str=INTRO) -> dict:
             __fields.update({'main_tab': __main_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block())
+            with gradio.Row(equal_height=True):
+                __fields.update(create_plot_block())
             with gradio.Row(equal_height=True):
                 __fields.update(create_outputs_block())
             with gradio.Row(equal_height=True):
