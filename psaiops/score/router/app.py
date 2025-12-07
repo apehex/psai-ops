@@ -183,6 +183,8 @@ def update_router_plot(
     __figure, __axes = matplotlib.pyplot.subplots()
     __axes.imshow(__plot_data.float().numpy(), vmin=0.0, vmax=1.0, cmap='viridis')
     __figure.tight_layout()
+    # remove the figure for the pyplot register for garbage collection
+    matplotlib.pyplot.close(__figure)
     # update each component => (highlight, plot) states
     return __figure
 
