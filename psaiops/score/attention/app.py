@@ -4,6 +4,8 @@ import gradio
 import torch
 import torch.cuda
 
+import psaiops.common.model
+import psaiops.common.tokenizer
 import psaiops.score.attention.lib
 
 # META #########################################################################
@@ -155,14 +157,14 @@ def update_computation_state(
     # handle all exceptions at once
     try:
         # dictionary {'input_ids': _, 'attention_mask': _}
-        __input_data = psaiops.score.attention.lib.preprocess_token_ids(
+        __input_data = psaiops.common.tokenizer.preprocess_token_ids(
             tokenizer_obj=tokenizer_obj,
             prompt_str=__prompt_str,
             device_str=__device_str)
         # parse the inputs
         __input_dim = int(__input_data['input_ids'].shape[-1])
         # tensor (1, T)
-        __output_data = psaiops.score.attention.lib.generate_token_ids(
+        __output_data = psaiops.common.model.generate_token_ids(
             model_obj=model_obj,
             input_args=__input_data,
             token_num=__token_num,
@@ -185,7 +187,7 @@ def update_computation_state(
             input_dim=__input_dim,
             token_idx=__token_idx)
         # detokenize the IDs
-        __tokens = psaiops.score.attention.lib.postprocess_token_ids(
+        __tokens = psaiops.common.tokenizer.postprocess_token_ids(
             tokenizer_obj=tokenizer_obj,
             token_obj=__output_data)
         # update each component => (input, output, attention, highligh) states
@@ -245,8 +247,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
     with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
         # load the model
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        __model = psaiops.score.attention.lib.get_model(name=model, device=__device)
-        __tokenizer = psaiops.score.attention.lib.get_tokenizer(name=model, device=__device)
+        __model = psaiops.common.model.get_model(name=model, device=__device)
+        __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
         # adapt the computing function
         __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
         # create the UI

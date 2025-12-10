@@ -5,6 +5,8 @@ import pandas
 import torch
 import torch.cuda
 
+import psaiops.common.model
+import psaiops.common.tokenizer
 import psaiops.compose.contrast.lib
 
 # META #########################################################################
@@ -155,8 +157,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
     with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
         # load the model
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        __model = psaiops.compose.contrast.lib.get_model(name=model, device=__device)
-        __tokenizer = psaiops.compose.contrast.lib.get_tokenizer(name=model, device=__device)
+        __model = psaiops.common.model.get_model(name=model, device=__device)
+        __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
         # adapt the computing functions
         __compute = functools.partial(psaiops.compose.contrast.lib.steer_model_output, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
         __format = functools.partial(update_table_data, tokenizer=__tokenizer)

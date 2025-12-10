@@ -5,6 +5,8 @@ import torch
 import torch.cuda
 import matplotlib.pyplot
 
+import psaiops.common.model
+import psaiops.common.tokenizer
 import psaiops.score.router.lib
 
 # META #########################################################################
@@ -145,12 +147,12 @@ def update_computation_state(
     if (not __prompt_str) or (model_obj is None) or (tokenizer_obj is None):
         return (torch.empty(0), torch.empty(0))
     # dictionary {'input_ids': _, 'attention_mask': _}
-    __input_data = psaiops.score.router.lib.preprocess_token_ids(
+    __input_data = psaiops.common.tokenizer.preprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
         prompt_str=__prompt_str,
         device_str=__device_str)
     # tensor (1, T)
-    __output_data = psaiops.score.router.lib.generate_token_ids(
+    __output_data = psaiops.common.model.generate_token_ids(
         model_obj=model_obj,
         input_args=__input_data,
         token_num=__token_num,
@@ -197,7 +199,7 @@ def update_text_highlight(
     if (output_data is None) or (len(output_data) == 0):
         return None
     # detokenize the IDs
-    __token_str = psaiops.score.router.lib.postprocess_token_ids(
+    __token_str = psaiops.common.tokenizer.postprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
         token_data=output_data)
     # list of string classes
@@ -214,8 +216,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
     with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
         # load the model
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        __model = psaiops.score.router.lib.get_model(name=model, device=__device)
-        __tokenizer = psaiops.score.router.lib.get_tokenizer(name=model, device=__device)
+        __model = psaiops.common.model.get_model(name=model, device=__device)
+        __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
         # adapt the event handlers
         __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
         __highlight = functools.partial(update_text_highlight, tokenizer_obj=__tokenizer)

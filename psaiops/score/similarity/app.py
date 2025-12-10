@@ -4,7 +4,8 @@ import gradio
 import torch
 import torch.cuda
 
-import psaiops.score.similarity.lib
+import psaiops.common.model
+import psaiops.common.tokenizer
 
 # META #########################################################################
 
@@ -122,8 +123,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
     with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
         # load the model
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        # __model = psaiops.score.similarity.lib.get_model(name=model, device=__device)
-        __tokenizer = psaiops.score.similarity.lib.get_tokenizer(name=model, device=__device)
+        # __model = psaiops.common.model.get_model(name=model, device=__device)
+        __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state

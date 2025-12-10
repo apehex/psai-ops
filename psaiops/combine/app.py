@@ -6,7 +6,7 @@ import pandas
 import torch
 import torch.cuda
 
-import psaiops.combine.lib
+import psaiops.common.tokenizer
 import psaiops.common.data
 
 # META #########################################################################
@@ -291,7 +291,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, limit: int=
     __inputs = {}
     with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
         # load the tokenizer
-        __tokenizer = psaiops.combine.lib.get_tokenizer(name=model, device='cpu')
+        __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device='cpu')
         # create the UI
         __inputs.update(create_layout(intro=intro, limit=limit))
         # init the state
