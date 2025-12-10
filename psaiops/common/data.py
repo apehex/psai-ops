@@ -21,3 +21,11 @@ def query_huggingface(target: str, label: str='model', limit: int=16, endpoint: 
         __results = []
     # list of strings
     return __results
+
+# EXAMPLES #####################################################################
+
+def update_dropdown(target: str, label: str) -> dict:
+    # query huggingface
+    __data = psaiops.elements.data.query_huggingface(target=target, label=label, limit=16)
+    # list choices in the dropdown
+    return gradio.update(choices=__data, visible=True)
