@@ -1,25 +1,50 @@
 import functools
+import math
 
 import torch
 
-# COMPUTE ########################################################################
+# GENERATE #######################################################################
 
-def compute_hidden_weights(
+@functools.lru_cache(maxsize=32)
+def generate_token_ids(
     model_obj: object,
-    token_data: torch.Tensor,
-) -> torch.Tensor:
-    # process the full sequence
+    input_args: dict,
+    token_num: int,
+    topk_num: int = 4,
+    topp_num: float = 0.9,
+) -> tuple:
+    # generate completion
     with torch.no_grad():
-        __outputs = model_obj(
-            input_ids=token_data,
+        __outputs = model_obj.generate(
+            **input_args,
+            max_new_tokens=token_num,
+            do_sample=(0.0 < topp_num < 1.0) or (topk_num > 0),
+            top_k=topk_num if (topk_num > 0) else None,
+            top_p=topp_num if (0.0 < topp_num < 1.0) else None,
+            return_dict_in_generate=True,
+            output_hidden_states=False,
             output_attentions=False,
-            output_router_logits=False,
-            output_hidden_states=True,
-            return_dict=True)
-    # stack all the layer outputs L * (B, T, E) => (L, B, T, E)
-    __logits = torch.stack(__outputs.output_hidden_states, dim=0)
-    # turn the logits into expert probabilities
-    return torch.softmax(__logits, dim=-1)
+            output_scores=False,
+            early_stopping=True,
+            use_cache=True)
+    # ((B, T), O * L * (B, I, H))
+    return __outputs.sequences, __outputs.hidden_states
+
+# MERGE ########################################################################
+
+def merge_hidden_weights(
+    hidden_data: torch.Tensor,
+) -> torch.Tensor:
+    # parse the inputs
+    __token_dim = len(hidden_data)
+    __layer_dim = len(hidden_data[0])
+    # stack the data for each layer => (B, L, I + O, H)
+    return torch.stack(
+        [
+            # concatenate the data for all the tokens => (B, I + O, H)
+            torch.concatenate([hidden_data[__t][__l] for __t in range(__token_dim)], dim=1)
+            for __l in range(__layer_dim)],
+        dim=1)
 
 # REDUCE #######################################################################
 
@@ -27,25 +52,35 @@ def reduce_hidden_weights(
     hidden_data: torch.Tensor,
     token_idx: int, # -1 => avg over all tokens
 ) -> torch.Tensor:
-    # parse
-    __layer_dim, __token_dim, __expert_dim = tuple(hidden_data.shape) # L, T, E
+    # parse the hidden states (B, L, T, H)
+    __batch_dim, __layer_dim, __token_dim, __hidden_dim = tuple(hidden_data.shape)
     __token_idx = min(token_idx, __token_dim - 1)
     # select the relevant data along each axis
     __token_slice = slice(0, __token_dim) if (__token_idx < 0) else slice(__token_idx, __token_idx + 1)
     # filter the data
-    __data = hidden_data[slice(None), __token_slice, slice(None)]
-    # reduce all the axes but the last
-    return __data.mean(dim=1, keepdim=False)
+    __data = hidden_data[slice(None), slice(None), __token_slice, slice(None)]
+    # reduce the token axis => (B, L, H)
+    return __data.mean(dim=2, keepdim=False)
+
+# RESHAPE ########################################################################
+
+def reshape_hidden_weights(
+    hidden_data: torch.Tensor, # (B, L, H)
+) -> torch.Tensor:
+    # parse the hidden states (B, L, H)
+    __batch_dim, __layer_dim, __hidden_dim = tuple(hidden_data.shape)
+    # factor the hidden dimension
+    __width_dim = math.gcd(__hidden_dim, 2 ** int(math.log2(__hidden_dim))) # greatest power of 2 that divides H
+    __height_dim = __hidden_dim // __width_dim
+    # reshape into (B, W, H, L)
+    return hidden_data.reshape((__batch_dim, __layer_dim, __width_dim, __height_dim)).permute(0, 2, 3, 1)
 
 # FORMAT #########################################################################
 
 def postprocess_hidden_weights(
-    hidden_data: torch.Tensor, # (L, E)
+    hidden_data: torch.Tensor, # (B, H, W, L)
 ) -> list:
-    # the averaging over tokens may have broken the scaling
-    __probs = torch.softmax(hidden_data, dim=-1)
-    # enforce the output range [0; 1] with 1 included
-    return __probs / __probs.amax(dim=-1, keepdim=True)
+    return hidden_data if (len(hidden_data.shape) == 3) else hidden_data.squeeze(dim=0)
 
 # POSTPROCESS ####################################################################
 

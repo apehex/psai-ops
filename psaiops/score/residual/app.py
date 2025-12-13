@@ -151,17 +151,16 @@ def update_computation_state(
         tokenizer_obj=tokenizer_obj,
         prompt_str=__prompt_str,
         device_str=__device_str)
-    # tensor (1, T)
-    __output_data = psaiops.common.model.generate_token_ids(
+    # tensor (1, T) and O * L * (1, I, H)
+    __output_data, __hidden_data = psaiops.score.residual.lib.generate_token_ids(
         model_obj=model_obj,
         input_args=__input_data,
         token_num=__token_num,
         topk_num=__topk_num,
         topp_num=__topp_num)
-    # tensor (L, S, H, T, T)
-    __hidden_data = psaiops.score.residual.lib.compute_hidden_weights(
-        model_obj=model_obj,
-        token_data=__output_data)
+    # tensor (1, L, I + O, H)
+    __hidden_data = psaiops.score.residual.lib.merge_hidden_weights(
+        hidden_data=__hidden_data)
     # update each component => (highlight, plot) states
     return (
         __output_data.cpu(),
@@ -174,11 +173,14 @@ def update_hidden_plot(
     # exit if some values are missing
     if (hidden_data is None) or (len(hidden_data) == 0):
         return None
-    # reduce the batch and token axes => tensor (L, E)
+    # reduce the token axis (B, L, T, E) => (B, L, E)
     __plot_data = psaiops.score.residual.lib.reduce_hidden_weights(
         hidden_data=hidden_data,
         token_idx=int(token_idx),)
-    # translate the scores into integer labels
+    # reshape into a 3D tensor by folding the hidden dimension E (B, L, E) => (B, W, H, L)
+    __plot_data = psaiops.score.residual.lib.reshape_hidden_weights(
+        hidden_data=__plot_data)
+    # squeeze the batch axis
     __plot_data = psaiops.score.residual.lib.postprocess_hidden_weights(
         hidden_data=__plot_data,)
     # plot the data
