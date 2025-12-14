@@ -1,6 +1,8 @@
 import functools
 import math
 
+import matplotlib
+import numpy
 import torch
 
 # GENERATE #######################################################################
@@ -104,10 +106,20 @@ def mask_hidden_states(
 
 # FORMAT #######################################################################
 
-def postprocess_hidden_states(
-    hidden_data: torch.Tensor, # (B, H, W, L)
+def color_hidden_states(
+    hidden_data: numpy.array, # (B, H, W, L)
+    gamma_val: float=0.7,
+    alpha_val: float=0.35,
+    color_map: matplotlib.colormaps['coolwarm'],
 ) -> list:
-    return hidden_data if (len(hidden_data.shape) == 3) else hidden_data.squeeze(dim=0)
+    # [-1; 1] => [0; 1]
+    __data = 0.5 * (hidden_data + 1.0)
+    # (B, W, H, L) => (B, W, H, L, 4)
+    __color = color_map[__data]
+    # compute the transparency from the magnitude
+    __color[..., 3] = alpha_val * (np.abs(__data) ** gamma_val)
+    # (B, W, H, L, 4)
+    return __color
 
 # POSTPROCESS ##################################################################
 
