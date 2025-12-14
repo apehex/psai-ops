@@ -91,10 +91,16 @@ def reshape_hidden_states(
 
 def mask_hidden_states(
     hidden_data: torch.Tensor, # (B, L, H)
-    threshold_val: float=0.2,
+    topk_num: int=128,
 ) -> torch.Tensor:
-    # hide the low activations to improve the readability
-    return hidden_data.abs() > threshold_val
+    # sanitize
+    __k = min(topk_num, int(hidden_data.shape[-1]))
+    # indices of the topk values
+    __indices = hidden_data.abs().topk(__k, dim=-1, largest=True, sorted=False).indices
+    # initialize the mask with False
+    __mask = torch.zeros_like(hidden_data, dtype=torch.bool)
+    # (B, L, H) mask of the topk values
+    return __mask.scatter_(dim=-1, index=__indices, src=True)
 
 # FORMAT #######################################################################
 
