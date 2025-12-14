@@ -62,6 +62,18 @@ def reduce_hidden_states(
     # reduce the token axis => (B, L, H)
     return __data.mean(dim=2, keepdim=False)
 
+# RESCALE ######################################################################
+
+def rescale_hidden_states(
+    hidden_data: torch.Tensor, # (B, L, H)
+) -> torch.Tensor:
+    # compute the scale of the data, layer by layer
+    __s = torch.quantile(hidden_data.abs(), q=0.9, dim=-1, keepdim=True)
+    # log scaling on large values and linear near 0
+    __a = torch.asinh(hidden_data / (__s + 1e-4))
+    # clip and map to [-1; 1]
+    return 0.33 * __a.clamp(min=-3, max=3)
+
 # RESHAPE ######################################################################
 
 def reshape_hidden_states(
