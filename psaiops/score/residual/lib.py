@@ -22,7 +22,7 @@ def generate_token_ids(
             top_k=topk_num if (topk_num > 0) else None,
             top_p=topp_num if (0.0 < topp_num < 1.0) else None,
             return_dict_in_generate=True,
-            output_hidden_states=False,
+            output_hidden_states=True,
             output_attentions=False,
             output_scores=False,
             early_stopping=True,
@@ -70,7 +70,7 @@ def rescale_hidden_states(
     # compute the scale of the data, layer by layer
     __s = torch.quantile(hidden_data.abs(), q=0.9, dim=-1, keepdim=True)
     # log scaling on large values and linear near 0
-    __a = torch.asinh(hidden_data / (__s + 1e-4))
+    __a = torch.asinh(hidden_data / (__s + torch.finfo().eps))
     # clip and map to [-1; 1]
     return 0.33 * __a.clamp(min=-3, max=3)
 
