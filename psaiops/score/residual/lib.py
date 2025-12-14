@@ -87,6 +87,15 @@ def reshape_hidden_states(
     # reshape into (B, W, H, L)
     return hidden_data.reshape((__batch_dim, __layer_dim, __width_dim, __height_dim)).permute(0, 2, 3, 1)
 
+# MASK #########################################################################
+
+def mask_hidden_states(
+    hidden_data: torch.Tensor, # (B, L, H)
+    threshold_val: float=0.2,
+) -> torch.Tensor:
+    # hide the low activations to improve the readability
+    return hidden_data.abs() > threshold_val
+
 # FORMAT #######################################################################
 
 def postprocess_hidden_states(

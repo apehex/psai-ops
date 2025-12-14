@@ -183,6 +183,10 @@ def update_hidden_plot(
     # reshape into a 3D tensor by folding E (B, L, E) => (B, W, H, L)
     __plot_data = psaiops.score.residual.lib.reshape_hidden_states(
         hidden_data=__plot_data)
+    # mask the small activations to improve the plot readability
+    __mask_data = psaiops.score.residual.lib.mask_hidden_states(
+        hidden_data=__plot_data,
+        threshold_val=0.2)
     # squeeze the batch axis
     __plot_data = psaiops.score.residual.lib.postprocess_hidden_states(
         hidden_data=__plot_data,)
