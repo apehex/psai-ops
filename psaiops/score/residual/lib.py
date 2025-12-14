@@ -32,7 +32,7 @@ def generate_token_ids(
 
 # MERGE ########################################################################
 
-def merge_hidden_weights(
+def merge_hidden_states(
     hidden_data: torch.Tensor,
 ) -> torch.Tensor:
     # parse the inputs
@@ -48,7 +48,7 @@ def merge_hidden_weights(
 
 # REDUCE #######################################################################
 
-def reduce_hidden_weights(
+def reduce_hidden_states(
     hidden_data: torch.Tensor,
     token_idx: int, # -1 => avg over all tokens
 ) -> torch.Tensor:
@@ -62,9 +62,9 @@ def reduce_hidden_weights(
     # reduce the token axis => (B, L, H)
     return __data.mean(dim=2, keepdim=False)
 
-# RESHAPE ########################################################################
+# RESHAPE ######################################################################
 
-def reshape_hidden_weights(
+def reshape_hidden_states(
     hidden_data: torch.Tensor, # (B, L, H)
 ) -> torch.Tensor:
     # parse the hidden states (B, L, H)
@@ -75,14 +75,14 @@ def reshape_hidden_weights(
     # reshape into (B, W, H, L)
     return hidden_data.reshape((__batch_dim, __layer_dim, __width_dim, __height_dim)).permute(0, 2, 3, 1)
 
-# FORMAT #########################################################################
+# FORMAT #######################################################################
 
-def postprocess_hidden_weights(
+def postprocess_hidden_states(
     hidden_data: torch.Tensor, # (B, H, W, L)
 ) -> list:
     return hidden_data if (len(hidden_data.shape) == 3) else hidden_data.squeeze(dim=0)
 
-# POSTPROCESS ####################################################################
+# POSTPROCESS ##################################################################
 
 def postprocess_token_cls(
     token_idx: int,
