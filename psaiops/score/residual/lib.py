@@ -115,11 +115,11 @@ def color_hidden_states(
     # [-1; 1] => [0; 1]
     __data = 0.5 * (hidden_data + 1.0)
     # (B, W, H, L) => (B, W, H, L, 4)
-    __color = color_map[__data]
+    __rgba = color_map[__data]
     # compute the transparency from the magnitude
-    __color[..., 3] = alpha_val * (np.abs(__data) ** gamma_val)
-    # (B, W, H, L, 4)
-    return __color
+    __rgba[..., 3] = alpha_val * (np.abs(hidden_data) ** gamma_val)
+    # (B, W, H, L, 4) in [0; 1]
+    return __rgba
 
 # POSTPROCESS ##################################################################
 
