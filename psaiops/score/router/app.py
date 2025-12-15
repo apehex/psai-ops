@@ -154,7 +154,7 @@ def update_computation_state(
     # tensor (1, T)
     __output_data = psaiops.common.model.generate_token_ids(
         model_obj=model_obj,
-        input_args=__input_data,
+        input_ids=__input_data['input_ids'],
         token_num=__token_num,
         topk_num=__topk_num,
         topp_num=__topp_num)

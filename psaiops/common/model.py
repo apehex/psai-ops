@@ -22,7 +22,7 @@ def get_model(name: str, device: str='cpu'):
 @functools.lru_cache(maxsize=32)
 def generate_token_ids(
     model_obj: object,
-    input_args: dict,
+    input_ids: torch.Tensor,
     token_num: int,
     topk_num: int = 4,
     topp_num: float = 0.9,
@@ -30,7 +30,7 @@ def generate_token_ids(
     # generate completion
     with torch.no_grad():
         __outputs = model_obj.generate(
-            **input_args,
+            input_ids=input_ids,
             max_new_tokens=token_num,
             do_sample=(0.0 < topp_num < 1.0) or (topk_num > 0),
             top_k=topk_num if (topk_num > 0) else None,

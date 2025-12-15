@@ -89,7 +89,7 @@ def score_tokens(
     # tensor (1, T)
     __outputs = psaiops.common.tokenizer.model.generate_token_ids(
         model_obj=model_obj,
-        input_args=__inputs,
+        input_ids=__inputs['input_ids'],
         token_num=token_num,
         topk_num=topk_num,
         topp_num=topp_num)
