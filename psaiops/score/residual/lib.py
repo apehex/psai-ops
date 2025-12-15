@@ -102,7 +102,7 @@ def mask_hidden_states(
     # initialize the mask with False
     __mask = torch.zeros_like(hidden_data, dtype=torch.bool)
     # (B, L, H) mask of the topk values
-    return __mask.scatter_(dim=-1, index=__indices, src=True)
+    return __mask.scatter_(dim=-1, index=__indices, value=True)
 
 # FORMAT #######################################################################
 
@@ -110,14 +110,14 @@ def color_hidden_states(
     hidden_data: numpy.array, # (B, H, W, L)
     gamma_val: float=0.7,
     alpha_val: float=0.35,
-    color_map: matplotlib.colormaps['coolwarm'],
+    color_map: callable=matplotlib.colormaps['coolwarm'],
 ) -> list:
     # [-1; 1] => [0; 1]
     __data = 0.5 * (hidden_data + 1.0)
     # (B, W, H, L) => (B, W, H, L, 4)
-    __rgba = color_map[__data]
+    __rgba = color_map(__data)
     # compute the transparency from the magnitude
-    __rgba[..., 3] = alpha_val * (np.abs(hidden_data) ** gamma_val)
+    __rgba[..., 3] = alpha_val * (numpy.abs(hidden_data) ** gamma_val)
     # (B, W, H, L, 4) in [0; 1]
     return __rgba
 

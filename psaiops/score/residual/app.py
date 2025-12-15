@@ -186,13 +186,14 @@ def update_hidden_plot(
     # mask the small activations to improve the plot readability
     __mask_data = psaiops.score.residual.lib.mask_hidden_states(
         hidden_data=__plot_data,
-        threshold_val=0.2)
-    # squeeze the batch axis
-    __plot_data = psaiops.score.residual.lib.postprocess_hidden_states(
-        hidden_data=__plot_data,)
-    # plot the data
-    __figure, __axes = matplotlib.pyplot.subplots()
-    __axes.imshow(__plot_data.float().numpy(), vmin=0.0, vmax=1.0, cmap='viridis')
+        topk_num=128).numpy()
+    # map the [-1; 1] activations to RGBA colors
+    __plot_data = psaiops.score.residual.lib.color_hidden_states(
+        hidden_data=__plot_data.numpy())
+    # plot the first sample
+    __figure = matplotlib.pyplot.figure()
+    __axes = __figure.add_subplot(1, 1, 1, projection='3d')
+    __axes.voxels(filled=__mask_data[0], facecolors=__plot_data[0], edgecolor=None)
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
