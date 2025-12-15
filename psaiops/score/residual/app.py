@@ -180,20 +180,22 @@ def update_hidden_plot(
     # rescale the data to [-1; 1] (B, L, E)
     __plot_data = psaiops.score.residual.lib.rescale_hidden_states(
         hidden_data=__plot_data)
-    # reshape into a 3D tensor by folding E (B, L, E) => (B, W, H, L)
-    __plot_data = psaiops.score.residual.lib.reshape_hidden_states(
-        hidden_data=__plot_data)
     # mask the small activations to improve the plot readability
     __mask_data = psaiops.score.residual.lib.mask_hidden_states(
         hidden_data=__plot_data,
-        topk_num=128).numpy()
+        topk_num=128)
+    # reshape into a 3D tensor by folding E (B, L, E) => (B, W, H, L)
+    __plot_data = psaiops.score.residual.lib.reshape_hidden_states(
+        hidden_data=__plot_data)
+    __mask_data = psaiops.score.residual.lib.reshape_hidden_states(
+        hidden_data=__mask_data)
     # map the [-1; 1] activations to RGBA colors
     __plot_data = psaiops.score.residual.lib.color_hidden_states(
         hidden_data=__plot_data.numpy())
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1, projection='3d')
-    __axes.voxels(filled=__mask_data[0], facecolors=__plot_data[0], edgecolor=None)
+    __axes.voxels(filled=__mask_data[0].numpy(), facecolors=__plot_data[0], edgecolor=None)
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
