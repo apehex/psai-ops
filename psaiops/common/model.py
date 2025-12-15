@@ -39,7 +39,7 @@ def generate_token_ids(
             output_hidden_states=False,
             output_attentions=False,
             output_scores=False,
-            early_stopping=True,
+            # early_stopping=True,
             use_cache=True)
     # full sequence
     return __outputs.sequences # (1, T)

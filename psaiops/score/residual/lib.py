@@ -27,7 +27,7 @@ def generate_token_ids(
             output_hidden_states=True,
             output_attentions=False,
             output_scores=False,
-            early_stopping=True,
+            # early_stopping=True,
             use_cache=True)
     # ((B, T), O * L * (B, I, H))
     return __outputs.sequences, __outputs.hidden_states
