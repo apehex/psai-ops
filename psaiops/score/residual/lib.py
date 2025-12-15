@@ -108,18 +108,27 @@ def mask_hidden_states(
 
 def color_hidden_states(
     hidden_data: numpy.array, # (B, H, W, L)
-    gamma_val: float=0.7,
-    alpha_val: float=0.35,
     color_map: callable=matplotlib.colormaps['coolwarm'],
 ) -> list:
     # [-1; 1] => [0; 1]
     __data = 0.5 * (hidden_data + 1.0)
     # (B, W, H, L) => (B, W, H, L, 4)
     __rgba = color_map(__data)
-    # compute the transparency from the magnitude
-    __rgba[..., 3] = alpha_val * (numpy.abs(hidden_data) ** gamma_val)
-    # (B, W, H, L, 4) in [0; 1]
-    return __rgba
+    # (B, W, H, L, 3) in [0; 1]
+    return __rgba[..., :3]
+
+def size_hidden_states(
+    hidden_data: numpy.array, # (B, H, W, L)
+    area_min: float=0.01,
+    area_max: float=16.0,
+    gamma_val: float=1.6,
+) -> list:
+    # [-1; 1] => [0; 1]
+    __data = numpy.abs(hidden_data)
+    # gamma < 1 will boost small values and > 1 emphasize larger values
+    __data = (__data + torch.finfo().eps) ** gamma_val
+    # map to point area
+    return area_min + (area_max - area_min) * __data
 
 # POSTPROCESS ##################################################################
 

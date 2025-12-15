@@ -1,6 +1,7 @@
 import functools
 
 import gradio
+import numpy
 import torch
 import torch.cuda
 import matplotlib.pyplot
@@ -189,13 +190,26 @@ def update_hidden_plot(
         hidden_data=__plot_data)
     __mask_data = psaiops.score.residual.lib.reshape_hidden_states(
         hidden_data=__mask_data)
+    # convert to numpy ndarrays
+    __plot_data = __plot_data.numpy()
+    __mask_data = __mask_data.numpy()
     # map the [-1; 1] activations to RGBA colors
-    __plot_data = psaiops.score.residual.lib.color_hidden_states(
-        hidden_data=__plot_data.numpy())
+    __rgb_data = psaiops.score.residual.lib.color_hidden_states(
+        hidden_data=__plot_data)
+    # map the [-1; 1] activations to point areas
+    __area_data = psaiops.score.residual.lib.size_hidden_states(
+        hidden_data=__plot_data,
+        area_min=0.01,
+        area_max=16.0,
+        gamma_val=1.6)
+    # format the first sample for a scatter plot
+    __x, __y, __z = numpy.nonzero(__mask_data[0])
+    __c = __rgb_data[0, __x, __y, __z]
+    __s = __area_data[0, __x, __y, __z]
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1, projection='3d')
-    __axes.voxels(filled=__mask_data[0].numpy(), facecolors=__plot_data[0], edgecolor=None)
+    __axes.scatter(__x, __y, __z, c=__c, ss=__s, marker='s', linewidths=0)
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
