@@ -255,13 +255,13 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             inputs=[__fields[__k] for __k in ['position_block', 'output_state']],
             outputs=__fields['output_block'],
             queue=False,
-            show_progress='full').then(
+            show_progress='hidden').then(
         # update the plot when the router data changes
             fn=update_hidden_plot,
             inputs=[__fields[__k] for __k in ['position_block', 'hidden_state']],
             outputs=__fields['plot_block'],
             queue=False,
-            show_progress='full')
+            show_progress='hidden')
         # update the range of the position slider when the settings change
         __fields['tokens_block'].change(
             fn=update_position_range,
@@ -275,7 +275,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             inputs=[__fields[__k] for __k in ['position_block', 'hidden_state']],
             outputs=__fields['plot_block'],
             queue=False,
-            show_progress='full')
+            show_progress='hidden')
         # update the token highlight when the token focus changes
         __fields['position_block'].change(
             fn=__highlight,
