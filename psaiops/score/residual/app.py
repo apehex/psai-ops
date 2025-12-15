@@ -209,7 +209,7 @@ def update_hidden_plot(
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1, projection='3d')
-    __axes.scatter(__x, __y, __z, c=__c, ss=__s, marker='s', linewidths=0)
+    __axes.scatter(__x, __y, __z, c=__c, s=__s, marker='s', linewidths=0)
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)

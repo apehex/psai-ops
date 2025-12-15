@@ -126,7 +126,7 @@ def size_hidden_states(
     # [-1; 1] => [0; 1]
     __data = numpy.abs(hidden_data)
     # gamma < 1 will boost small values and > 1 emphasize larger values
-    __data = (__data + torch.finfo().eps) ** gamma_val
+    __data = (__data + numpy.finfo(numpy.float32).eps) ** gamma_val
     # map to point area
     return area_min + (area_max - area_min) * __data
 
