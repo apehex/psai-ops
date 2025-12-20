@@ -5,6 +5,8 @@ import matplotlib
 import numpy
 import torch
 
+import mlable.shapes
+
 # GENERATE #######################################################################
 
 @functools.lru_cache(maxsize=32)
@@ -83,15 +85,19 @@ def rescale_hidden_states(
 # RESHAPE ######################################################################
 
 def reshape_hidden_states(
-    hidden_data: torch.Tensor, # (B, L, H)
+    hidden_data: torch.Tensor, # (B, L, E) or (B, E)
+    layer_idx: int=1,
 ) -> torch.Tensor:
-    # parse the hidden states (B, L, H)
-    __batch_dim, __layer_dim, __hidden_dim = tuple(hidden_data.shape)
+    # parse the shape
+    __shape = tuple(hidden_data.shape)
     # factor the hidden dimension
-    __width_dim = math.gcd(__hidden_dim, 2 ** int(math.log2(__hidden_dim))) # greatest power of 2 that divides H
-    __height_dim = __hidden_dim // __width_dim
-    # reshape into (B, W, H, L)
-    return hidden_data.reshape((__batch_dim, __layer_dim, __width_dim, __height_dim)).permute(0, 2, 3, 1)
+    __factor = 2 ** round(0.5 * math.log2(__shape[-1]))
+    # compute the shape with the last axis split
+    __shape = mlable.shapes.divide(shape=__shape, axis=-1, factor=__factor, insert=True, right=False)
+    # move the layer axis at the end
+    __perm = mlable.shapes.move(shape=__shape, before=layer_idx, after=-1)
+    # reshape into (B, W, H, L) or (B, W, H)
+    return hidden_data.reshape(__shape).permute(*__perm)
 
 # MASK #########################################################################
 
