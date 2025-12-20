@@ -13,8 +13,8 @@ import psaiops.score.residual.lib
 # META #########################################################################
 
 STYLE = '''.white-text span { color: white; }'''
-TITLE = '''Router Scoring'''
-INTRO = '''Plot the logits of the router for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
+TITLE = '''Visualization Of Residuals'''
+INTRO = '''Plot the hidden states for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
 
 MODEL = 'openai/gpt-oss-20b'
 
@@ -48,6 +48,15 @@ def create_sampling_block() -> dict:
         'topk_block': __topk,
         'topp_block': __topp,}
 
+# DATAVIZ ######################################################################
+
+def create_visualization_block() -> dict:
+    __3d = gradio.Slider(label='3D', value=1, minimum=0, maximum=1, step=1, scale=1, interactive=True)
+    __points = gradio.Slider(label='Points', value=128, minimum=32, maximum=2880, step=32, scale=1, interactive=True)
+    return {
+        'axes_block': __3d,
+        'points_block': __points,}
+
 # INPUTS #######################################################################
 
 def create_inputs_block() -> dict:
@@ -57,7 +66,7 @@ def create_inputs_block() -> dict:
 # PLOTS ########################################################################
 
 def create_plot_block() -> dict:
-    __plot = gradio.Plot(label='Router', scale=1)
+    __plot = gradio.Plot(label='Residuals', scale=1)
     return {'plot_block': __plot,}
 
 # OUTPUTS ######################################################################
@@ -71,7 +80,10 @@ def create_outputs_block() -> dict:
 def create_selection_block() -> dict:
     # __play = gradio.Button('>', variant='primary', size='lg', scale=1, interactive=True)
     __position = gradio.Slider(label='Token', value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
-    return {'position_block': __position,}
+    __layer = gradio.Slider(label='Layer', value=-1, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
+    return {
+        'position_block': __position,
+        'layer_block': __layer}
 
 # ACTIONS ######################################################################
 
@@ -92,7 +104,7 @@ def create_layout(intro: str=INTRO) -> dict:
     __fields = {}
     __fields.update(create_intro_block(intro=intro))
     with gradio.Tabs():
-        with gradio.Tab('Score Tokens') as __main_tab:
+        with gradio.Tab('Residuals') as __main_tab:
             __fields.update({'main_tab': __main_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block())
@@ -104,13 +116,16 @@ def create_layout(intro: str=INTRO) -> dict:
                 __fields.update(create_selection_block())
             with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
+        with gradio.Tab('Comparison') as __diff_tab:
+            __fields.update({'diff_tab': __diff_tab})
         with gradio.Tab('Settings') as __settings_tab:
             __fields.update({'settings_tab': __settings_tab})
-            with gradio.Column(scale=1):
-                with gradio.Row(equal_height=True):
-                    __fields.update(create_model_block())
-                with gradio.Row(equal_height=True):
-                    __fields.update(create_sampling_block())
+            with gradio.Row(equal_height=True):
+                __fields.update(create_model_block())
+            with gradio.Row(equal_height=True):
+                __fields.update(create_sampling_block())
+            with gradio.Row(equal_height=True):
+                __fields.update(create_visualization_block())
     return __fields
 
 # EVENTS #######################################################################
@@ -127,11 +142,12 @@ def update_position_range(
     # return a gradio update dictionary
     return gradio.update(maximum=__max, value=__val)
 
+# GENERATE #####################################################################
+
 def update_computation_state(
     token_num: float,
     topk_num: float,
     topp_num: float,
-    token_idx: float,
     prompt_str: str,
     device_str: str,
     model_obj: object,
@@ -141,7 +157,6 @@ def update_computation_state(
     __token_num = max(1, min(128, int(token_num)))
     __topk_num = max(1, min(8, int(topk_num)))
     __topp_num = max(0.0, min(1.0, float(topp_num)))
-    __token_idx = max(-1, min(__token_num, int(token_idx)))
     __prompt_str = prompt_str.strip()
     __device_str = device_str if (device_str in ['cpu', 'cuda']) else 'cpu'
     # exit if some values are missing
@@ -167,8 +182,13 @@ def update_computation_state(
         __output_data.cpu().float(),
         __hidden_data.cpu().float(),)
 
+# PLOT #########################################################################
+
 def update_hidden_plot(
     token_idx: float,
+    layer_idx: float,
+    axes_num: int,
+    points_num: int,
     hidden_data: torch.Tensor,
 ) -> tuple:
     # exit if some values are missing
@@ -184,7 +204,7 @@ def update_hidden_plot(
     # mask the small activations to improve the plot readability
     __mask_data = psaiops.score.residual.lib.mask_hidden_states(
         hidden_data=__plot_data,
-        topk_num=128)
+        topk_num=int(points_num))
     # reshape into a 3D tensor by folding E (B, L, E) => (B, W, H, L)
     __plot_data = psaiops.score.residual.lib.reshape_hidden_states(
         hidden_data=__plot_data)
@@ -209,7 +229,7 @@ def update_hidden_plot(
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1, projection='3d')
-    __axes.scatter(__x, __y, __z, c=__c, s=__s, marker='s', linewidths=0)
+    __axes.scatter(__x, __y, __z, c=__c, s=__s, marker='o', linewidths=0)
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
@@ -254,7 +274,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         # update the data after clicking process
         __fields['process_block'].click(
             fn=__compute,
-            inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'position_block', 'input_block']],
+            inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'input_block']],
             outputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             queue=False,
             show_progress='full').then(
@@ -272,7 +292,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             show_progress='hidden').then(
         # update the plot when the router data changes
             fn=update_hidden_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'hidden_state']],
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['plot_block'],
             queue=False,
             show_progress='hidden')
