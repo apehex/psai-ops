@@ -306,7 +306,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         # update the plot when the focus changes
         __fields['position_block'].change(
             fn=update_hidden_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'hidden_state']],
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['plot_block'],
             queue=False,
             show_progress='hidden')
