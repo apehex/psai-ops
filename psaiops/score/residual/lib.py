@@ -51,18 +51,22 @@ def merge_hidden_states(
 # REDUCE #######################################################################
 
 def reduce_hidden_states(
-    hidden_data: torch.Tensor,
-    token_idx: int, # -1 => avg over all tokens
+    hidden_data: torch.Tensor, # (B, L, T, E)
+    layer_idx: int, # -1 => select all layers
+    token_idx: int, # -1 => select all tokens
+    axes_idx: int=2,
 ) -> torch.Tensor:
-    # parse the hidden states (B, L, T, H)
+    # parse the hidden states (B, L, T, E)
     __batch_dim, __layer_dim, __token_dim, __hidden_dim = tuple(hidden_data.shape)
+    __layer_idx = min(layer_idx, __layer_dim - 1)
     __token_idx = min(token_idx, __token_dim - 1)
     # select the relevant data along each axis
+    __layer_slice = slice(0, __layer_dim) if (__layer_idx < 0) else slice(__layer_idx, __layer_idx + 1)
     __token_slice = slice(0, __token_dim) if (__token_idx < 0) else slice(__token_idx, __token_idx + 1)
     # filter the data
-    __data = hidden_data[slice(None), slice(None), __token_slice, slice(None)]
-    # reduce the token axis => (B, L, H)
-    return __data.mean(dim=2, keepdim=False)
+    __data = hidden_data[slice(None), __layer_slice, __token_slice, slice(None)]
+    # reduce the token axis => (B, L, E)
+    return __data.mean(dim=axes_idx, keepdim=False)
 
 # RESCALE ######################################################################
 
