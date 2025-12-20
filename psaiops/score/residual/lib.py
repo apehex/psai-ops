@@ -29,7 +29,7 @@ def generate_token_ids(
             output_scores=False,
             # early_stopping=True,
             use_cache=True)
-    # ((B, T), O * L * (B, I, H))
+    # ((B, T), O * L * (B, I, E))
     return __outputs.sequences, __outputs.hidden_states
 
 # MERGE ########################################################################
@@ -40,10 +40,10 @@ def merge_hidden_states(
     # parse the inputs
     __token_dim = len(hidden_data)
     __layer_dim = len(hidden_data[0])
-    # stack the data for each layer => (B, L, I + O, H)
+    # stack the data for each layer => (B, L, I + O, E)
     return torch.stack(
         [
-            # concatenate the data for all the tokens => (B, I + O, H)
+            # concatenate the data for all the tokens => (B, I + O, E)
             torch.concatenate([hidden_data[__t][__l] for __t in range(__token_dim)], dim=1)
             for __l in range(__layer_dim)],
         dim=1)
@@ -71,7 +71,7 @@ def reduce_hidden_states(
 # RESCALE ######################################################################
 
 def rescale_hidden_states(
-    hidden_data: torch.Tensor, # (B, L, H)
+    hidden_data: torch.Tensor, # (B, L, E) or (B, E)
 ) -> torch.Tensor:
     # compute the scale of the data, layer by layer
     __s = torch.quantile(hidden_data.abs(), q=0.9, dim=-1, keepdim=True)
@@ -96,7 +96,7 @@ def reshape_hidden_states(
 # MASK #########################################################################
 
 def mask_hidden_states(
-    hidden_data: torch.Tensor, # (B, L, H)
+    hidden_data: torch.Tensor, # (B, L, E)
     topk_num: int=128,
 ) -> torch.Tensor:
     # sanitize
@@ -105,7 +105,7 @@ def mask_hidden_states(
     __indices = hidden_data.abs().topk(__k, dim=-1, largest=True, sorted=False).indices
     # initialize the mask with False
     __mask = torch.zeros_like(hidden_data, dtype=torch.bool)
-    # (B, L, H) mask of the topk values
+    # (B, L, E) mask of the topk values
     return __mask.scatter_(dim=-1, index=__indices, value=True)
 
 # FORMAT #######################################################################
