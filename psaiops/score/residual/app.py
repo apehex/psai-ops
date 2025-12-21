@@ -23,7 +23,9 @@ MODEL = 'openai/gpt-oss-20b'
 def create_color_map() -> dict:
     return {
         '0': '#000000',
-        '1': '#004444',}
+        '1': '#004444',
+        '2': '#444400',
+        '3': '#440044',}
 
 # INTRO ########################################################################
 
@@ -190,7 +192,8 @@ def update_computation_state(
 # HIGHLIGHT ####################################################################
 
 def update_text_highlight(
-    token_idx: float,
+    left_idx: float,
+    right_idx: float,
     output_data: torch.Tensor,
     tokenizer_obj: object,
 ) -> list:
@@ -203,7 +206,8 @@ def update_text_highlight(
         token_data=output_data)
     # list of string classes
     __token_cls = psaiops.score.residual.lib.postprocess_token_cls(
-        token_idx=int(token_idx),
+        left_idx=int(left_idx),
+        right_idx=int(right_idx),
         token_dim=len(__token_str))
     # pairs of token and class
     return list(zip(__token_str, __token_cls))
@@ -426,7 +430,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             show_progress='hidden')
         __fields['right_position_block'].change(
             fn=__highlight,
-            inputs=[__fields[__k] for __k in ['right_position_block', 'right_position_block', 'output_state']],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['output_block'],
             queue=False,
             show_progress='hidden')
