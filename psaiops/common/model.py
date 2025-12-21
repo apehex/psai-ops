@@ -26,11 +26,13 @@ def generate_token_ids(
     token_num: int,
     topk_num: int = 4,
     topp_num: float = 0.9,
+    attention_mask: torch.Tensor=None,
 ) -> torch.Tensor:
     # generate completion
     with torch.no_grad():
         __outputs = model_obj.generate(
             input_ids=input_ids,
+            attention_mask=attention_mask,
             max_new_tokens=token_num,
             do_sample=(0.0 < topp_num < 1.0) or (topk_num > 0),
             top_k=topk_num if (topk_num > 0) else None,

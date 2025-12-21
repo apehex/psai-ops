@@ -90,6 +90,7 @@ def score_tokens(
     __outputs = psaiops.common.tokenizer.model.generate_token_ids(
         model_obj=model_obj,
         input_ids=__inputs['input_ids'],
+        attention_mask=__inputs['attention_mask'],
         token_num=token_num,
         topk_num=topk_num,
         topp_num=topp_num)
