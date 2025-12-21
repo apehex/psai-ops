@@ -59,31 +59,32 @@ def create_visualization_block() -> dict:
 
 # INPUTS #######################################################################
 
-def create_inputs_block() -> dict:
-    __input = gradio.Textbox(label='Prompt', value='', placeholder='A string of tokens to score.', lines=4, scale=1, show_copy_button=True, interactive=True)
+def create_inputs_block(label: str='Prompt') -> dict:
+    __input = gradio.Textbox(label=label, value='', placeholder='A string of tokens to score.', lines=4, scale=1, show_copy_button=True, interactive=True)
     return {'input_block': __input}
 
 # PLOTS ########################################################################
 
-def create_plot_block() -> dict:
-    __plot = gradio.Plot(label='Residuals', scale=1)
-    return {'plot_block': __plot,}
+def create_plot_block(label: str='Residuals', prefix: str='') -> dict:
+    __plot = gradio.Plot(label=label, scale=1)
+    return {prefix + 'plot_block': __plot,}
 
 # OUTPUTS ######################################################################
 
-def create_outputs_block() -> dict:
-    __output = gradio.HighlightedText(label='Output', value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=False, color_map=create_color_map(), elem_classes='white-text')
-    return {'output_block': __output}
+def create_outputs_block(label: str='Output', prefix: str='') -> dict:
+    __output = gradio.HighlightedText(label=label, value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=False, color_map=create_color_map(), elem_classes='white-text')
+    return {prefix + 'output_block': __output}
 
 # SELECT #######################################################################
 
-def create_selection_block() -> dict:
+def create_token_selection_block(label: str='Token', prefix: str='') -> dict:
     # __play = gradio.Button('>', variant='primary', size='lg', scale=1, interactive=True)
-    __position = gradio.Slider(label='Token', value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
-    __layer = gradio.Slider(label='Layer', value=-1, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
-    return {
-        'position_block': __position,
-        'layer_block': __layer}
+    __position = gradio.Slider(label=label, value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
+    return {prefix + 'position_block': __position,}
+
+def create_layer_selection_block(label: str='Layer', prefix: str='') -> dict:
+    __layer = gradio.Slider(label=label, value=-1, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
+    return {prefix + 'layer_block': __layer,}
 
 # ACTIONS ######################################################################
 
@@ -113,11 +114,23 @@ def create_layout(intro: str=INTRO) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_outputs_block())
             with gradio.Row(equal_height=True):
-                __fields.update(create_selection_block())
+                __fields.update(create_token_selection_block())
+                __fields.update(create_layer_selection_block())
             with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
         with gradio.Tab('Comparison') as __diff_tab:
             __fields.update({'diff_tab': __diff_tab})
+            with gradio.Row(equal_height=True):
+                __fields.update(create_outputs_block(label='Text', prefix='comparison_'))
+            with gradio.Row(equal_height=True):
+                __fields.update(create_plot_block(label='Left', prefix='left_'))
+                __fields.update(create_plot_block(label='Right', prefix='right_'))
+            with gradio.Row(equal_height=True):
+                __fields.update(create_token_selection_block(label='Token', prefix='left_'))
+                __fields.update(create_token_selection_block(label='Token', prefix='right_'))
+            with gradio.Row(equal_height=True):
+                __fields.update(create_layer_selection_block(label='Layer', prefix='left_'))
+                __fields.update(create_layer_selection_block(label='Layer', prefix='right_'))
         with gradio.Tab('Settings') as __settings_tab:
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Row(equal_height=True):
