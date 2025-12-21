@@ -110,18 +110,7 @@ def create_layout(intro: str=INTRO) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block())
             with gradio.Row(equal_height=True):
-                __fields.update(create_plot_block())
-            with gradio.Row(equal_height=True):
                 __fields.update(create_outputs_block())
-            with gradio.Row(equal_height=True):
-                __fields.update(create_token_selection_block())
-                __fields.update(create_layer_selection_block())
-            with gradio.Row(equal_height=True):
-                __fields.update(create_actions_block())
-        with gradio.Tab('Comparison') as __diff_tab:
-            __fields.update({'diff_tab': __diff_tab})
-            with gradio.Row(equal_height=True):
-                __fields.update(create_outputs_block(label='Text', prefix='comparison_'))
             with gradio.Row(equal_height=True):
                 __fields.update(create_plot_block(label='Left', prefix='left_'))
                 __fields.update(create_plot_block(label='Right', prefix='right_'))
@@ -131,6 +120,8 @@ def create_layout(intro: str=INTRO) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_layer_selection_block(label='Layer', prefix='left_'))
                 __fields.update(create_layer_selection_block(label='Layer', prefix='right_'))
+            with gradio.Row(equal_height=True):
+                __fields.update(create_actions_block())
         with gradio.Tab('Settings') as __settings_tab:
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Row(equal_height=True):
@@ -353,49 +344,89 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'input_block']],
             outputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             queue=False,
-            show_progress='full').then(
-        # update the range of the position slider when the output changes
+            show_progress='full'
+        ).then(
+        # update the range of the position sliders when the output changes
             fn=update_position_range,
-            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block', 'output_state']],
-            outputs=__fields['position_block'],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['left_position_block'],
             queue=False,
-            show_progress='hidden').then(
+            show_progress='hidden'
+        ).then(
+            fn=update_position_range,
+            inputs=[__fields[__k] for __k in ['right_position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['right_position_block'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
         # update the token highlight when the output data changes
             fn=__highlight,
-            inputs=[__fields[__k] for __k in ['position_block', 'output_state']],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['output_block'],
             queue=False,
-            show_progress='hidden').then(
+            show_progress='hidden'
+        ).then(
         # update the plot when the router data changes
             fn=update_hidden_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'axes_block', 'points_block', 'hidden_state']],
-            outputs=__fields['plot_block'],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
+            outputs=__fields['left_plot_block'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
+            fn=update_hidden_plot,
+            inputs=[__fields[__k] for __k in ['right_position_block', 'right_layer_block', 'axes_block', 'points_block', 'hidden_state']],
+            outputs=__fields['right_plot_block'],
             queue=False,
             show_progress='hidden')
         # update the range of the position slider when the settings change
         __fields['tokens_block'].change(
             fn=update_position_range,
-            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block', 'output_state']],
-            outputs=__fields['position_block'],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['left_position_block'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
+            fn=update_position_range,
+            inputs=[__fields[__k] for __k in ['right_position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['right_position_block'],
             queue=False,
             show_progress='hidden')
-        # update the plot when the focus changes
-        __fields['position_block'].change(
+        # update the left plot when the focus changes
+        __fields['left_position_block'].change(
             fn=update_hidden_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'axes_block', 'points_block', 'hidden_state']],
-            outputs=__fields['plot_block'],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
+            outputs=__fields['left_plot_block'],
             queue=False,
             show_progress='hidden')
-        __fields['layer_block'].change(
+        __fields['left_layer_block'].change(
             fn=update_hidden_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'axes_block', 'points_block', 'hidden_state']],
-            outputs=__fields['plot_block'],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
+            outputs=__fields['left_plot_block'],
+            queue=False,
+            show_progress='hidden')
+        # update the right plot when the focus changes
+        __fields['right_position_block'].change(
+            fn=update_hidden_plot,
+            inputs=[__fields[__k] for __k in ['right_position_block', 'right_layer_block', 'axes_block', 'points_block', 'hidden_state']],
+            outputs=__fields['right_plot_block'],
+            queue=False,
+            show_progress='hidden')
+        __fields['right_layer_block'].change(
+            fn=update_hidden_plot,
+            inputs=[__fields[__k] for __k in ['right_position_block', 'right_layer_block', 'axes_block', 'points_block', 'hidden_state']],
+            outputs=__fields['right_plot_block'],
             queue=False,
             show_progress='hidden')
         # update the token highlight when the token focus changes
-        __fields['position_block'].change(
+        __fields['left_position_block'].change(
             fn=__highlight,
-            inputs=[__fields[__k] for __k in ['position_block', 'output_state']],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
+            outputs=__fields['output_block'],
+            queue=False,
+            show_progress='hidden')
+        __fields['right_position_block'].change(
+            fn=__highlight,
+            inputs=[__fields[__k] for __k in ['right_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['output_block'],
             queue=False,
             show_progress='hidden')
