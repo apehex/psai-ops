@@ -205,11 +205,44 @@ def update_text_highlight(
 
 # PLOT #########################################################################
 
-def update_hidden_plot(
+def update_2d_plot(
     token_idx: float,
     layer_idx: float,
-    axes_num: int,
-    points_num: int,
+    hidden_data: torch.Tensor,
+) -> tuple:
+    # exit if some values are missing
+    if (hidden_data is None) or (len(hidden_data) == 0):
+        return None
+    # reduce the layer and token axes (B, L, T, E) => (B, E)
+    __plot_data = psaiops.score.residual.lib.reduce_hidden_states(
+        hidden_data=hidden_data,
+        layer_idx=int(layer_idx),
+        token_idx=int(token_idx),
+        axes_idx=(1, 2))
+    # rescale the data to [-1; 1] (B, E)
+    __plot_data = psaiops.score.residual.lib.rescale_hidden_states(
+        hidden_data=__plot_data)
+    # reshape into a 3D tensor by folding E (B, E) => (B, W, H)
+    __plot_data = psaiops.score.residual.lib.reshape_hidden_states(
+        hidden_data=__plot_data,
+        layer_idx=-1) # there is no layer axis
+    # map the [-1; 1] activations to RGBA colors
+    __plot_data = psaiops.score.residual.lib.color_hidden_states(
+        hidden_data=__plot_data.numpy())
+    # plot the first sample
+    __figure = matplotlib.pyplot.figure()
+    __axes = __figure.add_subplot(1, 1, 1)
+    __axes.imshow(__plot_data[0], vmin=0.0, vmax=1.0, cmap='viridis')
+    __figure.tight_layout()
+    # remove the figure for the pyplot register for garbage collection
+    matplotlib.pyplot.close(__figure)
+    # update each component => (highlight, plot) states
+    return __figure
+
+def update_3d_plot(
+    token_idx: float,
+    layer_idx: float,
+    points_num: float,
     hidden_data: torch.Tensor,
 ) -> tuple:
     # exit if some values are missing
@@ -218,19 +251,23 @@ def update_hidden_plot(
     # reduce the token axis (B, L, T, E) => (B, L, E)
     __plot_data = psaiops.score.residual.lib.reduce_hidden_states(
         hidden_data=hidden_data,
-        token_idx=int(token_idx),)
+        token_idx=int(token_idx),
+        layer_idx=int(layer_idx),
+        axes_idx=2)
     # rescale the data to [-1; 1] (B, L, E)
     __plot_data = psaiops.score.residual.lib.rescale_hidden_states(
         hidden_data=__plot_data)
     # mask the small activations to improve the plot readability
     __mask_data = psaiops.score.residual.lib.mask_hidden_states(
         hidden_data=__plot_data,
-        topk_num=int(points_num))
+        topk_num=int(points_num) if int(layer_idx) == -1 else 2 * int(points_num))
     # reshape into a 3D tensor by folding E (B, L, E) => (B, W, H, L)
     __plot_data = psaiops.score.residual.lib.reshape_hidden_states(
-        hidden_data=__plot_data)
+        hidden_data=__plot_data,
+        layer_idx=1)
     __mask_data = psaiops.score.residual.lib.reshape_hidden_states(
-        hidden_data=__mask_data)
+        hidden_data=__mask_data,
+        layer_idx=1)
     # convert to numpy ndarrays
     __plot_data = __plot_data.numpy()
     __mask_data = __mask_data.numpy()
@@ -257,24 +294,28 @@ def update_hidden_plot(
     # update each component => (highlight, plot) states
     return __figure
 
-def update_text_highlight(
+def update_hidden_plot(
     token_idx: float,
-    output_data: torch.Tensor,
-    tokenizer_obj: object,
-) -> list:
+    layer_idx: float,
+    axes_num: float,
+    points_num: float,
+    hidden_data: torch.Tensor,
+) -> tuple:
     # exit if some values are missing
-    if (output_data is None) or (len(output_data) == 0):
+    if (hidden_data is None) or (len(hidden_data) == 0):
         return None
-    # detokenize the IDs
-    __token_str = psaiops.common.tokenizer.postprocess_token_ids(
-        tokenizer_obj=tokenizer_obj,
-        token_data=output_data)
-    # list of string classes
-    __token_cls = psaiops.score.residual.lib.postprocess_token_cls(
-        token_idx=int(token_idx),
-        token_dim=len(__token_str))
-    # pairs of token and class
-    return list(zip(__token_str, __token_cls))
+    # plot the residuals of a given layer on a 2D heatmap
+    if not axes_num: # 0.0 or 0
+        return update_2d_plot(
+            token_idx=token_idx,
+            layer_idx=layer_idx,
+            hidden_data=hidden_data)
+    # by default, plot the residuals for all the layers in 3D
+    return update_3d_plot(
+        token_idx=token_idx,
+        layer_idx=layer_idx,
+        points_num=points_num,
+        hidden_data=hidden_data)
 
 # APP ##########################################################################
 
