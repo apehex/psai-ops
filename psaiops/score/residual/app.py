@@ -219,9 +219,6 @@ def update_2d_plot(
     layer_idx: float,
     hidden_data: torch.Tensor,
 ) -> tuple:
-    # exit if some values are missing
-    if (hidden_data is None) or (len(hidden_data) == 0):
-        return None
     # reduce the layer and token axes (B, L, T, E) => (B, E)
     __plot_data = psaiops.score.residual.lib.reduce_hidden_states(
         hidden_data=hidden_data,
@@ -254,9 +251,6 @@ def update_3d_plot(
     points_num: float,
     hidden_data: torch.Tensor,
 ) -> tuple:
-    # exit if some values are missing
-    if (hidden_data is None) or (len(hidden_data) == 0):
-        return None
     # reduce the token axis (B, L, T, E) => (B, L, E)
     __plot_data = psaiops.score.residual.lib.reduce_hidden_states(
         hidden_data=hidden_data,

@@ -58,7 +58,7 @@ def reduce_hidden_states(
     hidden_data: torch.Tensor, # (B, L, T, E)
     layer_idx: int, # -1 => select all layers
     token_idx: int, # -1 => select all tokens
-    axes_idx: int=2,
+    axes_idx: int=2, # token sequence axis
 ) -> torch.Tensor:
     # parse the hidden states (B, L, T, E)
     __batch_dim, __layer_dim, __token_dim, __hidden_dim = tuple(hidden_data.shape)
