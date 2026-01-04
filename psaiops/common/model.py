@@ -1,6 +1,7 @@
 import functools
 
 import torch
+import torch.nn
 
 import deformers.models.openai.gptoss
 
@@ -17,7 +18,32 @@ def get_model(name: str, device: str='cpu'):
     # transformers model
     return __model
 
-# GENERATE #######################################################################
+# PREFIX #######################################################################
+
+def get_prefix(
+    parent_obj: object,
+    layer_num: int
+) -> object:
+    # init from the config
+    __child = parent_obj.__class__(parent_obj.config)
+    # share decoder core
+    __child.model.embed_tokens = parent_obj.model.embed_tokens
+    __child.model.norm = parent_obj.model.norm
+    # share prefix layers (same objects)
+    __child.model.layers = torch.nn.ModuleList(parent_obj.model.layers[:layer_num])
+    # keep LM head
+    __child.lm_head = parent_obj.lm_head
+    # config hygiene
+    __child.model.config.num_hiddelayer_num = layer_num
+    __child.config.num_hiddelayer_num = layer_num
+    # layer types
+    if getattr(__child.config, "layer_types", None) is not None:
+        __child.config.layer_types = __child.config.layer_types[:layer_num]
+        __child.model.config.layer_types = __child.config.layer_types
+    # wrapper with the first N hidden layers, pointing at the parent weights
+    return __child
+
+# GENERATE #####################################################################
 
 @functools.lru_cache(maxsize=32)
 def generate_token_ids(
