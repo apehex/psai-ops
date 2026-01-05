@@ -20,12 +20,15 @@ MODEL = 'openai/gpt-oss-20b'
 
 # COLORS #######################################################################
 
-def create_color_map() -> dict:
+def create_selection_cmap() -> dict:
     return {
         '0': '#000000',
         '1': '#004444',
         '2': '#444400',
         '3': '#440044',}
+
+def create_score_cmap() -> dict:
+    return {str(__i): '#{:02x}0000'.format(int(2.55 * __i)) for __i in range(101)}
 
 # INTRO ########################################################################
 
@@ -73,9 +76,9 @@ def create_plot_block(label: str='Residuals', prefix: str='') -> dict:
 
 # OUTPUTS ######################################################################
 
-def create_outputs_block(label: str='Output', prefix: str='') -> dict:
-    __output = gradio.HighlightedText(label=label, value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=False, color_map=create_color_map(), elem_classes='white-text')
-    return {prefix + 'output_block': __output}
+def create_highlight_block(label: str='Output', prefix: str='', cmap: dict=create_selection_cmap()) -> dict:
+    __output = gradio.HighlightedText(label=label, value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=False, color_map=cmap, elem_classes='white-text')
+    return {prefix + 'highlight_block': __output}
 
 # SELECT #######################################################################
 
@@ -112,10 +115,13 @@ def create_layout(intro: str=INTRO) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block())
             with gradio.Row(equal_height=True):
-                __fields.update(create_outputs_block())
+                __fields.update(create_highlight_block())
             with gradio.Row(equal_height=True):
                 __fields.update(create_plot_block(label='Left', prefix='left_'))
                 __fields.update(create_plot_block(label='Right', prefix='right_'))
+            with gradio.Row(equal_height=True):
+                __fields.update(create_highlight_block(label='Score', prefix='left_', cmap=create_score_cmap()))
+                __fields.update(create_highlight_block(label='Score', prefix='right_', cmap=create_score_cmap()))
             with gradio.Row(equal_height=True):
                 __fields.update(create_token_selection_block(label='Token', prefix='left_'))
                 __fields.update(create_token_selection_block(label='Token', prefix='right_'))
@@ -211,6 +217,15 @@ def update_text_highlight(
         token_dim=len(__token_str))
     # pairs of token and class
     return list(zip(__token_str, __token_cls))
+
+# SCORES #######################################################################
+
+def update_token_scores(
+    layer_idx: float,
+    pair_data: list,
+    hidden_data: torch.Tensor
+) -> list:
+    return [(__t, '0') for (__t, __l) in pair_data]
 
 # PLOT #########################################################################
 
@@ -360,7 +375,21 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         # update the token highlight when the output data changes
             fn=__highlight,
             inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
-            outputs=__fields['output_block'],
+            outputs=__fields['highlight_block'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
+        # update the left token scores when the output data changes
+            fn=update_token_scores,
+            inputs=[__fields[__k] for __k in ['left_layer_block', 'highlight_block', 'hidden_state']],
+            outputs=__fields['left_highlight_block'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
+        # update the right token scores when the output data changes
+            fn=update_token_scores,
+            inputs=[__fields[__k] for __k in ['right_layer_block', 'highlight_block', 'hidden_state']],
+            outputs=__fields['right_highlight_block'],
             queue=False,
             show_progress='hidden'
         ).then(
@@ -401,7 +430,15 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['left_plot_block'],
             queue=False,
-            show_progress='hidden')
+            show_progress='hidden'
+        ).then(
+        # update the left token scores when the focus changes
+            fn=update_token_scores,
+            inputs=[__fields[__k] for __k in ['left_layer_block', 'highlight_block', 'hidden_state']],
+            outputs=__fields['left_highlight_block'],
+            queue=False,
+            show_progress='hidden'
+        )
         # update the right plot when the focus changes
         __fields['right_position_block'].change(
             fn=update_hidden_plot,
@@ -414,18 +451,26 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             inputs=[__fields[__k] for __k in ['right_position_block', 'right_layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['right_plot_block'],
             queue=False,
-            show_progress='hidden')
+            show_progress='hidden'
+        ).then(
+        # update the right token scores when the focus changes
+            fn=update_token_scores,
+            inputs=[__fields[__k] for __k in ['right_layer_block', 'highlight_block', 'hidden_state']],
+            outputs=__fields['right_highlight_block'],
+            queue=False,
+            show_progress='hidden'
+        )
         # update the token highlight when the token focus changes
         __fields['left_position_block'].change(
             fn=__highlight,
             inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
-            outputs=__fields['output_block'],
+            outputs=__fields['highlight_block'],
             queue=False,
             show_progress='hidden')
         __fields['right_position_block'].change(
             fn=__highlight,
             inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
-            outputs=__fields['output_block'],
+            outputs=__fields['highlight_block'],
             queue=False,
             show_progress='hidden')
         # gradio application
