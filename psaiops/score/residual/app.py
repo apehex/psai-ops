@@ -222,10 +222,19 @@ def update_text_highlight(
 
 def update_token_scores(
     layer_idx: float,
-    pair_data: list,
-    hidden_data: torch.Tensor
+    output_data: torch.Tensor,
+    hidden_data: torch.Tensor,
+    tokenizer_obj: object,
 ) -> list:
-    return [(__t, '0') for (__t, __l) in pair_data]
+    # exit if some values are missing
+    if (output_data is None) or (len(output_data) == 0):
+        return None
+    # detokenize the IDs
+    __token_str = psaiops.common.tokenizer.postprocess_token_ids(
+        tokenizer_obj=tokenizer_obj,
+        token_data=output_data)
+    # color each token according to the distance between the distribution at layer L and the final distribution
+    return [(__t, '0') for __t in __token_str]
 
 # PLOT #########################################################################
 
@@ -347,6 +356,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         # adapt the event handlers
         __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
         __highlight = functools.partial(update_text_highlight, tokenizer_obj=__tokenizer)
+        __score = functools.partial(update_token_scores, tokenizer_obj=__tokenizer)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
@@ -380,15 +390,15 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             show_progress='hidden'
         ).then(
         # update the left token scores when the output data changes
-            fn=update_token_scores,
-            inputs=[__fields[__k] for __k in ['left_layer_block', 'highlight_block', 'hidden_state']],
+            fn=__score,
+            inputs=[__fields[__k] for __k in ['left_layer_block', 'output_state', 'hidden_state']],
             outputs=__fields['left_highlight_block'],
             queue=False,
             show_progress='hidden'
         ).then(
         # update the right token scores when the output data changes
-            fn=update_token_scores,
-            inputs=[__fields[__k] for __k in ['right_layer_block', 'highlight_block', 'hidden_state']],
+            fn=__score,
+            inputs=[__fields[__k] for __k in ['right_layer_block', 'output_state', 'hidden_state']],
             outputs=__fields['right_highlight_block'],
             queue=False,
             show_progress='hidden'
@@ -433,8 +443,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             show_progress='hidden'
         ).then(
         # update the left token scores when the focus changes
-            fn=update_token_scores,
-            inputs=[__fields[__k] for __k in ['left_layer_block', 'highlight_block', 'hidden_state']],
+            fn=__score,
+            inputs=[__fields[__k] for __k in ['left_layer_block', 'output_state', 'hidden_state']],
             outputs=__fields['left_highlight_block'],
             queue=False,
             show_progress='hidden'
@@ -454,8 +464,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             show_progress='hidden'
         ).then(
         # update the right token scores when the focus changes
-            fn=update_token_scores,
-            inputs=[__fields[__k] for __k in ['right_layer_block', 'highlight_block', 'hidden_state']],
+            fn=__score,
+            inputs=[__fields[__k] for __k in ['right_layer_block', 'output_state', 'hidden_state']],
             outputs=__fields['right_highlight_block'],
             queue=False,
             show_progress='hidden'
