@@ -142,9 +142,32 @@ def size_hidden_states(
     # map to point area
     return area_min + (area_max - area_min) * __data
 
+# KL SCORES ####################################################################
+
+def kl_from_logprobs(
+    p_log: torch.Tensor,
+    q_log: torch.Tensor,
+) -> torch.Tensor:
+    # compute the KL div from log probabilities (B, T, E) or (T, E)
+    return (p_log.exp() * (p_log - q_log)).sum(dim=-1)
+
+def jsd_from_logits(
+    final_logits: torch.Tensor,
+    prefix_logits: torch.Tensor,
+) -> torch.Tensor:
+    # compute the log probs from logits (B, T, E) or (T, E)
+    __p = torch.log_softmax(final_logits.float(), dim=-1)
+    __q = torch.log_softmax(prefix_logits.float(), dim=-1)
+    # m = 0.5(p+q) in log-space (logsumexp trick)
+    __m = torch.logsumexp(torch.stack([__p, __q], dim=0), dim=0) - math.log(2.0)
+    # compute the JSD metric
+    __jsd = 0.5 * kl_from_logprobs(__p, __m) + 0.5 * kl_from_logprobs(__q, __m)
+    # scale to [0; 1]
+    return (__jsd / math.log(2.0)).clamp(0.0, 1.0)
+
 # POSTPROCESS ##################################################################
 
-def postprocess_token_cls(
+def postprocess_focus_cls(
     left_idx: int,
     right_idx: int,
     token_dim: int,
@@ -157,3 +180,8 @@ def postprocess_token_cls(
     __right_cls = token_dim * [2] if (__right_idx < 0) else [2 * int(__i == __right_idx) for __i in range(token_dim)]
     # sum the classes so that the overlap has class 3
     return [str(__l + __r) for __l, __r in zip(__left_cls, __right_cls)]
+
+def postprocess_score_cls(
+    score_data: torch.Tensor
+) -> list:
+    return [str(__s) for __s in score_data.numpy().tolist()]

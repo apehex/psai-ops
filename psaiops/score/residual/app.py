@@ -197,7 +197,7 @@ def update_computation_state(
 
 # HIGHLIGHT ####################################################################
 
-def update_text_highlight(
+def update_token_focus(
     left_idx: float,
     right_idx: float,
     output_data: torch.Tensor,
@@ -211,7 +211,7 @@ def update_text_highlight(
         tokenizer_obj=tokenizer_obj,
         token_data=output_data)
     # list of string classes
-    __token_cls = psaiops.score.residual.lib.postprocess_token_cls(
+    __token_cls = psaiops.score.residual.lib.postprocess_focus_cls(
         left_idx=int(left_idx),
         right_idx=int(right_idx),
         token_dim=len(__token_str))
@@ -225,16 +225,30 @@ def update_token_scores(
     output_data: torch.Tensor,
     hidden_data: torch.Tensor,
     tokenizer_obj: object,
+    model_obj: object,
 ) -> list:
     # exit if some values are missing
-    if (output_data is None) or (len(output_data) == 0):
+    if (output_data is None) or (len(output_data) == 0) or (hidden_data is None) or (len(hidden_data) == 0):
         return None
+    # parse the model meta
+    __device_str = model_obj.lm_head.weight.device
+    __dtype_obj = model_obj.lm_head.weight.dtype
     # detokenize the IDs
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
         token_data=output_data)
+    # select the relevant hidden states
+    __final_states = hidden_data[0, -1, :, :].to(device=__device_str, dtype=__dtype_obj)
+    __layer_states = hidden_data[0, int(layer_idx), :, :].to(device=__device_str, dtype=__dtype_obj)
+    # compute the logits
+    __final_logits = model_obj.lm_head(__final_states).detach().cpu() # already normalized
+    __layer_logits = model_obj.lm_head(model_obj.model.norm(__layer_states)).detach().cpu()
+    # compute the JSD metric
+    __token_jsd = jsd_from_logits(final_logits=__final_logits, prefix_logits=__layer_logits)
+    # scale into a [0; 100] label
+    __token_cls = postprocess_score_cls(score_data=__token_jsd)
     # color each token according to the distance between the distribution at layer L and the final distribution
-    return [(__t, '0') for __t in __token_str]
+    return list(zip(__token_str, __token_cls))
 
 # PLOT #########################################################################
 
@@ -355,8 +369,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
         # adapt the event handlers
         __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
-        __highlight = functools.partial(update_text_highlight, tokenizer_obj=__tokenizer)
-        __score = functools.partial(update_token_scores, tokenizer_obj=__tokenizer)
+        __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
+        __score = functools.partial(update_token_scores, tokenizer_obj=__tokenizer, model_obj=__model)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
