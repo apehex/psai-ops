@@ -144,6 +144,9 @@ def update_position_range(
     token_num: float,
     output_data: torch.Tensor,
 ) -> dict:
+    # exit if some values are missing
+    if (current_val is None) or (token_num is None):
+        return None
     # take the generated tokens into account
     __max = int(token_num) - 1 if (output_data is None) else int(output_data.shape[-1])
     # keep the previous value if possible
@@ -169,7 +172,7 @@ def update_computation_state(
     __prompt_str = prompt_str.strip()
     __device_str = device_str if (device_str in ['cpu', 'cuda']) else 'cpu'
     # exit if some values are missing
-    if (not __prompt_str) or (model_obj is None) or (tokenizer_obj is None):
+    if (not __prompt_str) or (token_num is None) or (topk_num is None) or (topp_num is None) or (model_obj is None) or (tokenizer_obj is None):
         return (torch.empty(0), torch.empty(0))
     # dictionary {'input_ids': _, 'attention_mask': _}
     __input_data = psaiops.common.tokenizer.preprocess_token_ids(
@@ -201,7 +204,7 @@ def update_token_focus(
     tokenizer_obj: object,
 ) -> list:
     # exit if some values are missing
-    if (output_data is None) or (len(output_data) == 0):
+    if (left_idx is None) or (right_idx is None) or (output_data is None) or (len(output_data) == 0):
         return None
     # detokenize the IDs
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
@@ -308,7 +311,7 @@ def update_hidden_plot(
     hidden_data: torch.Tensor,
 ) -> tuple:
     # exit if some values are missing
-    if (hidden_data is None) or (len(hidden_data) == 0):
+    if (token_idx is None) or (layer_idx is None) or (axes_num is None) or (points_num is None) or (hidden_data is None) or (len(hidden_data) == 0):
         return None
     # plot the residuals of a given layer on a 2D heatmap
     if not axes_num: # 0.0 or 0
