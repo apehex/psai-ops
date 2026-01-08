@@ -48,12 +48,16 @@ def postprocess_router_weights(
 
 # POSTPROCESS ####################################################################
 
-def postprocess_token_cls(
-    token_idx: int,
+def postprocess_focus_cls(
+    left_idx: int,
+    right_idx: int,
     token_dim: int,
 ) -> list:
-    __token_idx = max(-1, min(token_dim, token_idx))
-    # class 1 for the focused token(s) 0 for the rest
-    __token_cls = [str(int(__i == token_idx)) for __i in range(token_dim)]
-    # average on all the tokens when the idx is negative
-    return token_dim * ['1'] if (token_idx < 0) else __token_cls
+    __left_idx = max(-1, min(token_dim, left_idx))
+    __right_idx = max(-1, min(token_dim, right_idx))
+    # class 1 for the token(s) focused on the left, 0 for the rest
+    __left_cls = token_dim * [1] if (__left_idx < 0) else [int(__i == __left_idx) for __i in range(token_dim)]
+    # class 2 for the token(s) focused on the right, 0 for the rest
+    __right_cls = token_dim * [2] if (__right_idx < 0) else [2 * int(__i == __right_idx) for __i in range(token_dim)]
+    # sum the classes so that the overlap has class 3
+    return [str(__l + __r) for __l, __r in zip(__left_cls, __right_cls)]

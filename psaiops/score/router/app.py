@@ -170,6 +170,31 @@ def update_computation_state(
         __output_data.cpu(),
         __router_data.cpu(),)
 
+# HIGHLIGHT ####################################################################
+
+def update_token_focus(
+    left_idx: float,
+    right_idx: float,
+    output_data: torch.Tensor,
+    tokenizer_obj: object,
+) -> list:
+    # exit if some values are missing
+    if (left_idx is None) or (right_idx is None) or (output_data is None) or (len(output_data) == 0):
+        return None
+    # detokenize the IDs
+    __token_str = psaiops.common.tokenizer.postprocess_token_ids(
+        tokenizer_obj=tokenizer_obj,
+        token_data=output_data)
+    # list of string classes
+    __token_cls = psaiops.score.router.lib.postprocess_focus_cls(
+        left_idx=int(left_idx),
+        right_idx=int(right_idx),
+        token_dim=len(__token_str))
+    # pairs of token and class
+    return list(zip(__token_str, __token_cls))
+
+# PLOTS ########################################################################
+
 def update_router_plot(
     token_idx: float,
     router_data: torch.Tensor,
@@ -193,25 +218,6 @@ def update_router_plot(
     # update each component => (highlight, plot) states
     return __figure
 
-def update_text_highlight(
-    token_idx: float,
-    output_data: torch.Tensor,
-    tokenizer_obj: object,
-) -> list:
-    # exit if some values are missing
-    if (output_data is None) or (len(output_data) == 0):
-        return None
-    # detokenize the IDs
-    __token_str = psaiops.common.tokenizer.postprocess_token_ids(
-        tokenizer_obj=tokenizer_obj,
-        token_data=output_data)
-    # list of string classes
-    __token_cls = psaiops.score.router.lib.postprocess_token_cls(
-        token_idx=int(token_idx),
-        token_dim=len(__token_str))
-    # pairs of token and class
-    return list(zip(__token_str, __token_cls))
-
 # APP ##########################################################################
 
 def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=MODEL) -> gradio.Blocks:
@@ -223,7 +229,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
         # adapt the event handlers
         __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
-        __highlight = functools.partial(update_text_highlight, tokenizer_obj=__tokenizer)
+        __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
@@ -251,7 +257,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         ).then(
         # update the token highlight when the output data changes
             fn=__highlight,
-            inputs=[__fields[__k] for __k in ['left_position_block', 'output_state']],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['highlight_block'],
             queue=False,
             show_progress='full'
@@ -298,7 +304,13 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         # update the token highlight when the token focus changes
         __fields['left_position_block'].change(
             fn=__highlight,
-            inputs=[__fields[__k] for __k in ['left_position_block', 'output_state']],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
+            outputs=__fields['highlight_block'],
+            queue=False,
+            show_progress='hidden')
+        __fields['right_position_block'].change(
+            fn=__highlight,
+            inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['highlight_block'],
             queue=False,
             show_progress='hidden')
