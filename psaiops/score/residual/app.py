@@ -417,7 +417,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             queue=False,
             show_progress='hidden'
         ).then(
-        # update the plot when the router data changes
+        # update the plot when the hidden data changes
             fn=update_hidden_plot,
             inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['left_plot_block'],
