@@ -225,23 +225,16 @@ def update_router_plot(
 
 # APP ##########################################################################
 
-def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=MODEL) -> gradio.Blocks:
+def create_app(compute: callable, highlight: callable, title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=MODEL) -> gradio.Blocks:
     __fields = {}
     with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
-        # load the model
-        __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        __model = psaiops.common.model.get_model(name=model, device=__device)
-        __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
-        # adapt the event handlers
-        __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
-        __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
         __fields.update(create_state())
         # update the data after clicking process
         __fields['process_block'].click(
-            fn=__compute,
+            fn=compute,
             inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'input_block']],
             outputs=[__fields[__k] for __k in ['output_state', 'router_state']],
             queue=False,
@@ -261,7 +254,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             show_progress='hidden'
         ).then(
         # update the token highlight when the output data changes
-            fn=__highlight,
+            fn=highlight,
             inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['highlight_block'],
             queue=False,
@@ -308,13 +301,13 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             show_progress='hidden')
         # update the token highlight when the token focus changes
         __fields['left_position_block'].change(
-            fn=__highlight,
+            fn=highlight,
             inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['highlight_block'],
             queue=False,
             show_progress='hidden')
         __fields['right_position_block'].change(
-            fn=__highlight,
+            fn=highlight,
             inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['highlight_block'],
             queue=False,
@@ -325,5 +318,13 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
 # MAIN #########################################################################
 
 if __name__ == '__main__':
-    __app = create_app()
+    # load the model
+    __device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    __model = psaiops.common.model.get_model(name=MODEL, device=__device)
+    __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=MODEL, device=__device)
+    # adapt the event handlers
+    __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
+    __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
+    # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
+    __app = create_app(compute=__compute, highlight=__highlight)
     __app.launch(share=True, debug=True)
