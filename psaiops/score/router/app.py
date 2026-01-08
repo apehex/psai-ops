@@ -184,7 +184,7 @@ def update_token_focus(
     tokenizer_obj: object,
 ) -> list:
     # exit if some values are missing
-    if (left_idx is None) or (right_idx is None) or (output_data is None) or (len(output_data) == 0):
+    if (tokenizer_obj is None) or (left_idx is None) or (right_idx is None) or (output_data is None) or (len(output_data) == 0):
         return None
     # detokenize the IDs
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
