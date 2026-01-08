@@ -123,12 +123,17 @@ def update_position_range(
     token_num: float,
     output_data: torch.Tensor,
 ) -> dict:
+    # exit if values are missing
+    if (current_val is None) or (token_num is None):
+        return None
     # take the generated tokens into account
     __max = int(token_num) - 1 if (output_data is None) else int(output_data.shape[-1])
     # keep the previous value if possible
     __val = min(int(current_val), __max)
     # return a gradio update dictionary
     return gradio.update(maximum=__max, value=__val)
+
+# GENERATE #####################################################################
 
 def update_computation_state(
     token_num: float,
@@ -146,7 +151,7 @@ def update_computation_state(
     __prompt_str = prompt_str.strip()
     __device_str = device_str if (device_str in ['cpu', 'cuda']) else 'cpu'
     # exit if some values are missing
-    if (not __prompt_str) or (model_obj is None) or (tokenizer_obj is None):
+    if (not __prompt_str) or (model_obj is None) or (tokenizer_obj is None) or (token_num is None) or (topk_num is None) or (topp_num is None):
         return (torch.empty(0), torch.empty(0))
     # dictionary {'input_ids': _, 'attention_mask': _}
     __input_data = psaiops.common.tokenizer.preprocess_token_ids(
@@ -200,7 +205,7 @@ def update_router_plot(
     router_data: torch.Tensor,
 ) -> tuple:
     # exit if some values are missing
-    if (router_data is None) or (len(router_data) == 0):
+    if (token_idx is None) or (router_data is None) or (len(router_data) == 0):
         return None
     # reduce the batch and token axes => tensor (L, E)
     __plot_data = psaiops.score.router.lib.reduce_router_weights(
