@@ -365,20 +365,20 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['highlight_block'],
             queue=False,
-            show_progress='hidden'
+            show_progress='full'
         ).then(
         # update the plot when the hidden data changes
             fn=update_hidden_plot,
             inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['left_plot_block'],
             queue=False,
-            show_progress='hidden'
+            show_progress='full'
         ).then(
             fn=update_hidden_plot,
             inputs=[__fields[__k] for __k in ['right_position_block', 'right_layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['right_plot_block'],
             queue=False,
-            show_progress='hidden')
+            show_progress='full')
         # update the range of the position slider when the settings change
         __fields['tokens_block'].change(
             fn=update_position_range,
