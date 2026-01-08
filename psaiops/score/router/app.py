@@ -19,10 +19,12 @@ MODEL = 'openai/gpt-oss-20b'
 
 # COLORS #######################################################################
 
-def create_color_map() -> dict:
+def create_selection_cmap() -> dict:
     return {
         '0': '#000000',
-        '1': '#004444',}
+        '1': '#004444',
+        '2': '#444400',
+        '3': '#440044',}
 
 # INTRO ########################################################################
 
@@ -55,22 +57,22 @@ def create_inputs_block() -> dict:
 
 # PLOTS ########################################################################
 
-def create_plot_block() -> dict:
-    __plot = gradio.Plot(label='Router', scale=1)
-    return {'plot_block': __plot,}
+def create_plot_block(label: str='Router', prefix: str='') -> dict:
+    __plot = gradio.Plot(label=label, scale=1)
+    return {prefix + 'plot_block': __plot,}
 
 # OUTPUTS ######################################################################
 
-def create_outputs_block() -> dict:
-    __output = gradio.HighlightedText(label='Output', value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=False, color_map=create_color_map(), elem_classes='white-text')
-    return {'output_block': __output}
+def create_highlight_block(label: str='Output', prefix: str='', cmap: dict=create_selection_cmap()) -> dict:
+    __output = gradio.HighlightedText(label=label, value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=False, color_map=cmap, elem_classes='white-text')
+    return {prefix + 'highlight_block': __output}
 
 # SELECT #######################################################################
 
-def create_selection_block() -> dict:
+def create_selection_block(label: str='Token', prefix: str='') -> dict:
     # __play = gradio.Button('>', variant='primary', size='lg', scale=1, interactive=True)
-    __position = gradio.Slider(label='Token', value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
-    return {'position_block': __position,}
+    __position = gradio.Slider(label=label, value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
+    return {prefix + 'position_block': __position,}
 
 # ACTIONS ######################################################################
 
@@ -96,11 +98,13 @@ def create_layout(intro: str=INTRO) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block())
             with gradio.Row(equal_height=True):
-                __fields.update(create_plot_block())
+                __fields.update(create_highlight_block())
             with gradio.Row(equal_height=True):
-                __fields.update(create_outputs_block())
+                __fields.update(create_plot_block(label='Left', prefix='left_'))
+                __fields.update(create_plot_block(label='Right', prefix='right_'))
             with gradio.Row(equal_height=True):
-                __fields.update(create_selection_block())
+                __fields.update(create_selection_block(label='Token', prefix='left_'))
+                __fields.update(create_selection_block(label='Token', prefix='right_'))
             with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
         with gradio.Tab('Settings') as __settings_tab:
@@ -130,7 +134,6 @@ def update_computation_state(
     token_num: float,
     topk_num: float,
     topp_num: float,
-    token_idx: float,
     prompt_str: str,
     device_str: str,
     model_obj: object,
@@ -140,7 +143,6 @@ def update_computation_state(
     __token_num = max(1, min(128, int(token_num)))
     __topk_num = max(1, min(8, int(topk_num)))
     __topp_num = max(0.0, min(1.0, float(topp_num)))
-    __token_idx = max(-1, min(__token_num, int(token_idx)))
     __prompt_str = prompt_str.strip()
     __device_str = device_str if (device_str in ['cpu', 'cuda']) else 'cpu'
     # exit if some values are missing
@@ -229,47 +231,75 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
         # update the data after clicking process
         __fields['process_block'].click(
             fn=__compute,
-            inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'position_block', 'input_block']],
+            inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'input_block']],
             outputs=[__fields[__k] for __k in ['output_state', 'router_state']],
             queue=False,
-            show_progress='full').then(
-        # update the range of the position slider when the output changes
+            show_progress='full'
+        ).then(
+        # update the range of the position sliders when the output changes
             fn=update_position_range,
-            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block', 'output_state']],
-            outputs=__fields['position_block'],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['left_position_block'],
             queue=False,
-            show_progress='hidden').then(
+            show_progress='hidden'
+        ).then(
+            fn=update_position_range,
+            inputs=[__fields[__k] for __k in ['right_position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['right_position_block'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
         # update the token highlight when the output data changes
             fn=__highlight,
-            inputs=[__fields[__k] for __k in ['position_block', 'output_state']],
-            outputs=__fields['output_block'],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'output_state']],
+            outputs=__fields['highlight_block'],
             queue=False,
-            show_progress='full').then(
+            show_progress='full'
+        ).then(
         # update the plot when the router data changes
             fn=update_router_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'router_state']],
-            outputs=__fields['plot_block'],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'router_state']],
+            outputs=__fields['left_plot_block'],
+            queue=False,
+            show_progress='full'
+        ).then(
+            fn=update_router_plot,
+            inputs=[__fields[__k] for __k in ['right_position_block', 'router_state']],
+            outputs=__fields['right_plot_block'],
             queue=False,
             show_progress='full')
-        # update the range of the position slider when the settings change
+        # update the range of the position sliders when the settings change
         __fields['tokens_block'].change(
             fn=update_position_range,
-            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block', 'output_state']],
-            outputs=__fields['position_block'],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['left_position_block'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
+            fn=update_position_range,
+            inputs=[__fields[__k] for __k in ['right_position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['right_position_block'],
             queue=False,
             show_progress='hidden')
-        # update the plot when the focus changes
-        __fields['position_block'].change(
+        # update the left plot when the focus changes
+        __fields['left_position_block'].change(
             fn=update_router_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'router_state']],
-            outputs=__fields['plot_block'],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'router_state']],
+            outputs=__fields['left_plot_block'],
+            queue=False,
+            show_progress='full')
+        # update the left plot when the focus changes
+        __fields['right_position_block'].change(
+            fn=update_router_plot,
+            inputs=[__fields[__k] for __k in ['right_position_block', 'router_state']],
+            outputs=__fields['right_plot_block'],
             queue=False,
             show_progress='full')
         # update the token highlight when the token focus changes
-        __fields['position_block'].change(
+        __fields['left_position_block'].change(
             fn=__highlight,
-            inputs=[__fields[__k] for __k in ['position_block', 'output_state']],
-            outputs=__fields['output_block'],
+            inputs=[__fields[__k] for __k in ['left_position_block', 'output_state']],
+            outputs=__fields['highlight_block'],
             queue=False,
             show_progress='hidden')
         # gradio application
