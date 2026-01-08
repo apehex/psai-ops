@@ -298,14 +298,14 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             inputs=[__fields[__k] for __k in ['left_position_block', 'router_state']],
             outputs=__fields['left_plot_block'],
             queue=False,
-            show_progress='full')
+            show_progress='hidden')
         # update the left plot when the focus changes
         __fields['right_position_block'].change(
             fn=update_router_plot,
             inputs=[__fields[__k] for __k in ['right_position_block', 'router_state']],
             outputs=__fields['right_plot_block'],
             queue=False,
-            show_progress='full')
+            show_progress='hidden')
         # update the token highlight when the token focus changes
         __fields['left_position_block'].change(
             fn=__highlight,
