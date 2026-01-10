@@ -118,9 +118,9 @@ def update_position_range(value: float, tokens: float) -> dict:
 
 # APP ##########################################################################
 
-def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=MODEL) -> gradio.Blocks:
+def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.Blocks:
     __fields = {}
-    with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
+    with gradio.Blocks(title=title) as __app:
         # load the model
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
         # __model = psaiops.common.model.get_model(name=model, device=__device)
@@ -149,4 +149,4 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
 
 if __name__ == '__main__':
     __app = create_app()
-    __app.launch(share=True, debug=True)
+    __app.launch(theme=gradio.themes.Soft(), css=STYLE, share=True, debug=True)

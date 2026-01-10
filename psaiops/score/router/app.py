@@ -225,9 +225,9 @@ def update_router_plot(
 
 # APP ##########################################################################
 
-def create_app(compute: callable, highlight: callable, title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=MODEL) -> gradio.Blocks:
+def create_app(compute: callable, highlight: callable, title: str=TITLE, intro: str=INTRO) -> gradio.Blocks:
     __fields = {}
-    with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
+    with gradio.Blocks(title=title) as __app:
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
@@ -327,4 +327,4 @@ if __name__ == '__main__':
     __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
     __app = create_app(compute=__compute, highlight=__highlight)
-    __app.launch(share=True, debug=True)
+    __app.launch(theme=gradio.themes.Soft(), css=STYLE, share=True, debug=True)
