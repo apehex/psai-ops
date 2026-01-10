@@ -105,6 +105,7 @@ def create_layout(intro: str=INTRO) -> dict:
             __fields.update({'main_tab': __main_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block())
+            with gradio.Row(equal_height=True):
                 __fields.update(create_outputs_block())
             with gradio.Row(equal_height=True):
                 __fields.update(create_selection_block())
