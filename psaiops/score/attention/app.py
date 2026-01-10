@@ -244,15 +244,9 @@ def update_text_highlight(
 
 # APP ##########################################################################
 
-def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=MODEL) -> gradio.Blocks:
+def create_app(compute: callable, title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=MODEL) -> gradio.Blocks:
     __fields = {}
     with gradio.Blocks(theme=gradio.themes.Soft(), title=title, css=style) as __app:
-        # load the model
-        __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        __model = psaiops.common.model.get_model(name=model, device=__device)
-        __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
-        # adapt the computing function
-        __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
@@ -271,7 +265,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
             queue=False,
             show_progress='hidden')
         __fields['process_block'].click(
-            fn=__compute,
+            fn=compute,
             inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'position_block', 'layer_block', 'head_block', 'input_block']],
             outputs=[__fields[__k] for __k in ['output_block', 'input_state', 'output_state', 'attention_state']],
             queue=False,
@@ -300,5 +294,12 @@ def create_app(title: str=TITLE, intro: str=INTRO, style: str=STYLE, model: str=
 # MAIN #########################################################################
 
 if __name__ == '__main__':
-    __app = create_app()
+    # load the model
+    __device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    __model = psaiops.common.model.get_model(name=MODEL, device=__device)
+    __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=MODEL, device=__device)
+    # adapt the computing function
+    __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
+    # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
+    __app = create_app(compute=__compute)
     __app.launch(share=True, debug=True)
