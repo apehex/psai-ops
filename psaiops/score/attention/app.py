@@ -61,7 +61,7 @@ def create_target_block() -> dict:
 # INPUTS #######################################################################
 
 def create_inputs_block() -> dict:
-    __input = gradio.Textbox(label='Prompt', value='', placeholder='A string of tokens to score.', lines=4, scale=1, show_copy_button=True, interactive=True)
+    __input = gradio.Textbox(label='Prompt', value='', placeholder='A string of tokens to score.', lines=4, scale=1, interactive=True)
     return {'input_block': __input}
 
 # OUTPUTS ######################################################################
@@ -190,7 +190,7 @@ def update_computation_state(
         # detokenize the IDs
         __tokens = psaiops.common.tokenizer.postprocess_token_ids(
             tokenizer_obj=tokenizer_obj,
-            token_obj=__output_data)
+            token_data=__output_data)
         # update each component => (input, output, attention, highligh) states
         return (
             list(zip(__tokens, __labels)),
