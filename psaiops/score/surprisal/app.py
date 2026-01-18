@@ -8,13 +8,13 @@ import matplotlib.pyplot
 
 import psaiops.common.model
 import psaiops.common.tokenizer
-import psaiops.score.residual.lib
+import psaiops.score.surprisal.lib
 
 # META #########################################################################
 
 STYLE = '''.white-text span { color: white; }'''
-TITLE = '''Visualization Of Residuals'''
-INTRO = '''Plot the hidden states for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
+TITLE = '''Surprisal Scoring'''
+INTRO = '''Plot the following metrics to measure how unexpected each token is:\n- the rank of each token among the output logits shows how likely it is according to the LLM\n- the KL divergence between the final residuals and those at depth L compares the contributions of the prefix and the suffix models'''
 
 MODEL = 'openai/gpt-oss-20b'
 
@@ -56,11 +56,7 @@ def create_sampling_block() -> dict:
 # DATAVIZ ######################################################################
 
 def create_visualization_block() -> dict:
-    __3d = gradio.Slider(label='3D', value=1, minimum=0, maximum=1, step=1, scale=1, interactive=True)
-    __points = gradio.Slider(label='Points', value=128, minimum=32, maximum=2880, step=32, scale=1, interactive=True)
-    return {
-        'axes_block': __3d,
-        'points_block': __points,}
+    return {}
 
 # INPUTS #######################################################################
 
@@ -74,11 +70,11 @@ def create_plot_block(label: str='Residuals', prefix: str='') -> dict:
     __plot = gradio.Plot(label=label, scale=1)
     return {prefix + 'plot_block': __plot,}
 
-# OUTPUTS ######################################################################
+# HIGHLIGHT ####################################################################
 
 def create_highlight_block(label: str='Output', prefix: str='', cmap: dict=create_selection_cmap()) -> dict:
-    __output = gradio.HighlightedText(label=label, value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=False, color_map=cmap, elem_classes='white-text')
-    return {prefix + 'highlight_block': __output}
+    __highlight = gradio.HighlightedText(label=label, value='', scale=1, interactive=False, show_legend=False, show_inline_category=False, combine_adjacent=False, color_map=cmap, elem_classes='white-text')
+    return {prefix + 'highlight_block': __highlight}
 
 # SELECT #######################################################################
 
@@ -110,24 +106,22 @@ def create_layout(intro: str=INTRO) -> dict:
     __fields = {}
     __fields.update(create_intro_block(intro=intro))
     with gradio.Tabs():
-        with gradio.Tab('Residuals') as __main_tab:
+        with gradio.Tab('Surprisal') as __main_tab:
             __fields.update({'main_tab': __main_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block())
             with gradio.Row(equal_height=True):
-                __fields.update(create_highlight_block())
+                __fields.update(create_highlight_block(label='Rank By Token', prefix='rank_', cmap=create_score_cmap()))
+                __fields.update(create_plot_block(label='Rank By Position', prefix='rank_'))
             with gradio.Row(equal_height=True):
-                __fields.update(create_plot_block(label='Left', prefix='left_'))
-                __fields.update(create_plot_block(label='Right', prefix='right_'))
+                __fields.update(create_highlight_block(label='Prob By Token', prefix='prob_', cmap=create_score_cmap()))
+                __fields.update(create_plot_block(label='Prob By Position', prefix='prob_'))
             with gradio.Row(equal_height=True):
-                __fields.update(create_highlight_block(label='Score', prefix='left_', cmap=create_score_cmap()))
-                __fields.update(create_highlight_block(label='Score', prefix='right_', cmap=create_score_cmap()))
+                __fields.update(create_highlight_block(label='KL By Token', prefix='kl_', cmap=create_score_cmap()))
+                __fields.update(create_plot_block(label='KL By Layer', prefix='kl_'))
             with gradio.Row(equal_height=True):
-                __fields.update(create_token_selection_block(label='Token', prefix='left_'))
-                __fields.update(create_token_selection_block(label='Token', prefix='right_'))
-            with gradio.Row(equal_height=True):
-                __fields.update(create_layer_selection_block(label='Layer', prefix='left_'))
-                __fields.update(create_layer_selection_block(label='Layer', prefix='right_'))
+                __fields.update(create_token_selection_block(label='Token'))
+                __fields.update(create_layer_selection_block(label='Layer'))
             with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
         with gradio.Tab('Settings') as __settings_tab:
@@ -180,7 +174,7 @@ def update_computation_state(
         prompt_str=__prompt_str,
         device_str=__device_str)
     # tensor (1, T) and O * L * (1, I, H)
-    __output_data, __hidden_data = psaiops.score.residual.lib.generate_token_ids(
+    __output_data, __hidden_data = psaiops.score.surprisal.lib.generate_token_ids(
         model_obj=model_obj,
         input_ids=__input_data['input_ids'],
         attention_mask=__input_data['attention_mask'],
@@ -188,7 +182,7 @@ def update_computation_state(
         topk_num=__topk_num,
         topp_num=__topp_num)
     # tensor (1, L, I + O, H)
-    __hidden_data = psaiops.score.residual.lib.merge_hidden_states(
+    __hidden_data = psaiops.score.surprisal.lib.merge_hidden_states(
         hidden_data=__hidden_data)
     # update each component => (highlight, plot) states
     return (
@@ -198,8 +192,7 @@ def update_computation_state(
 # HIGHLIGHT ####################################################################
 
 def update_token_focus(
-    left_idx: float,
-    right_idx: float,
+    token_idx: float,
     output_data: torch.Tensor,
     tokenizer_obj: object,
 ) -> list:
@@ -211,9 +204,8 @@ def update_token_focus(
         tokenizer_obj=tokenizer_obj,
         token_data=output_data)
     # list of string classes
-    __token_cls = psaiops.score.residual.lib.postprocess_focus_cls(
-        left_idx=int(left_idx),
-        right_idx=int(right_idx),
+    __token_cls = psaiops.score.surprisal.lib.postprocess_focus_cls(
+        token_idx=int(token_idx),
         token_dim=len(__token_str))
     # pairs of token and class
     return list(zip(__token_str, __token_cls))
@@ -258,20 +250,20 @@ def update_2d_plot(
     hidden_data: torch.Tensor,
 ) -> tuple:
     # reduce the layer and token axes (B, L, T, E) => (B, E)
-    __plot_data = psaiops.score.residual.lib.reduce_hidden_states(
+    __plot_data = psaiops.score.surprisal.lib.reduce_hidden_states(
         hidden_data=hidden_data,
         layer_idx=int(layer_idx),
         token_idx=int(token_idx),
         axes_idx=(1, 2))
     # rescale the data to [-1; 1] (B, E)
-    __plot_data = psaiops.score.residual.lib.rescale_hidden_states(
+    __plot_data = psaiops.score.surprisal.lib.rescale_hidden_states(
         hidden_data=__plot_data)
     # reshape into a 3D tensor by folding E (B, E) => (B, W, H)
-    __plot_data = psaiops.score.residual.lib.reshape_hidden_states(
+    __plot_data = psaiops.score.surprisal.lib.reshape_hidden_states(
         hidden_data=__plot_data,
         layer_idx=-1) # there is no layer axis
     # map the [-1; 1] activations to RGBA colors
-    __plot_data = psaiops.score.residual.lib.color_hidden_states(
+    __plot_data = psaiops.score.surprisal.lib.color_hidden_states(
         hidden_data=__plot_data.numpy())
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
@@ -290,33 +282,33 @@ def update_3d_plot(
     hidden_data: torch.Tensor,
 ) -> tuple:
     # reduce the token axis (B, L, T, E) => (B, L, E)
-    __plot_data = psaiops.score.residual.lib.reduce_hidden_states(
+    __plot_data = psaiops.score.surprisal.lib.reduce_hidden_states(
         hidden_data=hidden_data,
         token_idx=int(token_idx),
         layer_idx=int(layer_idx),
         axes_idx=2)
     # rescale the data to [-1; 1] (B, L, E)
-    __plot_data = psaiops.score.residual.lib.rescale_hidden_states(
+    __plot_data = psaiops.score.surprisal.lib.rescale_hidden_states(
         hidden_data=__plot_data)
     # mask the small activations to improve the plot readability
-    __mask_data = psaiops.score.residual.lib.mask_hidden_states(
+    __mask_data = psaiops.score.surprisal.lib.mask_hidden_states(
         hidden_data=__plot_data,
         topk_num=int(points_num) if int(layer_idx) == -1 else 2 * int(points_num))
     # reshape into a 3D tensor by folding E (B, L, E) => (B, W, H, L)
-    __plot_data = psaiops.score.residual.lib.reshape_hidden_states(
+    __plot_data = psaiops.score.surprisal.lib.reshape_hidden_states(
         hidden_data=__plot_data,
         layer_idx=1)
-    __mask_data = psaiops.score.residual.lib.reshape_hidden_states(
+    __mask_data = psaiops.score.surprisal.lib.reshape_hidden_states(
         hidden_data=__mask_data,
         layer_idx=1)
     # convert to numpy ndarrays
     __plot_data = __plot_data.numpy()
     __mask_data = __mask_data.numpy()
     # map the [-1; 1] activations to RGBA colors
-    __rgb_data = psaiops.score.residual.lib.color_hidden_states(
+    __rgb_data = psaiops.score.surprisal.lib.color_hidden_states(
         hidden_data=__plot_data)
     # map the [-1; 1] activations to point areas
-    __area_data = psaiops.score.residual.lib.size_hidden_states(
+    __area_data = psaiops.score.surprisal.lib.size_hidden_states(
         hidden_data=__plot_data,
         area_min=0.01,
         area_max=16.0,
