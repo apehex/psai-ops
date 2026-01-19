@@ -79,7 +79,6 @@ def create_highlight_block(label: str='Output', prefix: str='', cmap: dict=creat
 # SELECT #######################################################################
 
 def create_token_selection_block(label: str='Token', prefix: str='') -> dict:
-    # __play = gradio.Button('>', variant='primary', size='lg', scale=1, interactive=True)
     __position = gradio.Slider(label=label, value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
     return {prefix + 'position_block': __position,}
 
@@ -111,14 +110,14 @@ def create_layout(intro: str=INTRO) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block())
             with gradio.Row(equal_height=True):
-                __fields.update(create_highlight_block(label='Rank By Token', prefix='rank_', cmap=create_score_cmap()))
-                __fields.update(create_plot_block(label='Rank By Position', prefix='rank_'))
-            with gradio.Row(equal_height=True):
                 __fields.update(create_highlight_block(label='Prob By Token', prefix='prob_', cmap=create_score_cmap()))
                 __fields.update(create_plot_block(label='Prob By Position', prefix='prob_'))
             with gradio.Row(equal_height=True):
-                __fields.update(create_highlight_block(label='KL By Token', prefix='kl_', cmap=create_score_cmap()))
-                __fields.update(create_plot_block(label='KL By Layer', prefix='kl_'))
+                __fields.update(create_highlight_block(label='Rank By Token', prefix='rank_', cmap=create_score_cmap()))
+                __fields.update(create_plot_block(label='Rank By Position', prefix='rank_'))
+            with gradio.Row(equal_height=True):
+                __fields.update(create_highlight_block(label='KL By Token', prefix='jsd_', cmap=create_score_cmap()))
+                __fields.update(create_plot_block(label='KL By Layer', prefix='jsd_'))
             with gradio.Row(equal_height=True):
                 __fields.update(create_token_selection_block(label='Token'))
                 __fields.update(create_layer_selection_block(label='Layer'))
@@ -210,33 +209,53 @@ def update_computation_state(
         __output_data.cpu().float(),
         __hidden_data.cpu().float(),)
 
-# HIGHLIGHT ####################################################################
+# PROB SCORE ###################################################################
 
-def update_token_focus(
+def update_prob_scores(
     token_idx: float,
-    output_data: torch.Tensor,
-    tokenizer_obj: object,
-) -> list:
-    # exit if some values are missing
-    if (output_data is None) or (len(output_data) == 0):
-        return None
-    # detokenize the IDs
-    __token_str = psaiops.common.tokenizer.postprocess_token_ids(
-        tokenizer_obj=tokenizer_obj,
-        token_data=output_data)
-    # list of string classes
-    __token_cls = psaiops.score.surprisal.lib.postprocess_focus_cls(
-        token_idx=int(token_idx),
-        token_dim=len(__token_str))
-    # pairs of token and class
-    return list(zip(__token_str, __token_cls))
-
-# SCORES #######################################################################
-
-def update_token_scores(
     layer_idx: float,
-    output_data: torch.Tensor,
-    hidden_data: torch.Tensor,
+    output_data: object,
+    hidden_data: object,
+    tokenizer_obj: object,
+    model_obj: object,
+) -> list:
+    return []
+
+def update_prob_plot(
+    token_idx: float,
+    layer_idx: float,
+    hidden_data: object,
+    model_obj: object,
+) -> object:
+    return None
+
+# PROB SCORE ###################################################################
+
+def update_rank_scores(
+    token_idx: float,
+    layer_idx: float,
+    output_data: object,
+    hidden_data: object,
+    tokenizer_obj: object,
+    model_obj: object,
+) -> list:
+    return []
+
+def update_rank_plot(
+    token_idx: float,
+    layer_idx: float,
+    hidden_data: object,
+    model_obj: object,
+) -> object:
+    return None
+
+# JSD SCORE ####################################################################
+
+def update_jsd_scores(
+    token_idx: float,
+    layer_idx: float,
+    output_data: object,
+    hidden_data: object,
     tokenizer_obj: object,
     model_obj: object,
 ) -> list:
@@ -263,13 +282,15 @@ def update_token_scores(
     # color each token according to the distance between the distribution at layer L and the final distribution
     return list(zip(__token_str, __token_cls))
 
-# PLOT #########################################################################
-
-def update_2d_plot(
+def update_jsd_plot(
     token_idx: float,
     layer_idx: float,
-    hidden_data: torch.Tensor,
-) -> tuple:
+    hidden_data: object,
+    model_obj: object,
+) -> object:
+    # exit if some values are missing
+    if (token_idx is None) or (layer_idx is None) or (hidden_data is None) or (len(hidden_data) == 0):
+        return None
     # reduce the layer and token axes (B, L, T, E) => (B, E)
     __plot_data = psaiops.score.surprisal.lib.reduce_hidden_states(
         hidden_data=hidden_data,
@@ -296,81 +317,6 @@ def update_2d_plot(
     # update each component => (highlight, plot) states
     return __figure
 
-def update_3d_plot(
-    token_idx: float,
-    layer_idx: float,
-    points_num: float,
-    hidden_data: torch.Tensor,
-) -> tuple:
-    # reduce the token axis (B, L, T, E) => (B, L, E)
-    __plot_data = psaiops.score.surprisal.lib.reduce_hidden_states(
-        hidden_data=hidden_data,
-        token_idx=int(token_idx),
-        layer_idx=int(layer_idx),
-        axes_idx=2)
-    # rescale the data to [-1; 1] (B, L, E)
-    __plot_data = psaiops.score.surprisal.lib.rescale_hidden_states(
-        hidden_data=__plot_data)
-    # mask the small activations to improve the plot readability
-    __mask_data = psaiops.score.surprisal.lib.mask_hidden_states(
-        hidden_data=__plot_data,
-        topk_num=int(points_num) if int(layer_idx) == -1 else 2 * int(points_num))
-    # reshape into a 3D tensor by folding E (B, L, E) => (B, W, H, L)
-    __plot_data = psaiops.score.surprisal.lib.reshape_hidden_states(
-        hidden_data=__plot_data,
-        layer_idx=1)
-    __mask_data = psaiops.score.surprisal.lib.reshape_hidden_states(
-        hidden_data=__mask_data,
-        layer_idx=1)
-    # convert to numpy ndarrays
-    __plot_data = __plot_data.numpy()
-    __mask_data = __mask_data.numpy()
-    # map the [-1; 1] activations to RGBA colors
-    __rgb_data = psaiops.score.surprisal.lib.color_hidden_states(
-        hidden_data=__plot_data)
-    # map the [-1; 1] activations to point areas
-    __area_data = psaiops.score.surprisal.lib.size_hidden_states(
-        hidden_data=__plot_data,
-        area_min=0.01,
-        area_max=16.0,
-        gamma_val=1.6)
-    # format the first sample for a scatter plot
-    __x, __y, __z = numpy.nonzero(__mask_data[0])
-    __c = __rgb_data[0, __x, __y, __z]
-    __s = __area_data[0, __x, __y, __z]
-    # plot the first sample
-    __figure = matplotlib.pyplot.figure()
-    __axes = __figure.add_subplot(1, 1, 1, projection='3d')
-    __axes.scatter(__x, __y, __z, c=__c, s=__s, marker='o', linewidths=0)
-    __figure.tight_layout()
-    # remove the figure for the pyplot register for garbage collection
-    matplotlib.pyplot.close(__figure)
-    # update each component => (highlight, plot) states
-    return __figure
-
-def update_hidden_plot(
-    token_idx: float,
-    layer_idx: float,
-    axes_num: float,
-    points_num: float,
-    hidden_data: torch.Tensor,
-) -> tuple:
-    # exit if some values are missing
-    if (hidden_data is None) or (len(hidden_data) == 0):
-        return None
-    # plot the residuals of a given layer on a 2D heatmap
-    if not axes_num: # 0.0 or 0
-        return update_2d_plot(
-            token_idx=token_idx,
-            layer_idx=layer_idx,
-            hidden_data=hidden_data)
-    # by default, plot the residuals for all the layers in 3D
-    return update_3d_plot(
-        token_idx=token_idx,
-        layer_idx=layer_idx,
-        points_num=points_num,
-        hidden_data=hidden_data)
-
 # APP ##########################################################################
 
 def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.Blocks:
@@ -381,9 +327,14 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
         __model = psaiops.common.model.get_model(name=model, device=__device)
         __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
         # adapt the event handlers
+        # __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
         __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
-        __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
-        __score = functools.partial(update_token_scores, tokenizer_obj=__tokenizer, model_obj=__model)
+        __prob_score = functools.partial(update_prob_scores, tokenizer_obj=__tokenizer, model_obj=__model)
+        __prob_plot = functools.partial(update_prob_plot, model_obj=__model)
+        __rank_score = functools.partial(update_rank_scores, tokenizer_obj=__tokenizer, model_obj=__model)
+        __rank_plot = functools.partial(update_rank_plot, model_obj=__model)
+        __jsd_score = functools.partial(update_jsd_scores, tokenizer_obj=__tokenizer, model_obj=__model)
+        __jsd_plot = functools.partial(update_jsd_plot, model_obj=__model)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
@@ -398,116 +349,77 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
         ).then(
         # update the range of the position sliders when the output changes
             fn=update_position_range,
-            inputs=[__fields[__k] for __k in ['left_position_block', 'tokens_block', 'output_state']],
-            outputs=__fields['left_position_block'],
+            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['position_block'],
             queue=False,
             show_progress='hidden'
         ).then(
-            fn=update_position_range,
-            inputs=[__fields[__k] for __k in ['right_position_block', 'tokens_block', 'output_state']],
-            outputs=__fields['right_position_block'],
+        # update the probability scores when the data changes
+            fn=__prob_score,
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'output_state', 'hidden_state']],
+            outputs=__fields['prob_highlight_block'],
             queue=False,
             show_progress='hidden'
         ).then(
-        # update the token highlight when the output data changes
-            fn=__highlight,
-            inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
-            outputs=__fields['highlight_block'],
+        # update the probability plot when the data changes
+            fn=__prob_plot,
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'hidden_state']],
+            outputs=__fields['prob_plot_block'],
             queue=False,
             show_progress='hidden'
         ).then(
-        # update the left token scores when the output data changes
-            fn=__score,
-            inputs=[__fields[__k] for __k in ['left_layer_block', 'output_state', 'hidden_state']],
-            outputs=__fields['left_highlight_block'],
+        # update the rank scores when the data changes
+            fn=__rank_score,
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'output_state', 'hidden_state']],
+            outputs=__fields['rank_highlight_block'],
             queue=False,
             show_progress='hidden'
         ).then(
-        # update the right token scores when the output data changes
-            fn=__score,
-            inputs=[__fields[__k] for __k in ['right_layer_block', 'output_state', 'hidden_state']],
-            outputs=__fields['right_highlight_block'],
+        # update the rank plot when the data changes
+            fn=__rank_plot,
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'hidden_state']],
+            outputs=__fields['rank_plot_block'],
             queue=False,
             show_progress='hidden'
         ).then(
-        # update the plot when the router data changes
-            fn=update_hidden_plot,
-            inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
-            outputs=__fields['left_plot_block'],
+        # update the JSD scores when the data changes
+            fn=__jsd_score,
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'output_state', 'hidden_state']],
+            outputs=__fields['jsd_highlight_block'],
             queue=False,
             show_progress='hidden'
         ).then(
-            fn=update_hidden_plot,
-            inputs=[__fields[__k] for __k in ['right_position_block', 'right_layer_block', 'axes_block', 'points_block', 'hidden_state']],
-            outputs=__fields['right_plot_block'],
+        # update the JSD plot when the data changes
+            fn=__jsd_plot,
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'hidden_state']],
+            outputs=__fields['jsd_plot_block'],
             queue=False,
             show_progress='hidden')
         # update the range of the position slider when the settings change
         __fields['tokens_block'].change(
             fn=update_position_range,
-            inputs=[__fields[__k] for __k in ['left_position_block', 'tokens_block', 'output_state']],
-            outputs=__fields['left_position_block'],
-            queue=False,
-            show_progress='hidden'
-        ).then(
-            fn=update_position_range,
-            inputs=[__fields[__k] for __k in ['right_position_block', 'tokens_block', 'output_state']],
-            outputs=__fields['right_position_block'],
+            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block', 'output_state']],
+            outputs=__fields['position_block'],
             queue=False,
             show_progress='hidden')
-        # update the left plot when the focus changes
-        __fields['left_position_block'].change(
-            fn=update_hidden_plot,
-            inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
-            outputs=__fields['left_plot_block'],
-            queue=False,
-            show_progress='hidden')
-        __fields['left_layer_block'].change(
-            fn=update_hidden_plot,
-            inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
-            outputs=__fields['left_plot_block'],
-            queue=False,
-            show_progress='hidden'
-        ).then(
-        # update the left token scores when the focus changes
-            fn=__score,
-            inputs=[__fields[__k] for __k in ['left_layer_block', 'output_state', 'hidden_state']],
-            outputs=__fields['left_highlight_block'],
-            queue=False,
-            show_progress='hidden'
-        )
-        # update the right plot when the focus changes
-        __fields['right_position_block'].change(
-            fn=update_hidden_plot,
-            inputs=[__fields[__k] for __k in ['right_position_block', 'right_layer_block', 'axes_block', 'points_block', 'hidden_state']],
-            outputs=__fields['right_plot_block'],
-            queue=False,
-            show_progress='hidden')
-        __fields['right_layer_block'].change(
-            fn=update_hidden_plot,
-            inputs=[__fields[__k] for __k in ['right_position_block', 'right_layer_block', 'axes_block', 'points_block', 'hidden_state']],
-            outputs=__fields['right_plot_block'],
-            queue=False,
-            show_progress='hidden'
-        ).then(
-        # update the right token scores when the focus changes
-            fn=__score,
-            inputs=[__fields[__k] for __k in ['right_layer_block', 'output_state', 'hidden_state']],
-            outputs=__fields['right_highlight_block'],
-            queue=False,
-            show_progress='hidden'
-        )
-        # update the token highlight when the token focus changes
-        __fields['left_position_block'].change(
-            fn=__highlight,
-            inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
+        # update the JSD token scores when the focus changes
+        __fields['layer_block'].change(
+            fn=__jsd_score,
+            inputs=[__fields[__k] for __k in ['layer_block', 'output_state', 'hidden_state']],
             outputs=__fields['highlight_block'],
             queue=False,
             show_progress='hidden')
-        __fields['right_position_block'].change(
-            fn=__highlight,
-            inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
-            outputs=__fields['highlight_block'],
+        # update the JSD plot when the focus changes
+        __fields['position_block'].change(
+            fn=__jsd_plot,
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'hidden_state']],
+            outputs=__fields['jsd_plot_block'],
+            queue=False,
+            show_progress='hidden')
+        __fields['layer_block'].change(
+            fn=__jsd_plot,
+            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'hidden_state']],
+            outputs=__fields['jsd_plot_block'],
             queue=False,
             show_progress='hidden')
         # gradio application
