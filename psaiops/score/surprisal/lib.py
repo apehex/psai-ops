@@ -12,11 +12,11 @@ import mlable.shapes
 @functools.lru_cache(maxsize=32)
 def generate_token_ids(
     model_obj: object,
-    input_ids: torch.Tensor,
+    input_ids: object,
     token_num: int,
     topk_num: int = 4,
     topp_num: float = 0.9,
-    attention_mask: torch.Tensor=None,
+    attention_mask: object=None,
 ) -> tuple:
     # generate completion
     with torch.no_grad():
@@ -39,8 +39,8 @@ def generate_token_ids(
 # MERGE ########################################################################
 
 def merge_hidden_states(
-    hidden_data: torch.Tensor,
-) -> torch.Tensor:
+    hidden_data: object,
+) -> object:
     # parse the inputs
     __token_dim = len(hidden_data)
     __layer_dim = len(hidden_data[0])
@@ -55,11 +55,11 @@ def merge_hidden_states(
 # REDUCE #######################################################################
 
 def reduce_hidden_states(
-    hidden_data: torch.Tensor, # (B, L, T, E)
+    hidden_data: object, # (B, L, T, E)
     layer_idx: int, # -1 => select all layers
     token_idx: int, # -1 => select all tokens
     axes_idx: int=2, # token sequence axis
-) -> torch.Tensor:
+) -> object:
     # parse the hidden states (B, L, T, E)
     __batch_dim, __layer_dim, __token_dim, __hidden_dim = tuple(hidden_data.shape)
     __layer_idx = min(layer_idx, __layer_dim - 1)
@@ -75,8 +75,8 @@ def reduce_hidden_states(
 # RESCALE ######################################################################
 
 def rescale_hidden_states(
-    hidden_data: torch.Tensor, # (B, L, E) or (B, E)
-) -> torch.Tensor:
+    hidden_data: object, # (B, L, E) or (B, E)
+) -> object:
     # compute the scale of the data, layer by layer
     __s = torch.quantile(hidden_data.abs(), q=0.9, dim=-1, keepdim=True)
     # log scaling on large values and linear near 0
@@ -87,9 +87,9 @@ def rescale_hidden_states(
 # RESHAPE ######################################################################
 
 def reshape_hidden_states(
-    hidden_data: torch.Tensor, # (B, L, E) or (B, E)
+    hidden_data: object, # (B, L, E) or (B, E)
     layer_idx: int=1,
-) -> torch.Tensor:
+) -> object:
     # parse the shape
     __shape = tuple(hidden_data.shape)
     # factor the hidden dimension
@@ -104,9 +104,9 @@ def reshape_hidden_states(
 # MASK #########################################################################
 
 def mask_hidden_states(
-    hidden_data: torch.Tensor, # (B, L, E)
+    hidden_data: object, # (B, L, E)
     topk_num: int=128,
-) -> torch.Tensor:
+) -> object:
     # sanitize
     __k = min(topk_num, int(hidden_data.shape[-1]))
     # indices of the topk values
@@ -145,16 +145,16 @@ def size_hidden_states(
 # KL SCORES ####################################################################
 
 def kl_from_logprobs(
-    p_log: torch.Tensor,
-    q_log: torch.Tensor,
-) -> torch.Tensor:
+    p_log: object,
+    q_log: object,
+) -> object:
     # compute the KL div from log probabilities (B, T, E) or (T, E)
     return (p_log.exp() * (p_log - q_log)).sum(dim=-1)
 
 def jsd_from_logits(
-    final_logits: torch.Tensor,
-    prefix_logits: torch.Tensor,
-) -> torch.Tensor:
+    final_logits: object,
+    prefix_logits: object,
+) -> object:
     # compute the log probs from logits (B, T, E) or (T, E)
     __p = torch.log_softmax(final_logits.float(), dim=-1)
     __q = torch.log_softmax(prefix_logits.float(), dim=-1)
@@ -178,6 +178,7 @@ def postprocess_focus_cls(
     return [str(__l) for __l in __token_cls]
 
 def postprocess_score_cls(
-    score_data: torch.Tensor
+    score_data: object,
+    scale_val: float=1.0,
 ) -> list:
-    return [str(__s) for __s in score_data.numpy().tolist()]
+    return [str(int(__s * scale_val)) for __s in score_data.numpy().tolist()]
