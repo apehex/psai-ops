@@ -231,23 +231,67 @@ def update_prob_plot(
 
 # PROB SCORE ###################################################################
 
+def compute_rank_metrics(
+    output_data: object,
+    hidden_data: object,
+    head_obj: object,
+) -> object:
+    # select the relevant tokens indices
+    __indices = output_data[0]
+    # select the relevant hidden states
+    __logits = hidden_data[0, -1, :, :]
+    # compute the logits
+    __logits = head_obj(__logits).detach()
+    # fetch the logits of the tokens chosen in the actual output
+    __chosen = logits.gather(dim=-1, index=__indices[1:].unsqueeze(-1))
+    # count the tokens with higher logits
+    return (__logits > __chosen).sum(dim=-1)
+
 def update_rank_scores(
-    token_idx: float,
-    layer_idx: float,
     output_data: object,
     hidden_data: object,
     tokenizer_obj: object,
-    model_obj: object,
+    head_obj: object,
 ) -> list:
-    return []
+    # exit if some values are missing
+    if (output_data is None) or (len(output_data) == 0) or (hidden_data is None) or (len(hidden_data) == 0):
+        return None
+    # detokenize the IDs
+    __token_str = psaiops.common.tokenizer.postprocess_token_ids(
+        tokenizer_obj=tokenizer_obj,
+        token_data=output_data)
+    # compute the rank metric, in [0; V-1]
+    __token_cls = compute_rank_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
+    # scale into a [0; 100] label
+    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls.clamp(min=0.0, max=100.0), scale_val=1.0)
+    # pad with null class for the tokens which have no logit (IE the first token)
+    __token_cls = max(0, len(__token_str) - len(__token_cls)) * ['0'] + __token_cls
+    # color each token according to its rank in the LLM's predictions
+    return list(zip(__token_str, __token_cls))
 
 def update_rank_plot(
-    token_idx: float,
-    layer_idx: float,
+    output_data: object,
     hidden_data: object,
-    model_obj: object,
+    head_obj: object,
 ) -> object:
-    return None
+    # exit if some values are missing
+    if (output_data is None) or (len(output_data) == 0) or (hidden_data is None) or (len(hidden_data) == 0):
+        return None
+    # compute the rank metric, in [0; V-1]
+    __y = compute_rank_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
+    # rescale and convert the data
+    __y = [0] + __y.int().numpy().tolist()
+    # match the metrics with their token position
+    __x = numpy.arange(len(__y))
+    # plot the first sample
+    __figure = matplotlib.pyplot.figure()
+    __axes = __figure.add_subplot(1, 1, 1)
+    __axes.plot(__x, __y, fmt='--')
+    __figure.tight_layout()
+    # remove the figure for the pyplot register for garbage collection
+    matplotlib.pyplot.close(__figure)
+    # update each component => (highlight, plot) states
+    return __figure
 
 # JSD SCORE ####################################################################
 
@@ -331,8 +375,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
         __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
         __prob_score = functools.partial(update_prob_scores, tokenizer_obj=__tokenizer, model_obj=__model)
         __prob_plot = functools.partial(update_prob_plot, model_obj=__model)
-        __rank_score = functools.partial(update_rank_scores, tokenizer_obj=__tokenizer, model_obj=__model)
-        __rank_plot = functools.partial(update_rank_plot, model_obj=__model)
+        __rank_score = functools.partial(update_rank_scores, tokenizer_obj=__tokenizer, head_obj=__head)
+        __rank_plot = functools.partial(update_rank_plot, head_obj=__head)
         __jsd_score = functools.partial(update_jsd_scores, tokenizer_obj=__tokenizer, head_obj=__head, norm_obj=__norm)
         __jsd_plot = functools.partial(update_jsd_plot, head_obj=__head, norm_obj=__norm)
         # create the UI
@@ -370,14 +414,14 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
         ).then(
         # update the rank scores when the data changes
             fn=__rank_score,
-            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'output_state', 'hidden_state']],
+            inputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             outputs=__fields['rank_highlight_block'],
             queue=False,
             show_progress='hidden'
         ).then(
         # update the rank plot when the data changes
             fn=__rank_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'hidden_state']],
+            inputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             outputs=__fields['rank_plot_block'],
             queue=False,
             show_progress='hidden'
