@@ -148,6 +148,27 @@ def update_position_range(
     # return a gradio update dictionary
     return gradio.update(maximum=__max, value=__val)
 
+# HIGHLIGHT ####################################################################
+
+def update_token_focus(
+    token_idx: float,
+    output_data: torch.Tensor,
+    tokenizer_obj: object,
+) -> list:
+    # exit if some values are missing
+    if (output_data is None) or (len(output_data) == 0):
+        return None
+    # detokenize the IDs
+    __token_str = psaiops.common.tokenizer.postprocess_token_ids(
+        tokenizer_obj=tokenizer_obj,
+        token_data=output_data)
+    # list of string classes
+    __token_cls = psaiops.score.surprisal.lib.postprocess_focus_cls(
+        token_idx=int(token_idx),
+        token_dim=len(__token_str))
+    # pairs of token and class
+    return list(zip(__token_str, __token_cls))
+
 # GENERATE #####################################################################
 
 def update_computation_state(

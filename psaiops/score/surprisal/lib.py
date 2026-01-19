@@ -168,18 +168,14 @@ def jsd_from_logits(
 # POSTPROCESS ##################################################################
 
 def postprocess_focus_cls(
-    left_idx: int,
-    right_idx: int,
+    token_idx: int,
     token_dim: int,
 ) -> list:
-    __left_idx = max(-1, min(token_dim, left_idx))
-    __right_idx = max(-1, min(token_dim, right_idx))
-    # class 1 for the token(s) focused on the left, 0 for the rest
-    __left_cls = token_dim * [1] if (__left_idx < 0) else [int(__i == __left_idx) for __i in range(token_dim)]
-    # class 2 for the token(s) focused on the right, 0 for the rest
-    __right_cls = token_dim * [2] if (__right_idx < 0) else [2 * int(__i == __right_idx) for __i in range(token_dim)]
-    # sum the classes so that the overlap has class 3
-    return [str(__l + __r) for __l, __r in zip(__left_cls, __right_cls)]
+    __token_idx = max(-1, min(token_dim, left_idx))
+    # class 1 for the token(s) focused, 0 for the rest
+    __token_cls = token_dim * [1] if (__token_idx < 0) else [int(__i == __token_idx) for __i in range(token_dim)]
+    # format as a label string
+    return [str(__l) for __l in __token_cls]
 
 def postprocess_score_cls(
     score_data: torch.Tensor
