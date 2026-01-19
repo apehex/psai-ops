@@ -206,8 +206,8 @@ def update_computation_state(
         hidden_data=__hidden_data)
     # update each component => (highlight, plot) states
     return (
-        __output_data.cpu().float(),
-        __hidden_data.cpu().float(),)
+        __output_data.cpu(),
+        __hidden_data.cpu(),)
 
 # PROB SCORE ###################################################################
 
@@ -251,66 +251,64 @@ def update_rank_plot(
 
 # JSD SCORE ####################################################################
 
+def compute_jsd_metrics(
+    layer_idx: float,
+    hidden_data: object,
+    head_obj: object,
+    norm_obj: object,
+) -> object:
+    # select the relevant hidden states
+    __final_states = hidden_data[0, -1, :, :]
+    __layer_states = hidden_data[0, int(layer_idx), :, :]
+    # compute the logits
+    __final_logits = head_obj(__final_states).detach()
+    __layer_logits = head_obj(norm_obj(__layer_states)).detach()
+    # compute the JSD metric, in [0; 1]
+    return psaiops.score.surprisal.lib.jsd_from_logits(final_logits=__final_logits, prefix_logits=__layer_logits)
+
 def update_jsd_scores(
-    token_idx: float,
     layer_idx: float,
     output_data: object,
     hidden_data: object,
     tokenizer_obj: object,
-    model_obj: object,
+    head_obj: object,
+    norm_obj: object,
 ) -> list:
     # exit if some values are missing
-    if (output_data is None) or (len(output_data) == 0) or (hidden_data is None) or (len(hidden_data) == 0):
+    if (layer_idx is None) or (output_data is None) or (len(output_data) == 0) or (hidden_data is None) or (len(hidden_data) == 0):
         return None
-    # parse the model meta
-    __device_str = model_obj.lm_head.weight.device
-    __dtype_obj = model_obj.lm_head.weight.dtype
     # detokenize the IDs
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
         token_data=output_data)
-    # select the relevant hidden states
-    __final_states = hidden_data[0, -1, :, :].to(device=__device_str, dtype=__dtype_obj)
-    __layer_states = hidden_data[0, int(layer_idx), :, :].to(device=__device_str, dtype=__dtype_obj)
-    # compute the logits
-    __final_logits = model_obj.lm_head(__final_states).detach().cpu() # already normalized
-    __layer_logits = model_obj.lm_head(model_obj.model.norm(__layer_states)).detach().cpu()
-    # compute the JSD metric
-    __token_jsd = jsd_from_logits(final_logits=__final_logits, prefix_logits=__layer_logits)
+    # compute the JSD metric [0; 1]
+    __token_cls = compute_jsd_metrics(layer_idx=layer_idx, hidden_data=hidden_data, head_obj=head_obj, norm_obj=norm_obj)
     # scale into a [0; 100] label
-    __token_cls = postprocess_score_cls(score_data=__token_jsd)
+    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls, scale_val=100.0)
+    # pad with null class for the tokens which have no logit (IE the first token)
+    __token_cls = max(0, len(__token_str) - len(__token_cls)) * ['0'] + __token_cls
     # color each token according to the distance between the distribution at layer L and the final distribution
     return list(zip(__token_str, __token_cls))
 
 def update_jsd_plot(
-    token_idx: float,
     layer_idx: float,
     hidden_data: object,
-    model_obj: object,
+    head_obj: object,
+    norm_obj: object,
 ) -> object:
     # exit if some values are missing
-    if (token_idx is None) or (layer_idx is None) or (hidden_data is None) or (len(hidden_data) == 0):
+    if (layer_idx is None) or (hidden_data is None) or (len(hidden_data) == 0):
         return None
-    # reduce the layer and token axes (B, L, T, E) => (B, E)
-    __plot_data = psaiops.score.surprisal.lib.reduce_hidden_states(
-        hidden_data=hidden_data,
-        layer_idx=int(layer_idx),
-        token_idx=int(token_idx),
-        axes_idx=(1, 2))
-    # rescale the data to [-1; 1] (B, E)
-    __plot_data = psaiops.score.surprisal.lib.rescale_hidden_states(
-        hidden_data=__plot_data)
-    # reshape into a 3D tensor by folding E (B, E) => (B, W, H)
-    __plot_data = psaiops.score.surprisal.lib.reshape_hidden_states(
-        hidden_data=__plot_data,
-        layer_idx=-1) # there is no layer axis
-    # map the [-1; 1] activations to RGBA colors
-    __plot_data = psaiops.score.surprisal.lib.color_hidden_states(
-        hidden_data=__plot_data.numpy())
+    # compute the JSD metric, in [0; 1] => (T,)
+    __y = compute_jsd_metrics(layer_idx=layer_idx, hidden_data=hidden_data, head_obj=head_obj, norm_obj=norm_obj)
+    # rescale and convert the data
+    __y = (100.0 * __y).float().numpy()
+    # match the metrics with their token position
+    __x = numpy.arange(len(__y))
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1)
-    __axes.imshow(__plot_data[0], vmin=0.0, vmax=1.0, cmap='viridis')
+    __axes.plot(__x, __y, fmt='--')
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
@@ -325,6 +323,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
         # load the model
         __device = 'cuda' if torch.cuda.is_available() else 'cpu'
         __model = psaiops.common.model.get_model(name=model, device=__device)
+        __head = __model.lm_head
+        __norm = __model.model.norm
         __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
         # adapt the event handlers
         # __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
@@ -333,8 +333,8 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
         __prob_plot = functools.partial(update_prob_plot, model_obj=__model)
         __rank_score = functools.partial(update_rank_scores, tokenizer_obj=__tokenizer, model_obj=__model)
         __rank_plot = functools.partial(update_rank_plot, model_obj=__model)
-        __jsd_score = functools.partial(update_jsd_scores, tokenizer_obj=__tokenizer, model_obj=__model)
-        __jsd_plot = functools.partial(update_jsd_plot, model_obj=__model)
+        __jsd_score = functools.partial(update_jsd_scores, tokenizer_obj=__tokenizer, head_obj=__head, norm_obj=__norm)
+        __jsd_plot = functools.partial(update_jsd_plot, head_obj=__head, norm_obj=__norm)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
@@ -384,14 +384,14 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
         ).then(
         # update the JSD scores when the data changes
             fn=__jsd_score,
-            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'output_state', 'hidden_state']],
+            inputs=[__fields[__k] for __k in ['layer_block', 'output_state', 'hidden_state']],
             outputs=__fields['jsd_highlight_block'],
             queue=False,
             show_progress='hidden'
         ).then(
         # update the JSD plot when the data changes
             fn=__jsd_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'hidden_state']],
+            inputs=[__fields[__k] for __k in ['layer_block', 'hidden_state']],
             outputs=__fields['jsd_plot_block'],
             queue=False,
             show_progress='hidden')
@@ -410,15 +410,9 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
             queue=False,
             show_progress='hidden')
         # update the JSD plot when the focus changes
-        __fields['position_block'].change(
-            fn=__jsd_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'hidden_state']],
-            outputs=__fields['jsd_plot_block'],
-            queue=False,
-            show_progress='hidden')
         __fields['layer_block'].change(
             fn=__jsd_plot,
-            inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'hidden_state']],
+            inputs=[__fields[__k] for __k in ['layer_block', 'hidden_state']],
             outputs=__fields['jsd_plot_block'],
             queue=False,
             show_progress='hidden')
