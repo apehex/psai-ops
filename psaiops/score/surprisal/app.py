@@ -404,31 +404,26 @@ def update_jsd_plot(
 
 # APP ##########################################################################
 
-def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.Blocks:
+def create_app(
+    compute: callable,
+    prob_score: callable,
+    prob_plot: callable,
+    rank_score: callable,
+    rank_plot: callable,
+    jsd_score: callable,
+    jsd_plot: callable,
+    title: str=TITLE,
+    intro: str=INTRO
+) -> gradio.Blocks:
     __fields = {}
     with gradio.Blocks(title=title) as __app:
-        # load the model
-        __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        __model = psaiops.common.model.get_model(name=model, device=__device)
-        __head = __model.lm_head
-        __norm = __model.model.norm
-        __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
-        # adapt the event handlers
-        # __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
-        __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
-        __prob_score = functools.partial(update_prob_scores, tokenizer_obj=__tokenizer, head_obj=__head)
-        __prob_plot = functools.partial(update_prob_plot, head_obj=__head)
-        __rank_score = functools.partial(update_rank_scores, tokenizer_obj=__tokenizer, head_obj=__head)
-        __rank_plot = functools.partial(update_rank_plot, head_obj=__head)
-        __jsd_score = functools.partial(update_jsd_scores, tokenizer_obj=__tokenizer, head_obj=__head, norm_obj=__norm)
-        __jsd_plot = functools.partial(update_jsd_plot, head_obj=__head, norm_obj=__norm)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
         __fields.update(create_state())
         # update the data after clicking process
         __fields['process_block'].click(
-            fn=__compute,
+            fn=compute,
             inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'input_block']],
             outputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             queue=False,
@@ -442,42 +437,42 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
             show_progress='hidden'
         ).then(
         # update the probability scores when the data changes
-            fn=__prob_score,
+            fn=prob_score,
             inputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             outputs=__fields['prob_highlight_block'],
             queue=False,
             show_progress='hidden'
         ).then(
         # update the probability plot when the data changes
-            fn=__prob_plot,
+            fn=prob_plot,
             inputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             outputs=__fields['prob_plot_block'],
             queue=False,
             show_progress='hidden'
         ).then(
         # update the rank scores when the data changes
-            fn=__rank_score,
+            fn=rank_score,
             inputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             outputs=__fields['rank_highlight_block'],
             queue=False,
             show_progress='hidden'
         ).then(
         # update the rank plot when the data changes
-            fn=__rank_plot,
+            fn=rank_plot,
             inputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             outputs=__fields['rank_plot_block'],
             queue=False,
             show_progress='hidden'
         ).then(
         # update the JSD scores when the data changes
-            fn=__jsd_score,
+            fn=jsd_score,
             inputs=[__fields[__k] for __k in ['layer_block', 'output_state', 'hidden_state']],
             outputs=__fields['jsd_highlight_block'],
             queue=False,
             show_progress='hidden'
         ).then(
         # update the JSD plot when the data changes
-            fn=__jsd_plot,
+            fn=jsd_plot,
             inputs=[__fields[__k] for __k in ['layer_block', 'hidden_state']],
             outputs=__fields['jsd_plot_block'],
             queue=False,
@@ -491,14 +486,14 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
             show_progress='hidden')
         # update the JSD token scores when the focus changes
         __fields['layer_block'].change(
-            fn=__jsd_score,
+            fn=jsd_score,
             inputs=[__fields[__k] for __k in ['layer_block', 'output_state', 'hidden_state']],
-            outputs=__fields['highlight_block'],
+            outputs=__fields['jsd_highlight_block'],
             queue=False,
             show_progress='hidden')
         # update the JSD plot when the focus changes
         __fields['layer_block'].change(
-            fn=__jsd_plot,
+            fn=jsd_plot,
             inputs=[__fields[__k] for __k in ['layer_block', 'hidden_state']],
             outputs=__fields['jsd_plot_block'],
             queue=False,
@@ -509,5 +504,21 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
 # MAIN #########################################################################
 
 if __name__ == '__main__':
-    __app = create_app()
+    # load the model
+    __device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=MODEL, device=__device)
+    __model = psaiops.common.model.get_model(name=MODEL, device=__device)
+    __norm = __model.model.norm.detach().clone().cpu()
+    __head = __model.lm_head.detach().clone().cpu()
+    # adapt the event handlers
+    # __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
+    __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
+    __prob_score = functools.partial(update_prob_scores, tokenizer_obj=__tokenizer, head_obj=__head)
+    __prob_plot = functools.partial(update_prob_plot, head_obj=__head)
+    __rank_score = functools.partial(update_rank_scores, tokenizer_obj=__tokenizer, head_obj=__head)
+    __rank_plot = functools.partial(update_rank_plot, head_obj=__head)
+    __jsd_score = functools.partial(update_jsd_scores, tokenizer_obj=__tokenizer, head_obj=__head, norm_obj=__norm)
+    __jsd_plot = functools.partial(update_jsd_plot, head_obj=__head, norm_obj=__norm)
+    # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
+    __app = create_app(compute=__compute, prob_score=__prob_score, prob_plot=__prob_plot, rank_score=__rank_score, rank_plot=__rank_plot, jsd_score=__jsd_score, jsd_plot=__jsd_plot)
     __app.launch(theme=gradio.themes.Soft(), css=STYLE, share=True, debug=True)
