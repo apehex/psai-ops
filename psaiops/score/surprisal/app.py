@@ -4,7 +4,7 @@ import gradio
 import numpy
 import torch
 import torch.cuda
-import torch.nn
+import torch.nn.functional
 import matplotlib.pyplot
 
 import psaiops.common.model
@@ -67,7 +67,7 @@ def create_inputs_block(label: str='Prompt') -> dict:
 
 # PLOTS ########################################################################
 
-def create_plot_block(label: str='Residuals', prefix: str='') -> dict:
+def create_plot_block(label: str='Plot', prefix: str='') -> dict:
     __plot = gradio.Plot(label=label, scale=1)
     return {prefix + 'plot_block': __plot,}
 
@@ -222,9 +222,9 @@ def compute_prob_metrics(
     # select the relevant hidden states
     __logits = hidden_data[0, -1, :, :]
     # compute the logits
-    __logits = torch.nn.softmax(head_obj(__logits).detach(), dim=-1)
+    __logits = torch.nn.functional.softmax(head_obj(__logits).detach(), dim=-1)
     # fetch the logits of the tokens chosen in the actual output
-    return logits.gather(dim=-1, index=__indices[1:].unsqueeze(-1)).squeeze(-1)
+    return __logits.gather(dim=-1, index=__indices[1:].unsqueeze(-1)).squeeze(-1)
 
 def update_prob_scores(
     output_data: object,
@@ -242,7 +242,7 @@ def update_prob_scores(
     # compute the rank metric, in [0; V-1]
     __token_cls = compute_prob_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
     # scale into a [0; 100] label
-    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls.clamp(min=0.0, max=1.0), scale_val=100.0)
+    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls.float().clamp(min=0.0, max=1.0), scale_val=100.0)
     # pad with null class for the tokens which have no logit (IE the first token)
     __token_cls = max(0, len(__token_str) - len(__token_cls)) * ['0'] + __token_cls
     # color each token according to its rank in the LLM's predictions
@@ -265,7 +265,7 @@ def update_prob_plot(
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1)
-    __axes.plot(__x, __y, fmt='--')
+    __axes.plot(__x, __y, '--')
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
@@ -286,7 +286,7 @@ def compute_rank_metrics(
     # compute the logits
     __logits = head_obj(__logits).detach()
     # fetch the logits of the tokens chosen in the actual output
-    __chosen = logits.gather(dim=-1, index=__indices[1:].unsqueeze(-1))
+    __chosen = __logits.gather(dim=-1, index=__indices[1:].unsqueeze(-1))
     # count the tokens with higher logits
     return (__logits > __chosen).sum(dim=-1)
 
@@ -306,7 +306,7 @@ def update_rank_scores(
     # compute the rank metric, in [0; V-1]
     __token_cls = compute_rank_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
     # scale into a [0; 100] label
-    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls.clamp(min=0.0, max=100.0), scale_val=1.0)
+    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls.int().clamp(min=0, max=100), scale_val=1)
     # pad with null class for the tokens which have no logit (IE the first token)
     __token_cls = max(0, len(__token_str) - len(__token_cls)) * ['0'] + __token_cls
     # color each token according to its rank in the LLM's predictions
@@ -329,7 +329,7 @@ def update_rank_plot(
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1)
-    __axes.plot(__x, __y, fmt='--')
+    __axes.plot(__x, __y, '--')
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
@@ -371,7 +371,7 @@ def update_jsd_scores(
     # compute the JSD metric [0; 1]
     __token_cls = compute_jsd_metrics(layer_idx=layer_idx, hidden_data=hidden_data, head_obj=head_obj, norm_obj=norm_obj)
     # scale into a [0; 100] label
-    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls, scale_val=100.0)
+    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls.float().clamp(min=0.0, max=1.0), scale_val=100.0)
     # pad with null class for the tokens which have no logit (IE the first token)
     __token_cls = max(0, len(__token_str) - len(__token_cls)) * ['0'] + __token_cls
     # color each token according to the distance between the distribution at layer L and the final distribution
@@ -395,7 +395,7 @@ def update_jsd_plot(
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1)
-    __axes.plot(__x, __y, fmt='--')
+    __axes.plot(__x, __y, '--')
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
