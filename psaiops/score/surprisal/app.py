@@ -217,14 +217,18 @@ def compute_prob_metrics(
     hidden_data: object,
     head_obj: object,
 ) -> object:
-    # select the relevant tokens indices
-    __indices = output_data[0]
-    # select the relevant hidden states
+    # ignore the first token for which there are no corresponding logits
+    __indices = output_data[0][1:].unsqueeze(-1)
+    # select the final hidden states, for the first sample and all tokens => (T, E)
     __logits = hidden_data[0, -1, :, :]
     # compute the logits
     __logits = torch.nn.functional.softmax(head_obj(__logits).detach().float(), dim=-1)
-    # fetch the logits of the tokens chosen in the actual output
-    return __logits.gather(dim=-1, index=__indices[1:].unsqueeze(-1)).squeeze(-1)
+    # compute the maximum probability, for the most likely token
+    __scales = torch.amax(__logits, dim=-1, keepdim=True)
+    # fetch the logits of the tokens chosen in the actual output and scale according to the max probability
+    __logits = __logits.gather(dim=-1, index=__indices) / __scales
+    # remove the extra axis, previously the latent axis and now of dimension 1
+    return __logits.squeeze(-1)
 
 def update_prob_scores(
     output_data: object,
