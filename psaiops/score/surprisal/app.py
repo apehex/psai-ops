@@ -47,8 +47,8 @@ def create_model_block() -> dict:
 
 def create_sampling_block() -> dict:
     __tokens = gradio.Slider(label='Tokens', value=16, minimum=1, maximum=128, step=1, scale=1, interactive=True)
-    __topk = gradio.Slider(label='Top K', value=4, minimum=1, maximum=8, step=1, scale=1, interactive=True)
-    __topp = gradio.Slider(label='Top P', value=0.9, minimum=0.0, maximum=1.0, step=0.1, scale=1, interactive=True)
+    __topk = gradio.Slider(label='Top K', value=4, minimum=1, maximum=16, step=1, scale=1, interactive=True)
+    __topp = gradio.Slider(label='Top P', value=0.9, minimum=0.0, maximum=1.0, step=0.05, scale=1, interactive=True)
     return {
         'tokens_block': __tokens,
         'topk_block': __topk,
@@ -120,7 +120,6 @@ def create_layout(intro: str=INTRO) -> dict:
                 __fields.update(create_highlight_block(label='KL By Token', prefix='jsd_', cmap=create_score_cmap()))
                 __fields.update(create_plot_block(label='KL By Position (Fixed Layer)', prefix='jsd_'))
             with gradio.Row(equal_height=True):
-                __fields.update(create_token_selection_block(label='Token'))
                 __fields.update(create_layer_selection_block(label='Layer'))
             with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
@@ -435,13 +434,6 @@ def create_app(
             queue=False,
             show_progress='full'
         ).then(
-        # update the range of the position sliders when the output changes
-            fn=update_position_range,
-            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block', 'output_state']],
-            outputs=__fields['position_block'],
-            queue=False,
-            show_progress='hidden'
-        ).then(
         # update the probability scores when the data changes
             fn=prob_score,
             inputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
@@ -481,13 +473,6 @@ def create_app(
             fn=jsd_plot,
             inputs=[__fields[__k] for __k in ['layer_block', 'hidden_state']],
             outputs=__fields['jsd_plot_block'],
-            queue=False,
-            show_progress='hidden')
-        # update the range of the position slider when the settings change
-        __fields['tokens_block'].change(
-            fn=update_position_range,
-            inputs=[__fields[__k] for __k in ['position_block', 'tokens_block', 'output_state']],
-            outputs=__fields['position_block'],
             queue=False,
             show_progress='hidden')
         # update the JSD token scores when the focus changes
