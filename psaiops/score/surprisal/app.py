@@ -118,7 +118,7 @@ def create_layout(intro: str=INTRO) -> dict:
                 __fields.update(create_plot_block(label='Rank By Position', prefix='rank_'))
             with gradio.Row(equal_height=True):
                 __fields.update(create_highlight_block(label='KL By Token', prefix='jsd_', cmap=create_score_cmap()))
-                __fields.update(create_plot_block(label='KL By Layer', prefix='jsd_'))
+                __fields.update(create_plot_block(label='KL By Position (Fixed Layer)', prefix='jsd_'))
             with gradio.Row(equal_height=True):
                 __fields.update(create_token_selection_block(label='Token'))
                 __fields.update(create_layer_selection_block(label='Layer'))
@@ -222,7 +222,7 @@ def compute_prob_metrics(
     # select the relevant hidden states
     __logits = hidden_data[0, -1, :, :]
     # compute the logits
-    __logits = torch.nn.functional.softmax(head_obj(__logits).detach(), dim=-1)
+    __logits = torch.nn.functional.softmax(head_obj(__logits).detach().float(), dim=-1)
     # fetch the logits of the tokens chosen in the actual output
     return __logits.gather(dim=-1, index=__indices[1:].unsqueeze(-1)).squeeze(-1)
 
@@ -239,10 +239,12 @@ def update_prob_scores(
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
         token_data=output_data)
-    # compute the rank metric, in [0; V-1]
+    # compute the probabilities ofthe chosen tokens, in [0; V-1]
     __token_cls = compute_prob_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
+    # postprocess
+    __token_cls = 1.0 - __token_cls.clamp(min=0.0, max=1.0)
     # scale into a [0; 100] label
-    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls.float().clamp(min=0.0, max=1.0), scale_val=100.0)
+    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls, scale_val=100.0)
     # pad with null class for the tokens which have no logit (IE the first token)
     __token_cls = max(0, len(__token_str) - len(__token_cls)) * ['0'] + __token_cls
     # color each token according to its rank in the LLM's predictions
@@ -257,9 +259,9 @@ def update_prob_plot(
     if (output_data is None) or (len(output_data) == 0) or (hidden_data is None) or (len(hidden_data) == 0):
         return None
     # compute the rank metric, in [0; V-1]
-    __y = 100.0 * compute_rank_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
+    __y = compute_prob_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
     # rescale and convert the data
-    __y = [0.0] + __y.float().numpy().tolist()
+    __y = [0.0] + (100.0 - 100.0 * __y).numpy().tolist()
     # match the metrics with their token position
     __x = range(len(__y))
     # plot the first sample
@@ -284,11 +286,11 @@ def compute_rank_metrics(
     # select the relevant hidden states
     __logits = hidden_data[0, -1, :, :]
     # compute the logits
-    __logits = head_obj(__logits).detach()
+    __logits = head_obj(__logits).detach().float()
     # fetch the logits of the tokens chosen in the actual output
     __chosen = __logits.gather(dim=-1, index=__indices[1:].unsqueeze(-1))
     # count the tokens with higher logits
-    return (__logits > __chosen).sum(dim=-1)
+    return (__logits > __chosen).int().sum(dim=-1)
 
 def update_rank_scores(
     output_data: object,
@@ -305,8 +307,10 @@ def update_rank_scores(
         token_data=output_data)
     # compute the rank metric, in [0; V-1]
     __token_cls = compute_rank_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
+    # postprocess
+    __token_cls = __token_cls.clamp(min=0, max=100)
     # scale into a [0; 100] label
-    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls.int().clamp(min=0, max=100), scale_val=1)
+    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls, scale_val=1)
     # pad with null class for the tokens which have no logit (IE the first token)
     __token_cls = max(0, len(__token_str) - len(__token_cls)) * ['0'] + __token_cls
     # color each token according to its rank in the LLM's predictions
@@ -323,7 +327,7 @@ def update_rank_plot(
     # compute the rank metric, in [0; V-1]
     __y = compute_rank_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
     # rescale and convert the data
-    __y = [0] + __y.int().numpy().tolist()
+    __y = [0] + __y.numpy().tolist()
     # match the metrics with their token position
     __x = range(len(__y))
     # plot the first sample
@@ -348,8 +352,8 @@ def compute_jsd_metrics(
     __final_states = hidden_data[0, -1, :, :]
     __layer_states = hidden_data[0, int(layer_idx), :, :]
     # compute the logits
-    __final_logits = head_obj(__final_states).detach()
-    __layer_logits = head_obj(norm_obj(__layer_states)).detach()
+    __final_logits = head_obj(__final_states).detach().float()
+    __layer_logits = head_obj(norm_obj(__layer_states)).detach().float()
     # compute the JSD metric, in [0; 1]
     return psaiops.score.surprisal.lib.jsd_from_logits(final_logits=__final_logits, prefix_logits=__layer_logits)
 
@@ -370,8 +374,10 @@ def update_jsd_scores(
         token_data=output_data)
     # compute the JSD metric [0; 1]
     __token_cls = compute_jsd_metrics(layer_idx=layer_idx, hidden_data=hidden_data, head_obj=head_obj, norm_obj=norm_obj)
+    # postprocess
+    __token_cls = __token_cls.clamp(min=0.0, max=1.0)
     # scale into a [0; 100] label
-    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls.float().clamp(min=0.0, max=1.0), scale_val=100.0)
+    __token_cls = psaiops.score.surprisal.lib.postprocess_score_cls(score_data=__token_cls, scale_val=100.0)
     # pad with null class for the tokens which have no logit (IE the first token)
     __token_cls = max(0, len(__token_str) - len(__token_cls)) * ['0'] + __token_cls
     # color each token according to the distance between the distribution at layer L and the final distribution
@@ -389,9 +395,9 @@ def update_jsd_plot(
     # compute the JSD metric, in [0; 1] => (T,)
     __y = compute_jsd_metrics(layer_idx=layer_idx, hidden_data=hidden_data, head_obj=head_obj, norm_obj=norm_obj)
     # rescale and convert the data
-    __y = (100.0 * __y).float().numpy()
+    __y = [0.0] + (100.0 * __y).numpy().tolist()
     # match the metrics with their token position
-    __x = numpy.arange(len(__y))
+    __x = range(len(__y))
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1)
