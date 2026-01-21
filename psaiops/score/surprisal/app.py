@@ -1,3 +1,4 @@
+import copy
 import functools
 
 import gradio
@@ -509,8 +510,8 @@ if __name__ == '__main__':
     __device = 'cuda' if torch.cuda.is_available() else 'cpu'
     __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=MODEL, device=__device)
     __model = psaiops.common.model.get_model(name=MODEL, device=__device)
-    __norm = __model.model.norm.detach().clone().cpu()
-    __head = __model.lm_head.detach().clone().cpu()
+    __norm = copy.deepcopy(__model.model.norm).cpu()
+    __head = copy.deepcopy(__model.lm_head).cpu()
     # adapt the event handlers
     # __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
     __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
