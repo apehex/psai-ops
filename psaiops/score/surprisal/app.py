@@ -447,42 +447,42 @@ def create_app(
             inputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             outputs=__fields['prob_highlight_block'],
             queue=False,
-            show_progress='hidden'
+            show_progress='full'
         ).then(
         # update the probability plot when the data changes
             fn=prob_plot,
             inputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             outputs=__fields['prob_plot_block'],
             queue=False,
-            show_progress='hidden'
+            show_progress='full'
         ).then(
         # update the rank scores when the data changes
             fn=rank_score,
             inputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             outputs=__fields['rank_highlight_block'],
             queue=False,
-            show_progress='hidden'
+            show_progress='full'
         ).then(
         # update the rank plot when the data changes
             fn=rank_plot,
             inputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
             outputs=__fields['rank_plot_block'],
             queue=False,
-            show_progress='hidden'
+            show_progress='full'
         ).then(
         # update the JSD scores when the data changes
             fn=jsd_score,
             inputs=[__fields[__k] for __k in ['layer_block', 'output_state', 'hidden_state']],
             outputs=__fields['jsd_highlight_block'],
             queue=False,
-            show_progress='hidden'
+            show_progress='full'
         ).then(
         # update the JSD plot when the data changes
             fn=jsd_plot,
             inputs=[__fields[__k] for __k in ['layer_block', 'hidden_state']],
             outputs=__fields['jsd_plot_block'],
             queue=False,
-            show_progress='hidden')
+            show_progress='full')
         # update the JSD token scores when the focus changes
         __fields['layer_block'].change(
             fn=jsd_score,
