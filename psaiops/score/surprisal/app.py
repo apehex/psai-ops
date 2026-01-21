@@ -267,7 +267,9 @@ def update_prob_plot(
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1)
-    __axes.plot(__x, __y, '--')
+    __axes.plot(__x, __y, linestyle='--', label='1 - p(token(i))')
+    # display the legend and remove the extra padding
+    __axes.legend()
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
@@ -328,13 +330,15 @@ def update_rank_plot(
     # compute the rank metric, in [0; V-1]
     __y = compute_rank_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
     # rescale and convert the data
-    __y = [0] + __y.numpy().tolist()
+    __y = [0] + __y.clamp(min=0, max=100).numpy().tolist()
     # match the metrics with their token position
     __x = range(len(__y))
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1)
-    __axes.plot(__x, __y, '--')
+    __axes.plot(__x, __y, linestyle='--', label='r(token(i))')
+    # display the legend and remove the extra padding
+    __axes.legend()
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
@@ -408,7 +412,8 @@ def update_jsd_plot(
         __x = range(len(__y))
         # plot the first sample
         __axes.plot(__x, __y, label=f'layer {__l}', linestyle='--' if (__l == int(layer_idx)) else ':')
-    # remove the extra padding
+    # remove the extra padding + show the legend
+    __axes.legend()
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
