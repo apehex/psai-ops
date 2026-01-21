@@ -103,7 +103,7 @@ def postprocess_focus_cls(
     token_idx: int,
     token_dim: int,
 ) -> list:
-    __token_idx = max(-1, min(token_dim, left_idx))
+    __token_idx = max(-1, min(token_dim, token_idx))
     # class 1 for the token(s) focused, 0 for the rest
     __token_cls = token_dim * [1] if (__token_idx < 0) else [int(__i == __token_idx) for __i in range(token_dim)]
     # format as a label string
