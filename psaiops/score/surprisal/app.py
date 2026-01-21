@@ -85,7 +85,7 @@ def create_token_selection_block(label: str='Token', prefix: str='') -> dict:
     return {prefix + 'position_block': __position,}
 
 def create_layer_selection_block(label: str='Layer', prefix: str='') -> dict:
-    __layer = gradio.Slider(label=label, value=-1, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
+    __layer = gradio.Slider(label=label, value=13, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
     return {prefix + 'layer_block': __layer,}
 
 # ACTIONS ######################################################################
@@ -352,12 +352,15 @@ def compute_jsd_metrics(
     head_obj: object,
     norm_obj: object,
 ) -> object:
+    # normalize the indices (in particular -1)
+    __dim = int(hidden_data.shape[1])
+    __idx = int(layer_idx) % __dim
     # select the relevant hidden states
     __final_states = hidden_data[0, -1, :, :]
-    __layer_states = hidden_data[0, int(layer_idx), :, :]
+    __layer_states = hidden_data[0, __idx, :, :]
     # compute the logits
     __final_logits = head_obj(__final_states).detach().float()
-    __layer_logits = head_obj(norm_obj(__layer_states)).detach().float()
+    __layer_logits = head_obj(__final_states if (__idx == __dim) else norm_obj(__layer_states)).detach().float()
     # compute the JSD metric, in [0; 1]
     return psaiops.score.surprisal.lib.jsd_from_logits(final_logits=__final_logits, prefix_logits=__layer_logits)
 
