@@ -211,7 +211,6 @@ def update_computation_state(
 
 # PROB SCORE ###################################################################
 
-@functools.lru_cache(maxsize=64)
 def compute_prob_metrics(
     output_data: object,
     hidden_data: object,
@@ -278,7 +277,6 @@ def update_prob_plot(
 
 # PROB SCORE ###################################################################
 
-@functools.lru_cache(maxsize=64)
 def compute_rank_metrics(
     output_data: object,
     hidden_data: object,
@@ -347,7 +345,6 @@ def update_rank_plot(
 
 # JSD SCORE ####################################################################
 
-@functools.lru_cache(maxsize=64)
 def compute_jsd_metrics(
     layer_idx: float,
     hidden_data: object,

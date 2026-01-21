@@ -144,6 +144,7 @@ def size_hidden_states(
 
 # KL SCORES ####################################################################
 
+@functools.lru_cache(maxsize=32)
 def kl_from_logprobs(
     p_log: object,
     q_log: object,
@@ -151,6 +152,7 @@ def kl_from_logprobs(
     # compute the KL div from log probabilities (B, T, E) or (T, E)
     return (p_log.exp() * (p_log - q_log)).sum(dim=-1)
 
+@functools.lru_cache(maxsize=32)
 def jsd_from_logits(
     final_logits: object,
     prefix_logits: object,
