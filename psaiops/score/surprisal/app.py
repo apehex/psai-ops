@@ -388,19 +388,24 @@ def update_jsd_plot(
     head_obj: object,
     norm_obj: object,
 ) -> object:
+    __dim = int(hidden_data.shape[1])
+    # init the plot
+    __figure = matplotlib.pyplot.figure()
+    __axes = __figure.add_subplot(1, 1, 1)
     # exit if some values are missing
     if (layer_idx is None) or (hidden_data is None) or (len(hidden_data) == 0):
         return None
-    # compute the JSD metric, in [0; 1] => (T,)
-    __y = compute_jsd_metrics(layer_idx=layer_idx, hidden_data=hidden_data, head_obj=head_obj, norm_obj=norm_obj)
-    # rescale and convert the data
-    __y = [0.0] + (100.0 * __y).numpy().tolist()
-    # match the metrics with their token position
-    __x = range(len(__y))
-    # plot the first sample
-    __figure = matplotlib.pyplot.figure()
-    __axes = __figure.add_subplot(1, 1, 1)
-    __axes.plot(__x, __y, '--')
+    # stack the plots for each layer
+    for __l in range(__dim):
+        # compute the JSD metric, in [0; 1] => (T,)
+        __y = compute_jsd_metrics(layer_idx=__l, hidden_data=hidden_data, head_obj=head_obj, norm_obj=norm_obj)
+        # rescale and convert the data
+        __y = [0.0] + (100.0 * __y).numpy().tolist()
+        # match the metrics with their token position
+        __x = range(len(__y))
+        # plot the first sample
+        __axes.plot(__x, __y, label=f'layer {__l}', linestyle='--' if (__l == int(layer_idx)) else ':')
+    # remove the extra padding
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
