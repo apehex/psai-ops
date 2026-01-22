@@ -14,11 +14,66 @@ import psaiops.score.surprisal.lib
 
 # META #########################################################################
 
+MODEL = 'openai/gpt-oss-20b'
+
 STYLE = '''.white-text span { color: white; }'''
 TITLE = '''Surprisal Scoring'''
-INTRO = '''Plot the following metrics to measure how unexpected each token is:\n- the rank of each token among the output logits shows how likely it is according to the LLM\n- the KL divergence between the final residuals and those at depth L compares the contributions of the prefix and the suffix models'''
+INTRO = '''Plot the following metrics to measure how unexpected each token is:\n- the probability of each token\n- the rank of each token among the output logits\n- the KL divergence between the final residuals and those at depth L\n\nSee the tab "docs" for more informations, in particular the exact formulas of the computations.'''
+DOCS = '''
+The metrics displayed in the plots have undergone a few simple postprocessing steps explained below.
 
-MODEL = 'openai/gpt-oss-20b'
+## Probabilities
+
+For each position $i$ in the final sequence of tokens, the probability metric is:
+
+$$\\begin{align}
+P_{{surprisal}}(i+1) = 100 * (1 - \\frac{{P(i, T(i+1))}}{{max_j P(i, j)}})
+\\end{align}$$
+
+Where:
+- `i` is the index for the position along the sequence of tokens
+- `j` is the index for a token in the vocabulary (o200k)
+- `T(i)` is the actual index of the token at position `i`
+- `P(i,j)` is the probability calculated at position `i` that the next token (`i+1`) has index `j` in the vocabulary
+
+It is the complementary of the probability that the token at position `i+1` is the actual token in the output sequence, according to the LLM.
+
+It is scaled by the maximum probability at that position so that the metric can be compared across positions.
+
+IE, it is the probability that the token at position $i+1$ was anything *other* than the actual token in the sequence, hence the surprise.
+
+## Ranks
+
+The token rank is a little more straightforward: it counts the number of tokens that are more probable than each token in the final sequence.
+
+And the metric is clamped to `[0; 100]` for readability.
+
+## KL Divergence
+
+This final metric does not evaluate the tokens but rather the layers.
+
+It is the Jensen–Shannon divergence (JSD) between the distribution of logits obtained from the final hidden states and those computed from the hidden states and the depth L:
+
+$$\\begin{align}
+JSD(i) = \\frac{{1}}{{2}} D(P_{{-1}}(i) \\parallel M_{{l}}(i)) + \\frac{{1}}{{2}} D(P_{{l}}(i) \\parallel M_{{l}}(i))
+\\end{align}$$
+
+Where:
+
+$$\\begin{align}
+P_{{l}}(i) &= Softmax(Head(H_l(i))) \\\\
+M_{{l}}(i) &= \\frac{{1}}{{2}} (P_{{-1}}(i) + P_{{l}}(i))
+\\end{align}$$
+
+And `D(P || Q)` is the KL divergence between the distributions `P` and `Q`.
+
+This metrics compares the contributions of the prefix and the suffix models, token by token:
+how much of the final probabilities is accounted for in the first $l$ layers and how much is added
+
+Some tokens like syntax are easier to predict and are already predicted from the earlier layers, while other take the full forward pass to be determined.
+
+For a given position in the output, the metric tends to improve from layer to layer almost everywhere:
+the contributions of the layers do stack, and there is rarely a contribution that goes opposes the final prediction.'''
 
 # COLORS #######################################################################
 
@@ -34,9 +89,9 @@ def create_score_cmap() -> dict:
 
 # INTRO ########################################################################
 
-def create_intro_block(intro: str) -> dict:
-    __intro = gradio.Markdown(intro, line_breaks=True)
-    return {'intro_block': __intro}
+def create_text_block(text: str) -> dict:
+    __text = gradio.Markdown(text, line_breaks=True)
+    return {'text_block': __text}
 
 # MODEL ########################################################################
 
@@ -103,9 +158,9 @@ def create_state() -> dict:
 
 # LAYOUT #######################################################################
 
-def create_layout(intro: str=INTRO) -> dict:
+def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
     __fields = {}
-    __fields.update(create_intro_block(intro=intro))
+    __fields.update(create_text_block(text=intro))
     with gradio.Tabs():
         with gradio.Tab('Surprisal') as __main_tab:
             __fields.update({'main_tab': __main_tab})
@@ -132,6 +187,9 @@ def create_layout(intro: str=INTRO) -> dict:
                 __fields.update(create_sampling_block())
             with gradio.Row(equal_height=True):
                 __fields.update(create_visualization_block())
+        with gradio.Tab('Docs') as __docs_tab:
+            __fields.update({'docs_tab': __docs_tab})
+            __fields.update(create_text_block(text=docs))
     return __fields
 
 # EVENTS #######################################################################
