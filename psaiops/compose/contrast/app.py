@@ -11,11 +11,38 @@ import psaiops.compose.contrast.lib
 
 # META #########################################################################
 
+MODEL = 'openai/gpt-oss-20b'
+
 STYLE = '''.giga-text input { font-size: 32px; }'''
 TITLE = '''Contrastive Steering'''
-INTRO = '''Add a delta of activation to a prompt to steer the model output in a specific latent direction.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
+INTRO = '''Add a delta of activation to a prompt to steer the model output in a specific latent direction.\nUnder construction, only "openai/gpt-oss-20b" is available for now.\nSee the tab "docs" for more details on the implementation and formulas.'''
+DOCS = '''Given:
+- a "positive" prompt `T^+`
+- a "negative" prompt `T^-`
+- another - possibly unrelated - `T`
+- 2 balancing factors alpha and beta
+- an integer index `l`
+- a model split in 2 parts:
+    - the prefix model `P_l` with all the layers up to the depth `l`
+    - and the suffix model `S_l` made of the rest of the layers
 
-MODEL = 'openai/gpt-oss-20b'
+The activations at depth `l` for the two contrastive prompts are:
+
+$$\\begin{align}
+H^{{+}}_{{l}} &= P_l (T^{{+}}) \\\\
+H^{{-}}_{{l}} &= P_l (T^{{-}}) \\\\
+\\end{align}$$
+
+The difference between these two prompts represents a meaningful direction that is added to the third prompt to alter it in a specific manner:
+
+$$\\begin{align}
+H_{{l}} = \\alpha P_l (T) + \\beta (H^{{+}}_{{l}} - H^{{-}}_{{l}})
+\\end{align}
+
+More specifically, the difference is:
+- masked along the sequence axis to only keep the tokens that differ between the two prompts
+- and averaged along this same axis 
+'''
 
 # COLORS #######################################################################
 
@@ -26,9 +53,9 @@ def create_color_map() -> dict:
 
 # INTRO ########################################################################
 
-def create_intro_block(intro: str) -> dict:
-    __intro = gradio.Markdown(intro, line_breaks=True)
-    return {'intro_block': __intro}
+def create_text_block(text: str) -> dict:
+    __text = gradio.Markdown(text, line_breaks=True)
+    return {'text_block': __text}
 
 # MODEL ########################################################################
 
@@ -96,9 +123,9 @@ def create_state() -> dict:
 
 # LAYOUT #######################################################################
 
-def create_layout(intro: str=INTRO) -> dict:
+def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
     __fields = {}
-    __fields.update(create_intro_block(intro=intro))
+    __fields.update(create_text_block(text=intro))
     with gradio.Tabs():
         with gradio.Tab('Equation') as __main_tab:
             __fields.update({'main_tab': __main_tab})
@@ -126,6 +153,9 @@ def create_layout(intro: str=INTRO) -> dict:
                 with gradio.Row(equal_height=True):
                     __fields.update(create_reduction_block())
                     # __fields.update(create_display_block())
+        with gradio.Tab('Docs') as __docs_tab:
+            __fields.update({'docs_tab': __docs_tab})
+            __fields.update(create_text_block(text=docs))
     return __fields
 
 # EVENTS #######################################################################

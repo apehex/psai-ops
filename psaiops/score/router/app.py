@@ -11,11 +11,23 @@ import psaiops.score.router.lib
 
 # META #########################################################################
 
+MODEL = 'openai/gpt-oss-20b'
+
 STYLE = '''.white-text span { color: white; }'''
 TITLE = '''Router Scoring'''
-INTRO = '''Plot the logits of the router for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
+INTRO = '''Plot the logits of the router for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.\nSee the tab "docs" for more details on the implementation and formulas.'''
+DOCS = '''The router weights are displayed for a selection position `i` along the sequence axis.
 
-MODEL = 'openai/gpt-oss-20b'
+With a position `-1`, all the tokens are selected and the router weights are average along the sequence axis.
+
+Since the logits may differ in amplitude across the layers, they are postprocessed to rescale them:
+
+$$\\begin{align}
+\\hat{{R}}_{{l}} = \\frac{{Softmax (R_{{l}})}}{{max (R_{{l}})}}
+\\end{align}$$
+
+Where `R_l` is a vector with a dimension equal to the number of experts.
+'''
 
 # COLORS #######################################################################
 
@@ -28,9 +40,9 @@ def create_selection_cmap() -> dict:
 
 # INTRO ########################################################################
 
-def create_intro_block(intro: str) -> dict:
-    __intro = gradio.Markdown(intro, line_breaks=True)
-    return {'intro_block': __intro}
+def create_text_block(text: str) -> dict:
+    __text = gradio.Markdown(text, line_breaks=True)
+    return {'text_block': __text}
 
 # MODEL ########################################################################
 
@@ -89,9 +101,9 @@ def create_state() -> dict:
 
 # LAYOUT #######################################################################
 
-def create_layout(intro: str=INTRO) -> dict:
+def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
     __fields = {}
-    __fields.update(create_intro_block(intro=intro))
+    __fields.update(create_text_block(text=intro))
     with gradio.Tabs():
         with gradio.Tab('Score Tokens') as __main_tab:
             __fields.update({'main_tab': __main_tab})
@@ -114,6 +126,9 @@ def create_layout(intro: str=INTRO) -> dict:
                     __fields.update(create_model_block())
                 with gradio.Row(equal_height=True):
                     __fields.update(create_sampling_block())
+        with gradio.Tab('Docs') as __docs_tab:
+            __fields.update({'docs_tab': __docs_tab})
+            __fields.update(create_text_block(text=docs))
     return __fields
 
 # EVENTS #######################################################################

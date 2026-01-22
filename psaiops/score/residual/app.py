@@ -12,11 +12,34 @@ import psaiops.score.residual.lib
 
 # META #########################################################################
 
+MODEL = 'openai/gpt-oss-20b'
+
 STYLE = '''.white-text span { color: white; }'''
 TITLE = '''Visualization Of Residuals'''
-INTRO = '''Plot the hidden states for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
+INTRO = '''Plot the hidden states for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.\nSee the tab "docs" for more details on the implementation and formulas.'''
+DPCS = '''Given:
+- a layer index `l` (-1 to select all the layers)
+- a token index `i` (-1 to select all the tokens)
 
-MODEL = 'openai/gpt-oss-20b'
+The hidden states for the selected layers are averaged across the selected tokens to produce `H_l`.
+This tensor has a latent dimension of 2880, which is 64 * 45.
+
+Depending on the layer and the prompt, the scale of the latent vectors differ widely.
+So these vectors are postprocessed to keep their pattern on each layer independently while rescaling them to allow the comparison across layers:
+
+$$\\begin{align}
+\\hat{{H}}_{{l}} = \\frac{{1}}{{3}}) min(3, max(0, asinh(\\frac{{H_{{l}}}}{{q_{{0.9}}(H_{{l}})}})))
+\\end{align}$$
+
+The resulting vectors take their values in `[-1; 1]`.
+These values are then mapped to colors with the "coolwarm" mapping applied to:
+
+$$\\frac{{1}}{{2}} (1 + \\hat{{H}}_{{l}})
+
+Finally, the vectors of dimension 2880 are reshaped into 2D tensors of 64 x 45 to allow the 3D visualization along the layers.
+To compute the plot in a reasonable time, only the top-k values in these tensors are displayed, which can configured in the settings.
+
+'''
 
 # COLORS #######################################################################
 
@@ -32,9 +55,9 @@ def create_score_cmap() -> dict:
 
 # INTRO ########################################################################
 
-def create_intro_block(intro: str) -> dict:
-    __intro = gradio.Markdown(intro, line_breaks=True)
-    return {'intro_block': __intro}
+def create_text_block(text: str) -> dict:
+    __text = gradio.Markdown(text, line_breaks=True)
+    return {'text_block': __text}
 
 # MODEL ########################################################################
 
@@ -106,9 +129,9 @@ def create_state() -> dict:
 
 # LAYOUT #######################################################################
 
-def create_layout(intro: str=INTRO) -> dict:
+def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
     __fields = {}
-    __fields.update(create_intro_block(intro=intro))
+    __fields.update(create_text_block(text=intro))
     with gradio.Tabs():
         with gradio.Tab('Residuals') as __main_tab:
             __fields.update({'main_tab': __main_tab})
@@ -135,6 +158,9 @@ def create_layout(intro: str=INTRO) -> dict:
                 __fields.update(create_sampling_block())
             with gradio.Row(equal_height=True):
                 __fields.update(create_visualization_block())
+        with gradio.Tab('Docs') as __docs_tab:
+            __fields.update({'docs_tab': __docs_tab})
+            __fields.update(create_text_block(text=docs))
     return __fields
 
 # EVENTS #######################################################################

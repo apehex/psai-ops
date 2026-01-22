@@ -15,7 +15,7 @@ MODEL = 'openai/gpt-oss-20b'
 
 STYLE = '''.giga-text input { font-size: 32px; }'''
 TITLE = '''Activation Maths'''
-INTRO = '''Compose prompts in the latent space.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
+INTRO = '''Compose prompts in the latent space from the combinations of elementary prompts with chosen operators.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
 
 COUNT = 8
 

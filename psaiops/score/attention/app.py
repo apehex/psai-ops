@@ -25,9 +25,9 @@ def create_color_map() -> dict:
 
 # INTRO ########################################################################
 
-def create_intro_block(intro: str) -> dict:
-    __intro = gradio.Markdown(intro, line_breaks=True)
-    return {'intro_block': __intro}
+def create_text_block(text: str) -> dict:
+    __text = gradio.Markdown(text, line_breaks=True)
+    return {'text_block': __text}
 
 # MODEL ########################################################################
 
@@ -99,7 +99,7 @@ def create_state() -> dict:
 
 def create_layout(intro: str=INTRO) -> dict:
     __fields = {}
-    __fields.update(create_intro_block(intro=intro))
+    __fields.update(create_text_block(text=intro))
     with gradio.Tabs():
         with gradio.Tab('Score Tokens') as __main_tab:
             __fields.update({'main_tab': __main_tab})
