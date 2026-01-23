@@ -182,16 +182,9 @@ def update_table_style(data: pandas.DataFrame, masks: pandas.DataFrame) -> panda
 
 # APP ##########################################################################
 
-def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.Blocks:
+def create_app(compute: callable, tabulate: callable, title: str=TITLE, intro: str=INTRO) -> gradio.Blocks:
     __fields = {}
     with gradio.Blocks(title=title) as __app:
-        # load the model
-        __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        __model = psaiops.common.model.get_model(name=model, device=__device)
-        __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
-        # adapt the computing functions
-        __compute = functools.partial(psaiops.compose.contrast.lib.steer_model_output, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
-        __format = functools.partial(update_table_data, tokenizer=__tokenizer)
         # create the UI
         __fields.update(create_layout(intro=intro))
         # init the state
@@ -204,13 +197,13 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
             queue=False,
             show_progress='hidden')
         __fields['details_tab'].select(
-            fn=__format,
+            fn=tabulate,
             inputs=[__fields[__k] for __k in ['prompt_0_block', 'prompt_1_block', 'prompt_2_block', 'output_block']],
             outputs=__fields['table_block'],
             queue=False,
             show_progress='hidden')
         __fields['process_block'].click(
-            fn=__compute,
+            fn=compute,
             inputs=[__fields[__k] for __k in ['prompt_0_block', 'prompt_1_block', 'prompt_2_block', 'factor_0_block', 'factor_1_block', 'factor_2_block', 'tokens_block', 'topk_block', 'topp_block', 'layer_block']],
             outputs=__fields['output_block'],
             queue=False,
@@ -221,5 +214,13 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
 # MAIN #########################################################################
 
 if __name__ == '__main__':
-    __app = create_app()
+    # load the model
+    __device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    __model = psaiops.common.model.get_model(name=MODEL, device=__device)
+    __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=MODEL, device=__device)
+    # adapt the computing functions
+    __compute = functools.partial(psaiops.compose.contrast.lib.steer_model_output, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
+    __tabulate = functools.partial(update_table_data, tokenizer=__tokenizer)
+    # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
+    __app = create_app(compute=__compute, tabulate=__tabulate)
     __app.launch(theme=gradio.themes.Soft(), css=STYLE, share=True, debug=True)

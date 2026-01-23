@@ -249,19 +249,13 @@ def update_table_data(tokenizer: object) -> callable:
 
 # APP ##########################################################################
 
-def create_app(title: str=TITLE, intro: str=INTRO, limit: int=COUNT, model: str=MODEL) -> gradio.Blocks:
+def create_app(tabulate: callable, title: str=TITLE, intro: str=INTRO, limit: int=COUNT) -> gradio.Blocks:
     __inputs = {}
     with gradio.Blocks(title=title) as __app:
-        # load the model
-        __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        # __model = psaiops.common.model.get_model(name=model, device=__device)
-        __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=model, device=__device)
         # create the UI
         __inputs.update(create_layout(intro=intro, limit=limit))
         # init the state
         __inputs.update(create_state(limit=limit))
-        # apply the configuration
-        __format = update_table_data(tokenizer=__tokenizer)
         # change the depth of the model
         __inputs['model_block'].change(
             fn=update_layer_range,
@@ -278,7 +272,7 @@ def create_app(title: str=TITLE, intro: str=INTRO, limit: int=COUNT, model: str=
             show_progress='hidden')
         # update the table
         __inputs['details_tab'].select(
-            fn=__format,
+            fn=tabulate,
             inputs=[__inputs[f'prompt_{__i}_block'] for __i in range(limit)] + [__inputs['output_block']],
             outputs=__inputs['table_block'],
             queue=False,
@@ -319,5 +313,12 @@ def create_app(title: str=TITLE, intro: str=INTRO, limit: int=COUNT, model: str=
 # MAIN #########################################################################
 
 if __name__ == '__main__':
-    __app = create_app()
+    # load the model
+    __device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=MODEL, device=__device)
+    # __model = psaiops.common.model.get_model(name=MODEL, device=__device)
+    # adapt the event handlers
+    __tabulate = update_table_data(tokenizer=__tokenizer)
+    # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
+    __app = create_app(tabulate=__tabulate)
     __app.launch(theme=gradio.themes.Soft(), css=STYLE, share=True, debug=True)
