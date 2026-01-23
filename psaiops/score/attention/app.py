@@ -12,7 +12,7 @@ import psaiops.score.attention.lib
 
 STYLE = '''.white-text span { color: white; }'''
 TITLE = '''Attention Scoring'''
-INTRO = '''Score each token according to the weights of the attention layers.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
+INTRO = '''Display the influence of each token on the prediction, according to a given slice of the attention weights.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
 
 MODEL = 'openai/gpt-oss-20b'
 
