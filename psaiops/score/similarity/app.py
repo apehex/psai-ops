@@ -48,8 +48,8 @@ def create_sampling_block() -> dict:
 # INPUTS #######################################################################
 
 def create_inputs_block() -> dict:
-    __reference = gradio.Textbox(label='Reference', value='', placeholder='The text used as reference for the comparison.', lines=4, scale=1, show_copy_button=True, interactive=True)
-    __prompt = gradio.Textbox(label='Prompt', value='', placeholder='A string of tokens to compare to the reference.', lines=4, scale=1, show_copy_button=True, interactive=True)
+    __reference = gradio.Textbox(label='Reference', value='', placeholder='The text used as reference for the comparison.', lines=4, scale=1, interactive=True)
+    __prompt = gradio.Textbox(label='Prompt', value='', placeholder='A string of tokens to compare to the reference.', lines=4, scale=1, interactive=True)
     return {
         'reference_input_block': __reference,
         'prompt_input_block': __prompt,}

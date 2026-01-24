@@ -92,7 +92,7 @@ def create_inputs_row(operation: str='', index: int=0, label: bool=False) -> dic
     # __operation = gradio.Button(value=operation, variant='primary', size='lg', elem_classes='white-text', scale=1, interactive=False)
     __operation = gradio.Dropdown(label=f'Operation', value=operation, choices=['', '+', '-', 'x', '.', '='], elem_classes='giga-text', scale=1, show_label=label, allow_custom_value=False, multiselect=False, interactive=False)
     __alpha = gradio.Slider(label='Factor', value=1.0, minimum=0.0, maximum=16.0, step=0.1, scale=1, show_label=label, interactive=True)
-    __input = gradio.Textbox(label=f'Prompt', value='', placeholder='Some text.', lines=2, max_lines=2, scale=8, show_label=label, show_copy_button=True, interactive=True)
+    __input = gradio.Textbox(label=f'Prompt', value='', placeholder='Some text.', lines=2, max_lines=2, scale=8, show_label=label, interactive=True)
     return {
         f'operation_{index}_block': __operation,
         f'factor_{index}_block': __alpha,
@@ -101,7 +101,7 @@ def create_inputs_row(operation: str='', index: int=0, label: bool=False) -> dic
 # OUTPUTS ######################################################################
 
 def create_outputs_block() -> dict:
-    __output = gradio.Textbox(label='= Total', value='', placeholder='Some text.', lines=2, max_lines=8, scale=1, show_label=True, show_copy_button=True, interactive=False)
+    __output = gradio.Textbox(label='= Total', value='', placeholder='Some text.', lines=2, max_lines=8, scale=1, show_label=True, interactive=False)
     return {'output_block': __output}
 
 # ACTIONS ######################################################################

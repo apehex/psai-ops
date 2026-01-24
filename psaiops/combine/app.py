@@ -142,7 +142,7 @@ def create_inputs_row(index: int=0) -> dict:
 # OUTPUTS ######################################################################
 
 def create_outputs_block() -> dict:
-    __output = gradio.Textbox(label='Sample', value='', placeholder='Resulting combination of the prompts.', lines=2, max_lines=8, scale=1, show_label=True, show_copy_button=True, interactive=False)
+    __output = gradio.Textbox(label='Sample', value='', placeholder='Resulting combination of the prompts.', lines=2, max_lines=8, scale=1, show_label=True, interactive=False)
     return {'output_block': __output,}
 
 # ACTIONS ######################################################################
