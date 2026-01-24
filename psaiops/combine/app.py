@@ -37,41 +37,45 @@ def create_template_block() -> dict:
     return {
         'template_block': __template,}
 
-# SAMPLING #####################################################################
+# IMPORT #######################################################################
 
-def create_huggingface_block() -> dict:
-    __token = gradio.Textbox(label='Token', value='', placeholder='Hugging Face authentication token.', lines=1, max_lines=1, scale=4, show_label=True, interactive=True)
+def create_search_block() -> dict:
+    __search = gradio.Dropdown(label='Search', value='', choices=[''], scale=1, allow_custom_value=True, multiselect=False, interactive=True)
     return {
-        'token_block': __token,}
-
-# SAMPLING #####################################################################
+        'search_block': __search,}
 
 def create_source_block() -> dict:
-    __search = gradio.Dropdown(label='Search', value='', choices=[''], scale=7, allow_custom_value=True, multiselect=False, interactive=True)
-    __append = gradio.Button(value='>', variant='primary', size='lg', scale=1, interactive=True)
-    __dataset = gradio.Dropdown(label='Datasets', value='', choices=[''], scale=8, allow_custom_value=False, multiselect=True, interactive=True)
+    __append = gradio.Button(value='Add >', variant='primary', size='lg', scale=1, interactive=True)
+    __dataset = gradio.Dropdown(label='Datasets', value='', choices=[''], scale=7, allow_custom_value=False, multiselect=True, interactive=True)
     return {
-        'search_block': __search,
         'append_block': __append,
         'sources_block': __dataset,}
-
-# SAMPLING #####################################################################
 
 def create_download_block() -> dict:
     __download = gradio.Button(value='Download', variant='primary', size='lg', scale=1, interactive=True)
     return {
         'download_block': __download,}
 
-# ACTIONS ######################################################################
+# EXPORT #######################################################################
 
-def create_meta_block() -> dict:
+def create_huggingface_block() -> dict:
+    __token = gradio.Textbox(label='Token', value='', placeholder='Hugging Face authentication token.', lines=1, max_lines=1, scale=1, show_label=True, interactive=True)
     __name = gradio.Textbox(label='Path', value='', placeholder='Dataset ID: user/name.', lines=1, max_lines=1, scale=1, show_label=True, interactive=True)
+    return {
+        'token_block': __token,
+        'name_block': __name,}
+
+def create_column_block() -> dict:
     __col0 = gradio.Textbox(label='Column 0', value='', placeholder='Name of the column 0.', lines=1, max_lines=1, scale=1, show_label=True, interactive=True)
     __col1 = gradio.Textbox(label='Column 1', value='', placeholder='Name of the column 1.', lines=1, max_lines=1, scale=1, show_label=True, interactive=True)
     return {
-        'name_block': __name,
         'column_0_block': __col0,
         'column_1_block': __col1,}
+
+def create_upload_block() -> dict:
+    __upload = gradio.Button(value='Upload', variant='primary', size='lg', scale=1, interactive=True)
+    return {
+        'upload_block': __upload,}
 
 # INPUTS #######################################################################
 
@@ -148,10 +152,8 @@ def create_outputs_block() -> dict:
 
 def create_action_block() -> dict:
     __show = gradio.Button(value='Add', variant='primary', size='lg', scale=1, interactive=True)
-    __upload = gradio.Button(value='Upload', variant='primary', size='lg', scale=1, interactive=True)
     return {
-        'show_block': __show,
-        'upload_block': __upload,}
+        'show_block': __show,}
 
 # TABLE ########################################################################
 
@@ -174,8 +176,6 @@ def create_state(limit: int=COUNT) -> dict:
 def create_layout(intro: str=INTRO, limit: int=COUNT) -> dict:
     __fields = {}
     __fields.update(create_intro_block(intro=intro))
-    with gradio.Row(equal_height=True):
-        __fields.update(create_meta_block())
     with gradio.Tabs():
         with gradio.Tab('Column 0') as __col0_tab:
             __fields.update({'column_0_tab': __col0_tab})
@@ -185,6 +185,22 @@ def create_layout(intro: str=INTRO, limit: int=COUNT) -> dict:
                 __fields.update(create_outputs_block())
             with gradio.Row(equal_height=True):
                 __fields.update(create_action_block())
+        with gradio.Tab('Import') as __import_tab:
+            __fields.update({'import_tab': __import_tab})
+            with gradio.Row(equal_height=True):
+                __fields.update(create_search_block())
+            with gradio.Row(equal_height=True):
+                __fields.update(create_source_block())
+            with gradio.Row(equal_height=True):
+                __fields.update(create_download_block())
+        with gradio.Tab('Export') as __export_tab:
+            __fields.update({'export_tab': __export_tab})
+            with gradio.Row(equal_height=True):
+                __fields.update(create_huggingface_block())
+            with gradio.Row(equal_height=True):
+                __fields.update(create_column_block())
+            with gradio.Row(equal_height=True):
+                __fields.update(create_upload_block())
         with gradio.Tab('Details') as __details_tab:
             __fields.update({'details_tab': __details_tab})
             with gradio.Row(equal_height=True):
@@ -193,12 +209,6 @@ def create_layout(intro: str=INTRO, limit: int=COUNT) -> dict:
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_template_block())
-            with gradio.Row(equal_height=True):
-                __fields.update(create_huggingface_block())
-            with gradio.Row(equal_height=True):
-                __fields.update(create_source_block())
-            with gradio.Row(equal_height=True):
-                __fields.update(create_download_block())
     return __fields
 
 # DYNAMIC ######################################################################
