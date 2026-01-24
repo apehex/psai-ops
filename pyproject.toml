@@ -1,6 +1,6 @@
 [project]
 name = "psaiops"
-version = "0.6.0"
+version = "0.6.1"
 description = "Web apps to inspect & engineer NN activations."
 authors = [{ name = "apehex", email = "17317183+apehex@users.noreply.github.com" }]
 readme = ".github/README.md"
@@ -11,7 +11,7 @@ dependencies = [
     "accelerate>=1.10",
     "deformers>=0.0",
     "gradio>=5.0",
-    "kernels==0.10",
+    "kernels>=0.10",
     "matplotlib>=3.10",
     "mlable-torch>=0.2",
     "requests>=2.0",
