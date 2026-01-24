@@ -17,7 +17,7 @@ MODEL = 'openai/gpt-oss-20b'
 STYLE = '''.white-text span { color: white; }'''
 TITLE = '''Visualization Of Residuals'''
 INTRO = '''Plot the hidden states for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.\nSee the tab "docs" for more details on the implementation and formulas.'''
-DPCS = '''Given:
+DOCS = '''Given:
 - a layer index `l` (-1 to select all the layers)
 - a token index `i` (-1 to select all the tokens)
 
