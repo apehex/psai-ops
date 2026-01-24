@@ -37,7 +37,7 @@ The difference between these two prompts represents a meaningful direction that 
 
 $$\\begin{align}
 H_{{l}} = \\alpha P_l (T) + \\beta (H^{{+}}_{{l}} - H^{{-}}_{{l}})
-\\end{align}
+\\end{align}$$
 
 More specifically, the difference is:
 - masked along the sequence axis to only keep the tokens that differ between the two prompts
