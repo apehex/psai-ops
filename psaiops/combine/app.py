@@ -152,8 +152,10 @@ def create_outputs_block() -> dict:
 
 def create_action_block() -> dict:
     __show = gradio.Button(value='Add', variant='primary', size='lg', scale=1, interactive=True)
+    __sample = gradio.Button(value='Sample', variant='primary', size='lg', scale=1, interactive=True)
     return {
-        'show_block': __show,}
+        'show_block': __show,
+        'sample_block': __sample,}
 
 # TABLE ########################################################################
 
@@ -201,8 +203,8 @@ def create_layout(intro: str=INTRO, limit: int=COUNT) -> dict:
                 __fields.update(create_column_block())
             with gradio.Row(equal_height=True):
                 __fields.update(create_upload_block())
-        with gradio.Tab('Details') as __details_tab:
-            __fields.update({'details_tab': __details_tab})
+        with gradio.Tab('View') as __view_tab:
+            __fields.update({'view_tab': __view_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_table_block())
         with gradio.Tab('Settings') as __settings_tab:
@@ -311,7 +313,7 @@ def create_app(tabulate: callable, title: str=TITLE, intro: str=INTRO, limit: in
             queue=False,
             show_progress='hidden')
         # update the table TODO
-        __inputs['details_tab'].select(
+        __inputs['view_tab'].select(
             fn=tabulate,
             inputs=[__inputs[f'content_{__i}_block'] for __i in range(limit)] + [__inputs['output_block']],
             outputs=__inputs['table_block'],
