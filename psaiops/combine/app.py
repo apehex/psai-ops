@@ -40,7 +40,7 @@ def create_template_block() -> dict:
 # SAMPLING #####################################################################
 
 def create_huggingface_block() -> dict:
-    __token = gradio.Textbox(label='Token', value='', placeholder='Hugging Face authentication token.', lines=1, max_lines=1, scale=4, show_label=True, show_copy_button=False, interactive=True)
+    __token = gradio.Textbox(label='Token', value='', placeholder='Hugging Face authentication token.', lines=1, max_lines=1, scale=4, show_label=True, interactive=True)
     return {
         'token_block': __token,}
 
@@ -65,9 +65,9 @@ def create_download_block() -> dict:
 # ACTIONS ######################################################################
 
 def create_meta_block() -> dict:
-    __name = gradio.Textbox(label='Path', value='', placeholder='Dataset ID: user/name.', lines=1, max_lines=1, scale=1, show_label=True, show_copy_button=False, interactive=True)
-    __col0 = gradio.Textbox(label='Column 0', value='', placeholder='Name of the column 0.', lines=1, max_lines=1, scale=1, show_label=True, show_copy_button=False, interactive=True)
-    __col1 = gradio.Textbox(label='Column 1', value='', placeholder='Name of the column 1.', lines=1, max_lines=1, scale=1, show_label=True, show_copy_button=False, interactive=True)
+    __name = gradio.Textbox(label='Path', value='', placeholder='Dataset ID: user/name.', lines=1, max_lines=1, scale=1, show_label=True, interactive=True)
+    __col0 = gradio.Textbox(label='Column 0', value='', placeholder='Name of the column 0.', lines=1, max_lines=1, scale=1, show_label=True, interactive=True)
+    __col1 = gradio.Textbox(label='Column 1', value='', placeholder='Name of the column 1.', lines=1, max_lines=1, scale=1, show_label=True, interactive=True)
     return {
         'name_block': __name,
         'column_0_block': __col0,
@@ -121,7 +121,6 @@ def create_inputs_row(index: int=0) -> dict:
             max_lines=1,
             scale=9,
             show_label=(index == 0),
-            show_copy_button=True,
             interactive=True,
             visible=(index == 0))
         __hide = gradio.Button(

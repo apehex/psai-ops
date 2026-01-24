@@ -94,7 +94,6 @@ def create_inputs_row(operation: str='', index: int=0) -> dict:
             max_lines=2,
             scale=8,
             show_label=(index == 0),
-            show_copy_button=True,
             interactive=True,
             visible=(index == 0))
         __delete = gradio.Button(
