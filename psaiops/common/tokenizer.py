@@ -22,7 +22,7 @@ def preprocess_token_ids(
     device_str: str='cpu'
 ) -> dict:
     # tokenize
-    __inputs = tokenizer_obj(prompt_str, return_tensors='pt')
+    __inputs = tokenizer_obj(prompt_str, return_tensors='pt', padding='longest')
     # move to the main device
     return {__k: __v.to(device_str) for __k, __v in __inputs.items()}
 
