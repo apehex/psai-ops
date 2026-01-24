@@ -85,10 +85,19 @@ def steer_model_output(
     model_obj: object,
     tokenizer_obj: object,
 ) -> str:
+    # check the input arguments
+    __args = [positive_str, negative_str, prompt_str, positive_rate, negative_rate, prompt_rate, token_num, topk_num, topp_num, layer_idx, device_str, model_obj, tokenizer_obj]
+    __missing = (
+        any([(__a is None) for __a in __args])
+        or (not prompt_str.strip())
+        or (not positive_str.strip())
+        or (not negative_str.strip()))
+    # exit early if inputs are missing
+    if __missing: return ''
     # parse & sanitize
-    __prompt0 = positive_str.strip()
-    __prompt1 = negative_str.strip()
-    __prompt2 = prompt_str.strip()
+    __prompt0 = positive_str
+    __prompt1 = negative_str
+    __prompt2 = prompt_str
     __alpha0 = max(0.0, float(positive_rate))
     __alpha1 = max(0.0, float(negative_rate))
     __alpha2 = max(0.0, float(prompt_rate))

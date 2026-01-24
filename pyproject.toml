@@ -1,6 +1,6 @@
 [project]
 name = "psaiops"
-version = "0.6.4"
+version = "0.6.5"
 description = "Web apps to inspect & engineer NN activations."
 authors = [{ name = "apehex", email = "17317183+apehex@users.noreply.github.com" }]
 readme = ".github/README.md"
