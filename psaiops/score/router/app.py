@@ -184,7 +184,7 @@ def update_computation_state(
     # tensor (L, S, H, T, T)
     __router_data = psaiops.score.router.lib.compute_router_weights(
         model_obj=model_obj,
-        token_data=__output_data)
+        token_arr=__output_data)
     # update each component => (highlight, plot) states
     return (
         __output_data.cpu(),
@@ -204,7 +204,7 @@ def update_token_focus(
     # detokenize the IDs
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
-        token_data=output_data)
+        token_arr=output_data)
     # list of string classes
     __token_cls = psaiops.score.router.lib.postprocess_focus_cls(
         left_idx=int(left_idx),

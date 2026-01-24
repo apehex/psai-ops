@@ -219,7 +219,7 @@ def update_token_focus(
     # detokenize the IDs
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
-        token_data=output_data)
+        token_arr=output_data)
     # list of string classes
     __token_cls = psaiops.score.surprisal.lib.postprocess_focus_cls(
         token_idx=int(token_idx),
@@ -300,7 +300,7 @@ def update_prob_scores(
     # detokenize the IDs
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
-        token_data=output_data)
+        token_arr=output_data)
     # compute the probabilities ofthe chosen tokens, in [0; V-1]
     __token_cls = compute_prob_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
     # postprocess
@@ -368,7 +368,7 @@ def update_rank_scores(
     # detokenize the IDs
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
-        token_data=output_data)
+        token_arr=output_data)
     # compute the rank metric, in [0; V-1]
     __token_cls = compute_rank_metrics(output_data=output_data, hidden_data=hidden_data, head_obj=head_obj)
     # postprocess
@@ -440,7 +440,7 @@ def update_jsd_scores(
     # detokenize the IDs
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
-        token_data=output_data)
+        token_arr=output_data)
     # compute the JSD metric [0; 1]
     __token_cls = compute_jsd_metrics(layer_idx=layer_idx, hidden_data=hidden_data, head_obj=head_obj, norm_obj=norm_obj)
     # postprocess

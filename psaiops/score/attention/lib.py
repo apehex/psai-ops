@@ -113,6 +113,6 @@ def score_tokens(
     # detokenize the IDs
     __tokens = psaiops.common.tokenizer.postprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
-        token_obj=__outputs)
+        token_arr=__outputs)
     # match tokens and labels for the HighlightedText field
     return list(zip(__tokens, __labels))

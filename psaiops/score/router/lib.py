@@ -6,12 +6,12 @@ import torch
 
 def compute_router_weights(
     model_obj: object,
-    token_data: torch.Tensor,
+    token_arr: torch.Tensor,
 ) -> torch.Tensor:
     # process the full sequence
     with torch.no_grad():
         __outputs = model_obj(
-            input_ids=token_data,
+            input_ids=token_arr,
             output_attentions=False,
             output_router_logits=True,
             return_dict=True)

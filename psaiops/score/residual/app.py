@@ -235,7 +235,7 @@ def update_token_focus(
     # detokenize the IDs
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
-        token_data=output_data)
+        token_arr=output_data)
     # list of string classes
     __token_cls = psaiops.score.residual.lib.postprocess_focus_cls(
         left_idx=int(left_idx),

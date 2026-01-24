@@ -191,7 +191,7 @@ def update_computation_state(
         # detokenize the IDs
         __tokens = psaiops.common.tokenizer.postprocess_token_ids(
             tokenizer_obj=tokenizer_obj,
-            token_data=__output_data)
+            token_arr=__output_data)
         # update each component => (input, output, attention, highligh) states
         return (
             list(zip(__tokens, __labels)),

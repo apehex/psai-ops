@@ -31,10 +31,10 @@ def preprocess_token_ids(
 @functools.lru_cache(maxsize=32)
 def postprocess_token_ids(
     tokenizer_obj: object,
-    token_data: torch.Tensor,
+    token_arr: torch.Tensor,
 ) -> list:
     # remove the batch axis
-    __indices = token_data.squeeze().tolist()
+    __indices = token_arr.squeeze().tolist()
     # back to token strings
     __tokens = tokenizer_obj.convert_ids_to_tokens(__indices)
     # normalize the tokens
