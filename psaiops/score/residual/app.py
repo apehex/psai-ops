@@ -7,6 +7,7 @@ import torch.cuda
 import matplotlib.pyplot
 
 import psaiops.common.model
+import psaiops.common.style
 import psaiops.common.tokenizer
 import psaiops.score.residual.lib
 
@@ -14,7 +15,6 @@ import psaiops.score.residual.lib
 
 MODEL = 'openai/gpt-oss-20b'
 
-STYLE = '''.white-text span { color: white; }'''
 TITLE = '''Visualization Of Residuals'''
 INTRO = '''Plot the hidden states for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.\nSee the tab "docs" for more details on the implementation and formulas.'''
 DOCS = '''Given:
@@ -470,4 +470,4 @@ if __name__ == '__main__':
     __highlight = functools.partial(update_token_focus, tokenizer_obj=__tokenizer)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
     __app = create_app(compute=__compute, highlight=__highlight)
-    __app.launch(theme=gradio.themes.Soft(), css=STYLE, share=True, debug=True)
+    __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)

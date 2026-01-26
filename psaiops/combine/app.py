@@ -6,14 +6,14 @@ import pandas
 import torch
 import torch.cuda
 
-import psaiops.common.tokenizer
 import psaiops.common.data
+import psaiops.common.style
+import psaiops.common.tokenizer
 
 # META #########################################################################
 
 MODEL = 'openai/gpt-oss-20b'
 
-STYLE = '''.giga-text input { font-size: 32px; }'''
 TITLE = '''Combine Datasets'''
 INTRO = '''Combine and wrap prompts to form new datasets.'''
 
@@ -375,4 +375,4 @@ if __name__ == '__main__':
     __tabulate = update_table_data(tokenizer=__tokenizer)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
     __app = create_app(tabulate=__tabulate)
-    __app.launch(theme=gradio.themes.Soft(), css=STYLE, share=True, debug=True)
+    __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)

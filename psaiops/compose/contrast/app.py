@@ -6,6 +6,7 @@ import torch
 import torch.cuda
 
 import psaiops.common.model
+import psaiops.common.style
 import psaiops.common.tokenizer
 import psaiops.compose.contrast.lib
 
@@ -13,7 +14,6 @@ import psaiops.compose.contrast.lib
 
 MODEL = 'openai/gpt-oss-20b'
 
-STYLE = '''.giga-text input { font-size: 32px; }'''
 TITLE = '''Contrastive Steering'''
 INTRO = '''Add a delta of activation to a prompt to steer the model output in a specific latent direction.\nUnder construction, only "openai/gpt-oss-20b" is available for now.\nSee the tab "docs" for more details on the implementation and formulas.'''
 DOCS = '''Given:
@@ -223,4 +223,4 @@ if __name__ == '__main__':
     __tabulate = functools.partial(update_table_data, tokenizer=__tokenizer)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
     __app = create_app(compute=__compute, tabulate=__tabulate)
-    __app.launch(theme=gradio.themes.Soft(), css=STYLE, share=True, debug=True)
+    __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)

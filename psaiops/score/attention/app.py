@@ -5,12 +5,12 @@ import torch
 import torch.cuda
 
 import psaiops.common.model
+import psaiops.common.style
 import psaiops.common.tokenizer
 import psaiops.score.attention.lib
 
 # META #########################################################################
 
-STYLE = '''.white-text span { color: white; }'''
 TITLE = '''Attention Scoring'''
 INTRO = '''Display the influence of each token on the prediction, according to a given slice of the attention weights.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
 
@@ -302,4 +302,4 @@ if __name__ == '__main__':
     __compute = functools.partial(update_computation_state, model_obj=__model, tokenizer_obj=__tokenizer, device_str=__device)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
     __app = create_app(compute=__compute)
-    __app.launch(theme=gradio.themes.Soft(), css=STYLE, share=True, debug=True)
+    __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)

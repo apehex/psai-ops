@@ -9,6 +9,7 @@ import torch.nn.functional
 import matplotlib.pyplot
 
 import psaiops.common.model
+import psaiops.common.style
 import psaiops.common.tokenizer
 import psaiops.score.surprisal.lib
 
@@ -16,7 +17,6 @@ import psaiops.score.surprisal.lib
 
 MODEL = 'openai/gpt-oss-20b'
 
-STYLE = '''.white-text span { color: white; }'''
 TITLE = '''Surprisal Scoring'''
 INTRO = '''Plot the following metrics to measure how unexpected each token is:\n- the probability of each token\n- the rank of each token among the output logits\n- the KL divergence between the final residuals and those at depth L\n\nSee the tab "docs" for more informations, in particular the exact formulas of the computations.'''
 DOCS = '''
@@ -590,4 +590,4 @@ if __name__ == '__main__':
     __jsd_plot = functools.partial(update_jsd_plot, head_obj=__head, norm_obj=__norm)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
     __app = create_app(compute=__compute, prob_score=__prob_score, prob_plot=__prob_plot, rank_score=__rank_score, rank_plot=__rank_plot, jsd_score=__jsd_score, jsd_plot=__jsd_plot)
-    __app.launch(theme=gradio.themes.Soft(), css=STYLE, share=True, debug=True)
+    __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)

@@ -5,11 +5,11 @@ import torch
 import torch.cuda
 
 import psaiops.common.model
+import psaiops.common.style
 import psaiops.common.tokenizer
 
 # META #########################################################################
 
-STYLE = '''.white-text span { color: white; }'''
 TITLE = '''Shapley Scoring'''
 INTRO = '''Score each token according to their [Shapley value](https://en.wikipedia.org/wiki/Shapley_value).\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
 
@@ -155,4 +155,4 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
 
 if __name__ == '__main__':
     __app = create_app()
-    __app.launch(theme=gradio.themes.Soft(), css=STYLE, share=True, debug=True)
+    __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)
