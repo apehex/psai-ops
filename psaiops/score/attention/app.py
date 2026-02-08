@@ -197,7 +197,7 @@ def update_computation_state(
             list(zip(__tokens, __labels)),
             __tokens[:__input_dim],
             __tokens[__input_dim:],
-            __attention_data,)
+            __attention_data.cpu(),)
     except:
         raise Exception('Attention generation aborted with an error.')
 
