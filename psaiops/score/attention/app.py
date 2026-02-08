@@ -38,9 +38,9 @@ def create_model_block() -> dict:
 # SAMPLING #####################################################################
 
 def create_sampling_block() -> dict:
-    __tokens = gradio.Slider(label='Tokens', value=16, minimum=1, maximum=128, step=1, scale=1, interactive=True)
-    __topk = gradio.Slider(label='Top K', value=4, minimum=1, maximum=8, step=1, scale=1, interactive=True)
-    __topp = gradio.Slider(label='Top P', value=0.9, minimum=0.0, maximum=1.0, step=0.1, scale=1, interactive=True)
+    __tokens = gradio.Slider(label='Tokens', value=16, minimum=1, maximum=256, step=1, scale=1, interactive=True)
+    __topk = gradio.Slider(label='Top K', value=16, minimum=1, maximum=2048, step=1, scale=1, interactive=True)
+    __topp = gradio.Slider(label='Top P', value=0.9, minimum=0.0, maximum=1.0, step=0.01, scale=1, interactive=True)
     return {
         'tokens_block': __tokens,
         'topk_block': __topk,
@@ -118,8 +118,8 @@ def create_layout(intro: str=INTRO) -> dict:
                     __fields.update(create_model_block())
                 with gradio.Row(equal_height=True):
                     __fields.update(create_sampling_block())
-                with gradio.Row(equal_height=True):
-                    __fields.update(create_target_block())
+                # with gradio.Row(equal_height=True):
+                #     __fields.update(create_target_block())
                     # __fields.update(create_display_block())
     return __fields
 
