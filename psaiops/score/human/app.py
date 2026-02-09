@@ -99,8 +99,8 @@ def create_actions_block() -> dict:
 
 def create_state() -> dict:
     return {
-        'indices_state': gradio.State(torch.empty(0)),
-        'logits_state': gradio.State(torch.empty(0)),}
+        'indices_state': gradio.State(None),
+        'logits_state': gradio.State(None),}
 
 # LAYOUT #######################################################################
 
@@ -113,10 +113,10 @@ def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block())
             with gradio.Row(equal_height=True):
-                __fields.update(create_highlight_block(label='Score', prefix='final_', cmap=create_score_cmap()))
+                __fields.update(create_highlight_block(label='Score', prefix='', cmap=create_score_cmap()))
             with gradio.Row(equal_height=True):
-                __fields.update(create_metrics_block(label='Metrics', prefix='final_'))
-                __fields.update(create_window_block(label='Window', prefix='final_'))
+                __fields.update(create_metrics_block(label='Metrics', prefix=''))
+                __fields.update(create_window_block(label='Window', prefix=''))
             with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
         with gradio.Tab('Plots') as __plots_tab:
@@ -134,23 +134,6 @@ def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
             __fields.update(create_text_block(text=docs))
     return __fields
 
-# TOKENS #######################################################################
-
-def update_indices_state(
-    prompt_str: str,
-    tokenizer_obj: object,
-) -> tuple:
-    # exit if some values are missing
-    if (prompt_str is None) or (tokenizer_obj is None):
-        return torch.empty(0)
-    # dictionary {'input_ids': _, 'attention_mask': _}
-    __input_data = psaiops.common.tokenizer.preprocess_token_ids(
-        tokenizer_obj=tokenizer_obj,
-        prompt_str=prompt_str.strip(),
-        device_str='cpu')
-    # discard the mask, which is all ones
-    return __input_data['input_ids'].cpu()
-
 # WINDOW #######################################################################
 
 def update_window_range(
@@ -167,10 +150,70 @@ def update_window_range(
     # return a gradio update dictionary
     return gradio.update(value=__val, maximum=__max)
 
+# TOKENS #######################################################################
+
+def update_indices_state(
+    prompt_str: str,
+    tokenizer_obj: object,
+) -> object:
+    # exit if some values are missing
+    if (prompt_str is None) or (tokenizer_obj is None):
+        return None
+    # dictionary {'input_ids': _, 'attention_mask': _}
+    __input_data = psaiops.common.tokenizer.preprocess_token_ids(
+        tokenizer_obj=tokenizer_obj,
+        prompt_str=prompt_str.strip(),
+        device_str='cpu')
+    # discard the mask, which is all ones
+    return __input_data['input_ids'].cpu()
+
+# LOGITS #######################################################################
+
+def update_logits_state(
+    indices_arr: object,
+    model_obj: object,
+) -> object:
+    # exit if some values are missing
+    if (indices_arr is None) or (model_obj is None):
+        return None
+    # move the output back to the CPU
+    return psaiops.score.human.lib.compute_raw_logits(
+        indices_arr=indices_arr.to(device=model_obj.device),
+        model_obj=model_obj).cpu()
+
+# RANK #########################################################################
+
+def update_rank_scores(
+    indices_arr: object,
+    logits_arr: object,
+    tokenizer_obj: object,
+) -> list:
+    # exit if some values are missing
+    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
+        return None
+    # detokenize the IDs
+    __token_str = psaiops.common.tokenizer.postprocess_token_ids(
+        token_arr=indices_arr,
+        tokenizer_obj=tokenizer_obj)
+    # compute the rank metric, in [0; V-1]
+    __token_cls = psaiops.score.human.lib.compute_rank_metrics(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr)
+    # postprocess
+    __token_cls = __token_cls.clamp(min=0, max=100)
+    # scale into a [0; 100] label
+    __token_cls = psaiops.score.human.lib.postprocess_score_cls(score_arr=__token_cls, scale_val=1)
+    # pad with null class for the tokens which have no logit (IE the first token)
+    __token_cls = max(0, len(__token_str) - len(__token_cls)) * ['0'] + __token_cls
+    # color each token according to its rank in the LLM's predictions
+    return list(zip(__token_str, __token_cls))
+
 # APP ##########################################################################
 
 def create_app(
     tokenize: callable,
+    compute: callable,
+    score: callable,
     title: str=TITLE,
     intro: str=INTRO
 ) -> gradio.Blocks:
@@ -180,7 +223,7 @@ def create_app(
         __fields.update(create_layout(intro=intro))
         # init the state
         __fields.update(create_state())
-        # update the data after clicking process
+        # first tokenize to get the token indices
         __fields['process_block'].click(
             fn=tokenize,
             inputs=__fields['input_block'],
@@ -188,10 +231,24 @@ def create_app(
             queue=False,
             show_progress='hidden'
         ).then(
+        # then compute the associated logits
+            fn=compute,
+            inputs=__fields['indices_state'],
+            outputs=__fields['logits_state'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
+        # then compute the rank metrics
+            fn=score,
+            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
+            outputs=__fields['highlight_block'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
         # update the range of possible values for the window
             fn=update_window_range,
-            inputs=[__fields[__k] for __k in ['final_window_block', 'indices_state']],
-            outputs=__fields['final_window_block'],
+            inputs=[__fields[__k] for __k in ['window_block', 'indices_state']],
+            outputs=__fields['window_block'],
             queue=False,
             show_progress='hidden')
         # gradio application
@@ -203,11 +260,11 @@ if __name__ == '__main__':
     # load the model
     __device = 'cuda' if torch.cuda.is_available() else 'cpu'
     __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=MODEL, device=__device)
-    # __model = psaiops.common.model.get_model(name=MODEL, device=__device)
-    # __norm = copy.deepcopy(__model.model.norm).cpu()
-    # __head = copy.deepcopy(__model.lm_head).cpu()
+    __model = psaiops.common.model.get_model(name=MODEL, device=__device)
     # adapt the event handlers
     __tokenize = functools.partial(update_indices_state, tokenizer_obj=__tokenizer)
+    __compute = functools.partial(update_logits_state, model_obj=__model)
+    __score = functools.partial(update_rank_scores, tokenizer_obj=__tokenizer)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
-    __app = create_app(tokenize=__tokenize)
+    __app = create_app(tokenize=__tokenize, compute=__compute, score=__score)
     __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)
