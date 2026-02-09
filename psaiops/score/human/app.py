@@ -10,7 +10,7 @@ import matplotlib.pyplot
 import psaiops.common.model
 import psaiops.common.style
 import psaiops.common.tokenizer
-import psaiops.score.surprisal.lib
+import psaiops.score.human.lib
 
 # META #########################################################################
 
@@ -99,8 +99,8 @@ def create_actions_block() -> dict:
 
 def create_state() -> dict:
     return {
-        'output_state': gradio.State(None),
-        'hidden_state': gradio.State(None),}
+        'indices_state': gradio.State(torch.empty(0)),
+        'logits_state': gradio.State(torch.empty(0)),}
 
 # LAYOUT #######################################################################
 
@@ -136,17 +136,32 @@ def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
 
 # TOKENS #######################################################################
 
+def update_indices_state(
+    prompt_str: str,
+    tokenizer_obj: object,
+) -> tuple:
+    # exit if some values are missing
+    if (prompt_str is None) or (tokenizer_obj is None):
+        return torch.empty(0)
+    # dictionary {'input_ids': _, 'attention_mask': _}
+    __input_data = psaiops.common.tokenizer.preprocess_token_ids(
+        tokenizer_obj=tokenizer_obj,
+        prompt_str=prompt_str.strip(),
+        device_str='cpu')
+    # discard the mask, which is all ones
+    return __input_data['input_ids'].cpu()
+
 # WINDOW #######################################################################
 
 def update_window_range(
     current_val: float,
-    output_arr: object,
+    indices_arr: object,
 ) -> dict:
     # exit if some values are missing
-    if (current_val is None) or (output_arr is None) or (len(output_arr) == 0):
+    if (current_val is None) or (indices_arr is None) or (len(indices_arr) == 0):
         return gradio.update()
     # take the generated tokens into account
-    __max = max(1, int(output_arr.shape[-1]))
+    __max = max(1, int(indices_arr.shape[-1]))
     # keep the previous value if possible
     __val = min(int(current_val), __max)
     # return a gradio update dictionary
@@ -155,6 +170,7 @@ def update_window_range(
 # APP ##########################################################################
 
 def create_app(
+    tokenize: callable,
     title: str=TITLE,
     intro: str=INTRO
 ) -> gradio.Blocks:
@@ -165,11 +181,16 @@ def create_app(
         # init the state
         __fields.update(create_state())
         # update the data after clicking process
-        __fields['process_block'].click()
+        __fields['process_block'].click(
+            fn=tokenize,
+            inputs=__fields['input_block'],
+            outputs=__fields['indices_state'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
         # update the range of possible values for the window
-        __fields['output_state'].change(
             fn=update_window_range,
-            inputs=[__fields[__k] for __k in ['final_window_block', 'output_state']],
+            inputs=[__fields[__k] for __k in ['final_window_block', 'indices_state']],
             outputs=__fields['final_window_block'],
             queue=False,
             show_progress='hidden')
@@ -186,6 +207,7 @@ if __name__ == '__main__':
     # __norm = copy.deepcopy(__model.model.norm).cpu()
     # __head = copy.deepcopy(__model.lm_head).cpu()
     # adapt the event handlers
+    __tokenize = functools.partial(update_indices_state, tokenizer_obj=__tokenizer)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
-    __app = create_app()
+    __app = create_app(tokenize=__tokenize)
     __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)
