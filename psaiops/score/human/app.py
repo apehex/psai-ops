@@ -40,6 +40,7 @@ DOCS = '''The model used as critic is `openai/gpt-oss-20b`.'''
 # metric types
 TOKENS = 1
 CRITIC = 2
+SAMPLING = 4
 
 # COLORS #######################################################################
 
@@ -53,8 +54,8 @@ def create_selection_cmap() -> dict:
 def create_score_cmap() -> dict:
     return {
         str(__i): '#{:02x}{:02x}00'.format(
-            int(2.55 * 2 * max(0, __i - 50)), # red: increasing prob of LLM from 50 to 100
-            int(2.55 * 2 * max(0, 50 - __i))) # green: decreasing prob of human from 0 to 50
+            int(2.55 * 2 * max(0, 50 - __i)), # red: decreasing prob of LLM from 0 to 50
+            int(2.55 * 2 * max(0, __i - 50))) # green: increasing prob of human from 50 to 100
         for __i in range(101)}
 
 # INTRO ########################################################################
@@ -82,9 +83,9 @@ def create_sampling_block() -> dict:
 
 # INPUTS #######################################################################
 
-def create_inputs_block(label: str='Prompt') -> dict:
+def create_inputs_block(label: str='Prompt', prefix: str='') -> dict:
     __input = gradio.Textbox(label=label, value='', placeholder='A string of tokens to score.', lines=4, scale=1, interactive=True)
-    return {'input_block': __input}
+    return {prefix + 'input_block': __input}
 
 # PLOTS ########################################################################
 
@@ -127,21 +128,18 @@ def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
     __fields = {}
     __fields.update(create_text_block(text=intro))
     with gradio.Tabs():
-        with gradio.Tab('Main') as __main_tab:
+        with gradio.Tab('Scores') as __main_tab:
             __fields.update({'main_tab': __main_tab})
             with gradio.Row(equal_height=True):
-                __fields.update(create_inputs_block())
+                __fields.update(create_inputs_block(label='Prompt', prefix=''))
             with gradio.Row(equal_height=True):
-                __fields.update(create_highlight_block(label='Scores', prefix='', cmap=create_score_cmap()))
+                __fields.update(create_highlight_block(label='By Token', prefix='', cmap=create_score_cmap()))
+                __fields.update(create_plot_block(label='By Position', prefix=''))
             with gradio.Row(equal_height=True):
                 __fields.update(create_metrics_block(label='Metrics', prefix=''))
                 __fields.update(create_window_block(label='Window', prefix=''))
             with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
-        with gradio.Tab('Plots') as __plots_tab:
-            __fields.update({'plots_tab': __plots_tab})
-            with gradio.Row(equal_height=True):
-                __fields.update(create_plot_block(label='Scores', prefix=''))
         with gradio.Tab('Settings') as __settings_tab:
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Row(equal_height=True):
@@ -214,7 +212,7 @@ def update_rank_scores(
     __token_str = psaiops.common.tokenizer.postprocess_token_ids(
         token_arr=indices_arr,
         tokenizer_obj=tokenizer_obj)
-    # compute the rank metric, in [0; V-1]
+    # compute the rank metric, in [0.5; 1]
     __token_cls = psaiops.score.human.lib.compute_rank_metrics(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
@@ -226,6 +224,35 @@ def update_rank_scores(
     __token_cls = max(0, len(__token_str) - len(__token_cls)) * ['50'] + __token_cls
     # color each token according to its rank in the LLM's predictions
     return list(zip(__token_str, __token_cls))
+
+def update_rank_plots(
+    indices_arr: object,
+    logits_arr: object,
+) -> object:
+    # exit if some values are missing
+    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
+        return None
+    # compute the rank metric, in [0.5; 1]
+    __y = psaiops.score.human.lib.compute_rank_metrics(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr)
+    # add the missing score for the first token
+    __y = [0.5] + __y.squeeze().numpy().tolist()
+    # rescale as a percentage like the token labels
+    __y = [int(100.0 * __s) for __s in __y]
+    # match the metrics with their token position
+    __x = range(len(__y))
+    # plot the first sample
+    __figure = matplotlib.pyplot.figure()
+    __axes = __figure.add_subplot(1, 1, 1)
+    __axes.plot(__x, __y, linestyle='--', label='prob(human)')
+    # display the legend and remove the extra padding
+    __axes.legend()
+    __figure.tight_layout()
+    # remove the figure for the pyplot register for garbage collection
+    matplotlib.pyplot.close(__figure)
+    # update each component => (highlight, plot) states
+    return __figure
 
 # APP ##########################################################################
 
@@ -262,7 +289,14 @@ def create_app(
             inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
             outputs=__fields['highlight_block'],
             queue=False,
-            show_progress='hidden'
+            show_progress='full'
+        ).then(
+        # and the rank plots
+            fn=update_rank_plots,
+            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
+            outputs=__fields['plot_block'],
+            queue=False,
+            show_progress='full'
         ).then(
         # update the range of possible values for the window
             fn=update_window_range,
