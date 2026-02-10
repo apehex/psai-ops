@@ -33,14 +33,21 @@ def compute_raw_logits(
 def compute_rank_metrics(
     indices_arr: object,
     logits_arr: object,
+    lower_val: int=100,
+    upper_val: int=201088, # size of the vocabulary used by gpt-oss
 ) -> object:
-    # the first token cannot be rated => (T-1,) and (T-1, V)
-    __indices = indices_arr[0, 1:].detach().int()
-    __logits = logits_arr[0, :-1].detach().float()
+    # the first token cannot be rated => (B, T-1, 1) and (B, T-1, V)
+    __indices = indices_arr[:, 1:].detach().int().unsqueeze(-1)
+    __logits = logits_arr[:, :-1].detach().float()
     # fetch the logits of the tokens chosen in the actual output
-    __chosen = __logits.gather(dim=-1, index=__indices.unsqueeze(-1))
+    __chosen = __logits.gather(dim=-1, index=__indices)
     # count the tokens with higher logits
-    return (__logits > __chosen).int().sum(dim=-1)
+    __ranks = (__logits > __chosen).float().sum(dim=-1, keepdim=True)
+    # normalization factors
+    __llower = math.log(1 + lower_val)
+    __lupper = math.log(1 + upper_val)
+    # the metric is in [0.5; 1] with shape (B, T-1, 1)
+    return 0.5 * (1.0 + torch.clamp((torch.log(1 + __ranks) - __llower) / (__lupper - __llower), min=0.0, max=1.0))
 
 # POSTPROCESS ##################################################################
 
@@ -48,7 +55,7 @@ def postprocess_score_cls(
     score_arr: object,
     scale_val: float=1.0,
 ) -> list:
-    # prepend a 0 because the first token cannot be rated
-    __scores = [0] + score_arr.numpy().tolist()
+    # remove the orphan axes => flat sequence
+    __scores = score_arr.squeeze().numpy().tolist()
     # rescale and output str labels
     return [str(int(__s * scale_val)) for __s in __scores]
