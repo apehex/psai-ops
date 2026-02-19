@@ -200,7 +200,7 @@ def update_logits_state(
 
 # RANK #########################################################################
 
-def update_rank_scores(
+def update_human_scores(
     indices_arr: object,
     logits_arr: object,
     tokenizer_obj: object,
@@ -225,7 +225,7 @@ def update_rank_scores(
     # color each token according to its rank in the LLM's predictions
     return list(zip(__token_str, __token_cls))
 
-def update_rank_plots(
+def update_human_plots(
     indices_arr: object,
     logits_arr: object,
 ) -> object:
@@ -292,7 +292,7 @@ def create_app(
             show_progress='full'
         ).then(
         # and the rank plots
-            fn=update_rank_plots,
+            fn=update_human_plots,
             inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
             outputs=__fields['plot_block'],
             queue=False,
@@ -317,7 +317,7 @@ if __name__ == '__main__':
     # adapt the event handlers
     __tokenize = functools.partial(update_indices_state, tokenizer_obj=__tokenizer)
     __compute = functools.partial(update_logits_state, model_obj=__model)
-    __score = functools.partial(update_rank_scores, tokenizer_obj=__tokenizer)
+    __score = functools.partial(update_human_scores, tokenizer_obj=__tokenizer)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
     __app = create_app(tokenize=__tokenize, compute=__compute, score=__score)
     __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)
