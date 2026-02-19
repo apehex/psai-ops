@@ -49,6 +49,18 @@ def compute_rank_metrics(
     # the metric is in [0.5; 1] with shape (B, T-1, 1)
     return 0.5 * (1.0 + torch.clamp((torch.log(1 + __ranks) - __llower) / (__lupper - __llower), min=0.0, max=1.0))
 
+# ENTROPY ######################################################################
+
+def compute_entropy_metrics(
+    logits_arr: object,
+) -> object:
+    # the first token can be rated actually (B, T, V)
+    __outputs = logits_arr.detach().float()
+    # compute the log probs
+    __outputs = torch.log_softmax(__outputs, dim=-1)
+    # reduce the last axis
+    return -(torch.exp(__outputs) * __outputs).sum(dim=-1)
+
 # POSTPROCESS ##################################################################
 
 def postprocess_score_cls(
