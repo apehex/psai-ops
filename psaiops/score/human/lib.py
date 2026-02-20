@@ -61,6 +61,22 @@ def compute_entropy_metrics(
     # reduce the last axis
     return -(torch.exp(__outputs) * __outputs).sum(dim=-1)
 
+# PERPLEXITY ###################################################################
+
+def compute_perplexity_metrics(
+    indices_arr: object,
+    logits_arr: object,
+) -> object:
+    # the first token cannot be rated => (B, T-1, 1) and (B, T-1, V)
+    __indices = indices_arr[:, 1:].detach().int().unsqueeze(-1)
+    __logits = logits_arr[:, :-1].detach().float()
+    # compute the log probs
+    __outputs = torch.log_softmax(__logits, dim=-1)
+    # fetch the logprobs of the tokens chosen in the actual output
+    __outputs = __outputs.gather(dim=-1, index=__indices)
+    # compute the perplexity exp(E(-log(p(t))))
+    return torch.exp(-torch.mean(__outputs, dim=-1))
+
 # POSTPROCESS ##################################################################
 
 def postprocess_score_cls(
