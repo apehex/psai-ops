@@ -59,13 +59,15 @@ def compute_entropy_metrics(
     # compute the log probs
     __outputs = torch.log_softmax(__outputs, dim=-1)
     # reduce the last axis
-    return -(torch.exp(__outputs) * __outputs).sum(dim=-1)
+    return -(torch.exp(__outputs) * __outputs).sum(dim=-1) / math.log(201088)
 
 # PERPLEXITY ###################################################################
 
 def compute_perplexity_metrics(
     indices_arr: object,
     logits_arr: object,
+    lower_val: float=math.log(2), # perplexity 2 => average probability of 0.5, values below are rare and considered the extrem of LLM sampling
+    upper_val: float=math.log(800), # perplexity 800 => computed so the 0.5 * (L + U) = log(40) => perplexity 40 is undecided between LLM / human
 ) -> object:
     # the first token cannot be rated => (B, T-1, 1) and (B, T-1, V)
     __indices = indices_arr[:, 1:].detach().int().unsqueeze(-1)
@@ -73,9 +75,11 @@ def compute_perplexity_metrics(
     # compute the log probs
     __outputs = torch.log_softmax(__logits, dim=-1)
     # fetch the logprobs of the tokens chosen in the actual output
-    __outputs = __outputs.gather(dim=-1, index=__indices)
-    # compute the perplexity exp(E(-log(p(t))))
-    return torch.exp(-torch.mean(__outputs, dim=-1))
+    __outputs = __outputs.gather(dim=-1, index=__indices).squeeze(-1)
+    # compute the log of the perplexity E(-log(p(t)))
+    __outputs = -torch.mean(__outputs, dim=-1, keepdim=True)
+    # rescale the metric to cover [0; 1]
+    return torch.clamp((__outputs - lower_val) / (upper_val - lower_val), min=0.0, max=1.0)
 
 # POSTPROCESS ##################################################################
 
