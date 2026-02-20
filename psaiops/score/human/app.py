@@ -134,6 +134,7 @@ def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
                 __fields.update(create_inputs_block(label='Prompt', prefix=''))
             with gradio.Row(equal_height=True):
                 __fields.update(create_highlight_block(label='By Token', prefix='', cmap=create_score_cmap()))
+            with gradio.Row(equal_height=True):
                 __fields.update(create_plot_block(label='By Position', prefix=''))
             with gradio.Row(equal_height=True):
                 __fields.update(create_metrics_block(label='Metrics', prefix=''))
@@ -259,7 +260,7 @@ def update_human_plots(
     # display the perplexity as a constant line
     __yp = len(__yr) * __yp
     # plot the first sample
-    __figure = matplotlib.pyplot.figure()
+    __figure = matplotlib.pyplot.figure(figsize=(16, 4), dpi=120)
     __axes = __figure.add_subplot(1, 1, 1)
     __axes.plot(__x, __yr, linestyle='--', label='rank')
     __axes.plot(__x, __ye, linestyle='--', label='entropy')
