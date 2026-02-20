@@ -233,19 +233,37 @@ def update_human_plots(
     if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
         return None
     # compute the rank metric, in [0.5; 1]
-    __y = psaiops.score.human.lib.compute_rank_metrics(
+    __yr = psaiops.score.human.lib.compute_rank_metrics(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
+    # compute the entropy metric
+    __ye = psaiops.score.human.lib.compute_entropy_metrics(
+        logits_arr=logits_arr)
+    # compute the perplexity metric
+    __yp = psaiops.score.human.lib.compute_perplexity_metrics(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr)
+    # remove the batch axis
+    __yr = __yr.squeeze(dim=0).numpy().tolist()
+    __ye = __ye.squeeze(dim=0).numpy().tolist()
+    __yp = __yp.squeeze(dim=0).numpy().tolist()
     # add the missing score for the first token
-    __y = [0.5] + __y.squeeze().numpy().tolist()
+    __yr = [0.5] + __yr
+    __ye = [0.5] + __ye
     # rescale as a percentage like the token labels
-    __y = [int(100.0 * __s) for __s in __y]
+    __yr = [int(100.0 * __s) for __s in __yr]
+    __ye = [int(100.0 * __s) for __s in __ye]
+    __yp = [int(100.0 * __s) for __s in __yp]
     # match the metrics with their token position
-    __x = range(len(__y))
+    __x = range(len(__yr))
+    # display the perplexity as a constant line
+    __yp = len(__yr) * __yp
     # plot the first sample
     __figure = matplotlib.pyplot.figure()
     __axes = __figure.add_subplot(1, 1, 1)
-    __axes.plot(__x, __y, linestyle='--', label='prob(human)')
+    __axes.plot(__x, __yr, linestyle='--', label='rank')
+    __axes.plot(__x, __ye, linestyle='--', label='entropy')
+    __axes.plot(__x, __yp, linestyle='--', label='perplexity')
     # display the legend and remove the extra padding
     __axes.legend()
     __figure.tight_layout()
