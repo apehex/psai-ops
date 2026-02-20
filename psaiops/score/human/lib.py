@@ -42,7 +42,7 @@ def compute_rank_metrics(
     # fetch the logits of the tokens chosen in the actual output
     __chosen = __logits.gather(dim=-1, index=__indices)
     # count the tokens with higher logits
-    __ranks = (__logits > __chosen).float().sum(dim=-1, keepdim=True)
+    __ranks = (__logits > __chosen).float().sum(dim=-1, keepdim=False)
     # normalization factors
     __llower = math.log(1 + lower_val)
     __lupper = math.log(1 + upper_val)
@@ -55,7 +55,7 @@ def compute_entropy_metrics(
     logits_arr: object,
 ) -> object:
     # the first token can be rated actually (B, T, V)
-    __outputs = logits_arr.detach().float()
+    __outputs = logits_arr[:, :-1].detach().float()
     # compute the log probs
     __outputs = torch.log_softmax(__outputs, dim=-1)
     # reduce the last axis
