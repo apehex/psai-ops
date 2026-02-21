@@ -8,6 +8,19 @@ import torch.nn.functional
 
 import mlable.shapes
 
+# META ###########################################################################
+
+VOCABULARY_DIM = 201088
+
+RANK_DIM_MIN = 1
+RANK_DIM_MAX = 1
+
+ENTROPY_DIM_MIN = 1
+ENTROPY_DIM_MAX = 33
+
+PERPLEXITY_DIM_MIN = 5
+PERPLEXITY_DIM_MAX = 33
+
 # GENERATE #######################################################################
 
 @functools.lru_cache(maxsize=32)
@@ -65,9 +78,11 @@ def compute_rank_metrics(
     indices_arr: object,
     logits_arr: object,
     lower_val: int=100,
-    upper_val: int=201088, # size of the vocabulary used by gpt-oss
-    scope_dim: int=1,
+    upper_val: int=VOCABULARY_DIM, # size of the vocabulary used by gpt-oss
+    scope_dim: int=RANK_DIM_MIN,
 ) -> object:
+    # prevent the pooling from flattening the ranks
+    __dim = max(RANK_DIM_MIN, min(RANK_DIM_MAX, scope_dim))
     # the first token cannot be rated => (B, T-1, 1) and (B, T-1, V)
     __indices = indices_arr[:, 1:].detach().int().unsqueeze(-1)
     __logits = logits_arr[:, :-1].detach().float()
@@ -81,14 +96,16 @@ def compute_rank_metrics(
     # the metric is in [0.5; 1] with shape (B, T-1)
     __outputs = 0.5 * (1.0 + torch.clamp((torch.log(1 + __outputs) - __llower) / (__lupper - __llower), min=0.0, max=1.0))
     # compute the average in the scope to smooth the output
-    return compute_average_pooling(__outputs, pool_dim=scope_dim, axis_idx=1)
+    return compute_average_pooling(__outputs, pool_dim=__dim, axis_idx=1)
 
 # ENTROPY ######################################################################
 
 def compute_entropy_metrics(
     logits_arr: object,
-    scope_dim: int=1,
+    scope_dim: int=ENTROPY_DIM_MIN,
 ) -> object:
+    # prevent the entropy from just accumulating over time (when the window is the length of the sample)
+    __dim = max(ENTROPY_DIM_MIN, min(ENTROPY_DIM_MAX, scope_dim))
     # the first token can be rated actually (B, T-1, V)
     __outputs = logits_arr[:, :-1].detach().float()
     # compute the log probs (B, T-1, V)
@@ -96,9 +113,9 @@ def compute_entropy_metrics(
     # reduce the last axis (B, T-1)
     __outputs = -(torch.exp(__outputs) * __outputs).sum(dim=-1, keepdim=False)
     # normalize (B, T-1)
-    __outputs = __outputs / math.log(201088)
+    __outputs = __outputs / math.log(VOCABULARY_DIM)
     # and average over the scope (B, T-1)
-    return compute_average_pooling(__outputs, pool_dim=scope_dim, axis_idx=1)
+    return compute_average_pooling(__outputs, pool_dim=__dim, axis_idx=1)
 
 # PERPLEXITY ###################################################################
 
@@ -107,8 +124,10 @@ def compute_perplexity_metrics(
     logits_arr: object,
     lower_val: float=math.log(2), # perplexity 2 => average probability of 0.5, values below are rare and considered the extrem of LLM sampling
     upper_val: float=math.log(800), # perplexity 800 => computed so the 0.5 * (L + U) = log(40) => perplexity 40 is undecided between LLM / human
-    scope_dim: int=1,
+    scope_dim: int=PERPLEXITY_DIM_MIN,
 ) -> object:
+    # prevent the perplexity from just accumulating over time, and avoid computing the perplexity of a single token
+    __dim = max(PERPLEXITY_DIM_MIN, min(PERPLEXITY_DIM_MAX, scope_dim))
     # the first token cannot be rated => (B, T-1, 1) and (B, T-1, V)
     __indices = indices_arr[:, 1:].detach().int().unsqueeze(-1)
     __logits = logits_arr[:, :-1].detach().float()
@@ -117,7 +136,7 @@ def compute_perplexity_metrics(
     # fetch the logprobs of the tokens chosen in the actual output (B, T-1)
     __outputs = __outputs.gather(dim=-1, index=__indices).squeeze(-1)
     # compute the log of the perplexity E(-log(p(t)))
-    __outputs = compute_average_pooling(-__outputs, pool_dim=scope_dim, axis_idx=1)
+    __outputs = compute_average_pooling(-__outputs, pool_dim=__dim, axis_idx=1)
     # rescale the metric to cover [0; 1] (B, T-1)
     return torch.clamp((__outputs - lower_val) / (upper_val - lower_val), min=0.0, max=1.0)
 
