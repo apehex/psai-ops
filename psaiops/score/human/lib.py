@@ -21,9 +21,11 @@ ENTROPY_DIM_MAX = 33
 PERPLEXITY_DIM_MIN = 5
 PERPLEXITY_DIM_MAX = 33
 
+SURPRISAL_DIM_MIN = 1
+SURPRISAL_DIM_MAX = 33
+
 # GENERATE #######################################################################
 
-@functools.lru_cache(maxsize=32)
 def compute_raw_logits(
     indices_arr: object,
     model_obj: object,
@@ -198,6 +200,38 @@ def compute_perplexity_metrics(
         nlls_arr=__outputs,
         lower_val=lower_val,
         upper_val=upper_val,
+        scope_dim=scope_dim)
+
+# SURPRISAL ####################################################################
+
+def postprocess_surprisals(
+    surprisals_arr: object,
+    scope_dim: int=SURPRISAL_DIM_MIN,
+) -> object:
+    # prevent the surprisal from just accumulating over time (when the window is the length of the sample)
+    __dim = max(SURPRISAL_DIM_MIN, min(SURPRISAL_DIM_MAX, scope_dim))
+    # normalize (B, T-1)
+    __outputs = torch.clamp(0.5 + (surprisals_arr / math.log(VOCABULARY_DIM)), min=0.0, max=1.0)
+    # and average over the scope (B, T-1)
+    return compute_average_pooling(__outputs, pool_dim=__dim, axis_idx=1)
+
+def compute_surprisal_metrics(
+    indices_arr: object,
+    logits_arr: object,
+    scope_dim: int=SURPRISAL_DIM_MIN,
+) -> object:
+    # compute the raw entropies (B, T-1)
+    __expectations = compute_entropies(
+        logits_arr=logits_arr)
+    # compute the negative log likelihoods (B, T-1)
+    __realizations = compute_nllikelihoods(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr)
+    # the surprisal is defined as the delta between entropy and NLL (B, T-1)
+    __outputs = __realizations - __expectations
+    # normalized like the entropy (B, T-1)
+    return postprocess_surprisals(
+        surprisals_arr=__outputs,
         scope_dim=scope_dim)
 
 # FINAL SCORES #################################################################
