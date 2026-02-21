@@ -229,21 +229,25 @@ def update_human_scores(
 def update_human_plots(
     indices_arr: object,
     logits_arr: object,
+    window_dim: float,
 ) -> object:
     # exit if some values are missing
-    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
+    if (window_dim is None) or (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
         return None
     # compute the rank metric, in [0.5; 1]
     __yr = psaiops.score.human.lib.compute_rank_metrics(
         indices_arr=indices_arr,
-        logits_arr=logits_arr)
+        logits_arr=logits_arr,
+        scope_dim=int(window_dim))
     # compute the entropy metric
     __ye = psaiops.score.human.lib.compute_entropy_metrics(
-        logits_arr=logits_arr)
+        logits_arr=logits_arr,
+        scope_dim=int(window_dim))
     # compute the perplexity metric
     __yp = psaiops.score.human.lib.compute_perplexity_metrics(
         indices_arr=indices_arr,
-        logits_arr=logits_arr)
+        logits_arr=logits_arr,
+        scope_dim=int(window_dim))
     # remove the batch axis
     __yr = __yr.squeeze(dim=0).numpy().tolist()
     __ye = __ye.squeeze(dim=0).numpy().tolist()
@@ -251,14 +255,13 @@ def update_human_plots(
     # add the missing score for the first token
     __yr = [0.5] + __yr
     __ye = [0.5] + __ye
+    __yp = [0.5] + __yp
     # rescale as a percentage like the token labels
     __yr = [int(100.0 * __s) for __s in __yr]
     __ye = [int(100.0 * __s) for __s in __ye]
     __yp = [int(100.0 * __s) for __s in __yp]
     # match the metrics with their token position
     __x = range(len(__yr))
-    # display the perplexity as a constant line
-    __yp = len(__yr) * __yp
     # plot the first sample
     __figure = matplotlib.pyplot.figure(figsize=(16, 4), dpi=120)
     __axes = __figure.add_subplot(1, 1, 1)
@@ -303,16 +306,16 @@ def create_app(
             queue=False,
             show_progress='hidden'
         ).then(
-        # then compute the rank metrics
+        # then compute the scores
             fn=score,
             inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
             outputs=__fields['highlight_block'],
             queue=False,
             show_progress='full'
         ).then(
-        # and the rank plots
+        # and plot the metrics
             fn=update_human_plots,
-            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
+            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'window_block']],
             outputs=__fields['plot_block'],
             queue=False,
             show_progress='full'
@@ -323,6 +326,13 @@ def create_app(
             outputs=__fields['window_block'],
             queue=False,
             show_progress='hidden')
+        # update the plots when the window changes
+        __fields['window_block'].change(
+            fn=update_human_plots,
+            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'window_block']],
+            outputs=__fields['plot_block'],
+            queue=False,
+            show_progress='full')
         # gradio application
         return __app
 
