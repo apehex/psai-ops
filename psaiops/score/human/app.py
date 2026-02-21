@@ -248,18 +248,26 @@ def update_human_plots(
         indices_arr=indices_arr,
         logits_arr=logits_arr,
         scope_dim=int(window_dim))
+    # and the surprisal metric
+    __ys = psaiops.score.human.lib.compute_surprisal_metrics(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr,
+        scope_dim=int(window_dim))
     # remove the batch axis
     __yr = __yr.squeeze(dim=0).numpy().tolist()
     __ye = __ye.squeeze(dim=0).numpy().tolist()
     __yp = __yp.squeeze(dim=0).numpy().tolist()
+    __ys = __ys.squeeze(dim=0).numpy().tolist()
     # add the missing score for the first token
     __yr = [0.5] + __yr
     __ye = [0.5] + __ye
     __yp = [0.5] + __yp
+    __ys = [0.5] + __ys
     # rescale as a percentage like the token labels
     __yr = [int(100.0 * __s) for __s in __yr]
     __ye = [int(100.0 * __s) for __s in __ye]
     __yp = [int(100.0 * __s) for __s in __yp]
+    __ys = [int(100.0 * __s) for __s in __ys]
     # match the metrics with their token position
     __x = range(len(__yr))
     # plot the first sample
@@ -268,6 +276,7 @@ def update_human_plots(
     __axes.plot(__x, __yr, linestyle='--', label='rank')
     __axes.plot(__x, __ye, linestyle='--', label='entropy')
     __axes.plot(__x, __yp, linestyle='--', label='perplexity')
+    __axes.plot(__x, __ys, linestyle='--', label='surprisal')
     # display the legend and remove the extra padding
     __axes.legend()
     __figure.tight_layout()
