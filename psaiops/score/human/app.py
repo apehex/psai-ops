@@ -318,14 +318,7 @@ def create_app(
             inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'window_block']],
             outputs=__fields['plot_block'],
             queue=False,
-            show_progress='full'
-        ).then(
-        # update the range of possible values for the window
-            fn=update_window_range,
-            inputs=[__fields[__k] for __k in ['window_block', 'indices_state']],
-            outputs=__fields['window_block'],
-            queue=False,
-            show_progress='hidden')
+            show_progress='full')
         # update the plots when the window changes
         __fields['window_block'].change(
             fn=update_human_plots,
