@@ -58,7 +58,7 @@ def compute_average_pooling(
     # save the shape before flattening
     *__prefix, __dim = tuple(__data.shape)
     # flatten to match the expected shape of pool1d
-    __data = __data.reshape(math.prod(__prefix), 1, __dim)
+    __data = __data.contiguous().view(math.prod(__prefix), 1, __dim)
     # actually pool the data
     __data = torch.nn.functional.avg_pool1d(
         __data,
@@ -167,7 +167,7 @@ def compute_nllikelihoods(
     # compute the log probs (B, T-1, V)
     __outputs = torch.log_softmax(__logits, dim=-1)
     # fetch the logprobs of the tokens chosen in the actual output (B, T-1)
-    return __outputs.gather(dim=-1, index=__indices).squeeze(-1)
+    return -__outputs.gather(dim=-1, index=__indices).squeeze(-1)
 
 def postprocess_nllikelihoods(
     nlls_arr: object,
@@ -178,7 +178,7 @@ def postprocess_nllikelihoods(
     # prevent the perplexity from just accumulating over time, and avoid computing the perplexity of a single token
     __dim = max(PERPLEXITY_DIM_MIN, min(PERPLEXITY_DIM_MAX, scope_dim))
     # compute the log of the perplexity E(-log(p(t)))
-    __outputs = compute_average_pooling(-nlls_arr, pool_dim=__dim, axis_idx=1)
+    __outputs = compute_average_pooling(nlls_arr, pool_dim=__dim, axis_idx=1)
     # rescale the metric to cover [0; 1] (B, T-1)
     return torch.clamp((__outputs - lower_val) / (upper_val - lower_val), min=0.0, max=1.0)
 
