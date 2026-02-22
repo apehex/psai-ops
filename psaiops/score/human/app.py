@@ -220,15 +220,28 @@ def update_human_scores(
     tokens_arr: list,
     indices_arr: object,
     logits_arr: object,
+    window_dim: float,
     tokenizer_obj: object,
 ) -> list:
     # exit if some values are missing
     if (tokens_arr is None) or (len(tokens_arr) == 0) or (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
         return None
-    # compute the rank metric, in [0.5; 1]
-    __token_cls = psaiops.score.human.lib.compute_rank_metrics(
-        indices_arr=indices_arr,
-        logits_arr=logits_arr)
+    # compute all the metrics, in [0.0; 1]
+    __token_cls = [
+        psaiops.score.human.lib.compute_perplexity_metrics(
+            indices_arr=indices_arr,
+            logits_arr=logits_arr,
+            scope_dim=int(window_dim)),
+        psaiops.score.human.lib.compute_surprisal_metrics(
+            indices_arr=indices_arr,
+            logits_arr=logits_arr,
+            scope_dim=int(window_dim)),
+        psaiops.score.human.lib.compute_unicode_metrics(
+            tokens_arr=tokens_arr)[:, 1:]] # ignore the first token to match the shape of the other metrics
+    # combine the metrics
+    __token_cls = psaiops.score.human.lib.compute_probability_conflation(
+        metrics_arr=__token_cls,
+        axis_idx=-1)
     # scale into a [0; 100] label
     __token_cls = psaiops.score.human.lib.postprocess_score_cls(
         score_arr=__token_cls,
@@ -249,9 +262,7 @@ def update_human_plots(
         return None
     # compute the unicode metric, in [0.0; 0.5] and ignore the first token
     __yu = psaiops.score.human.lib.compute_unicode_metrics(
-        indices_arr=indices_arr,
-        logits_arr=logits_arr,
-        scope_dim=int(window_dim))
+        tokens_arr=tokens_arr,)[:, 1:]
     # compute the rank metric, in [0.5; 1]
     __yr = psaiops.score.human.lib.compute_rank_metrics(
         indices_arr=indices_arr,
@@ -271,28 +282,37 @@ def update_human_plots(
         indices_arr=indices_arr,
         logits_arr=logits_arr,
         scope_dim=int(window_dim))
+    # combine all the metrics into a final score
+    __yf = psaiops.score.human.lib.compute_probability_conflation(
+        metrics_arr=[__yp, __ys, __yu],
+        axis_idx=-1)
     # remove the batch axis
     __yu = __yu.squeeze(dim=0).numpy().tolist()
     __yr = __yr.squeeze(dim=0).numpy().tolist()
     __ye = __ye.squeeze(dim=0).numpy().tolist()
     __yp = __yp.squeeze(dim=0).numpy().tolist()
     __ys = __ys.squeeze(dim=0).numpy().tolist()
+    __yf = __yf.squeeze(dim=0).numpy().tolist()
     # add the missing score for the first token
+    __yu = [0.5] + __yu
     __yr = [0.5] + __yr
     __ye = [0.5] + __ye
     __yp = [0.5] + __yp
     __ys = [0.5] + __ys
+    __yf = [0.5] + __yf
     # rescale as a percentage like the token labels
     __yu = [int(100.0 * __s) for __s in __yu]
     __yr = [int(100.0 * __s) for __s in __yr]
     __ye = [int(100.0 * __s) for __s in __ye]
     __yp = [int(100.0 * __s) for __s in __yp]
     __ys = [int(100.0 * __s) for __s in __ys]
+    __yf = [int(100.0 * __s) for __s in __yf]
     # match the metrics with their token position
     __x = range(len(__yr))
     # plot the first sample
     __figure = matplotlib.pyplot.figure(figsize=(16, 4), dpi=120)
     __axes = __figure.add_subplot(1, 1, 1)
+    __axes.plot(__x, __yf, linestyle='--', label='final')
     __axes.plot(__x, __yu, linestyle='--', label='unicode')
     __axes.plot(__x, __yr, linestyle='--', label='rank')
     __axes.plot(__x, __ye, linestyle='--', label='entropy')
@@ -346,7 +366,7 @@ def create_app(
         ).then(
         # then compute the scores
             fn=score,
-            inputs=[__fields[__k] for __k in ['tokens_state', 'indices_state', 'logits_state']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'indices_state', 'logits_state', 'window_block']],
             outputs=__fields['highlight_block'],
             queue=False,
             show_progress='full'
@@ -360,7 +380,7 @@ def create_app(
         # update the plots when the window changes
         __fields['window_block'].change(
             fn=update_human_plots,
-            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'window_block']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'indices_state', 'logits_state', 'window_block']],
             outputs=__fields['plot_block'],
             queue=False,
             show_progress='full')
