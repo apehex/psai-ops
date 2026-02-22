@@ -24,6 +24,25 @@ PERPLEXITY_DIM_MAX = 33
 SURPRISAL_DIM_MIN = 1
 SURPRISAL_DIM_MAX = 33
 
+# UNICODE ########################################################################
+
+UNICODE_RANGES = [
+    (0x0100, 0x017f), # latin extended A: used to offset special characters of ASCII
+    (0x0180, 0x024f), # latin extended B: used to offset special characters of ASCII
+    (0x0250, 0x02af), # IPA extension: used to offset special characters of ASCII
+    (0x02b0, 0x02ff), # spacing modifier letters: fancy glyphs used by LLMS, like the prime \u02b9
+    (0x0300, 0x036f), # combining diacritical marks: more fancy glyphs like the tilde \u0334
+    (0x0360, 0x03ff), # Greek and Coptic: used by LLMs in equations, while we use named glyphs (cf LaTeX)
+    (0x2000, 0x206f), # general punctuation: fancy non ASCII puntuation like the double quote \u201c
+    (0x2070, 0x209f), # superscripts and subscripts: fancy exponents like the parenthesis \u207d
+    (0x20d0, 0x20ff), # combining diacritical marks for symbols: never seen those
+    (0x2100, 0x214f), # letterlike symbols, like the struck N for the natural numbers \u2115
+    (0x2150, 0x218f), # number forms, like the symbol for VII \u2166
+    (0x2190, 0x21ff), # arrows, fancy arrows like the symbol for <=> \u21d4
+    (0x2200, 0x22ff), # mathematical operators, like the double integral \u222c
+    (0x2300, 0x2d7f), # a whole bunch of fancy symbols, if you care partition this
+    (0x010000, 0xffffff),] # anything outside the basic multilingual plane is suspicious
+
 # GENERATE #######################################################################
 
 def compute_raw_logits(
@@ -73,6 +92,32 @@ def compute_average_pooling(
     __data = __data.reshape((*__prefix, int(__data.shape[-1])))
     # move the axis back
     return __data.movedim(source=-1, destination=__axis)
+
+# UNICODE ######################################################################
+
+def _is_char_in_blacklist(
+    char_str: str,
+    unicode_arr: list=UNICODE_RANGES
+) -> bool:
+    return any([
+        (ord(char_str) >= __s) and (ord(char_str) <= __e)
+        for (__s, __e) in unicode_arr])
+
+def _is_token_in_blacklist(
+    token_str: str,
+    unicode_arr: list=UNICODE_RANGES
+) -> bool:
+    return any([
+        _is_char_in_blacklist(char_str=__c, unicode_arr=unicode_arr)
+        for __c in token_str])
+
+def compute_unicode_metrics(
+    tokens_arr: list, # list of token strings, without escaping the special characters
+    unicode_arr: list=UNICODE_RANGES,
+) -> list:
+    return [
+        0.0 if _is_token_in_blacklist(token_str=__t, unicode_arr=unicode_arr) else 0.5
+        for __t in tokens_arr]
 
 # RANK #########################################################################
 
