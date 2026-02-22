@@ -93,6 +93,21 @@ def compute_average_pooling(
     # move the axis back
     return __data.movedim(source=-1, destination=__axis)
 
+# CONFLATION ###################################################################
+
+def compute_probability_conflation(
+    metrics_arr: list,
+    axis_idx: int=-1,
+) -> object:
+    # stack all the metrics on the given axis
+    __outputs = torch.stack(metrics_arr, dim=axis_idx)
+    # combine the scores according to the conflation function
+    return (
+        torch.prod(__outputs, dim=-1, keepdim=False)
+        / (
+            torch.prod(__outputs, dim=-1, keepdim=False)
+            + torch.prod(1.0 - __outputs, dim=-1, keepdim=False)))
+
 # UNICODE ######################################################################
 
 def _is_char_in_blacklist(
@@ -115,6 +130,7 @@ def compute_unicode_metrics(
     tokens_arr: list, # list of token strings, without escaping the special characters
     unicode_arr: list=UNICODE_RANGES,
 ) -> object:
+    # wrap in a tensor to match the shape (B, T)
     return torch.Tensor([[
         0.0 if _is_token_in_blacklist(token_str=__t, unicode_arr=unicode_arr) else 0.5
         for __t in tokens_arr]])
