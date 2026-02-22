@@ -221,7 +221,6 @@ def update_human_scores(
     indices_arr: object,
     logits_arr: object,
     window_dim: float,
-    tokenizer_obj: object,
 ) -> list:
     # exit if some values are missing
     if (tokens_arr is None) or (len(tokens_arr) == 0) or (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
@@ -332,7 +331,6 @@ def create_app(
     partition: callable,
     convert: callable,
     compute: callable,
-    score: callable,
     title: str=TITLE,
     intro: str=INTRO
 ) -> gradio.Blocks:
@@ -365,7 +363,7 @@ def create_app(
             show_progress='hidden'
         ).then(
         # then compute the scores
-            fn=score,
+            fn=update_human_scores,
             inputs=[__fields[__k] for __k in ['tokens_state', 'indices_state', 'logits_state', 'window_block']],
             outputs=__fields['highlight_block'],
             queue=False,
@@ -398,7 +396,6 @@ if __name__ == '__main__':
     __partition = functools.partial(update_tokens_state, tokenizer_obj=__tokenizer)
     __convert = functools.partial(update_indices_state, tokenizer_obj=__tokenizer)
     __compute = functools.partial(update_logits_state, model_obj=__model)
-    __score = functools.partial(update_human_scores, tokenizer_obj=__tokenizer)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
-    __app = create_app(partition=__partition, convert=__convert, compute=__compute, score=__score)
+    __app = create_app(partition=__partition, convert=__convert, compute=__compute)
     __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)
