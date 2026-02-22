@@ -217,17 +217,14 @@ def update_logits_state(
 # RANK #########################################################################
 
 def update_human_scores(
+    tokens_arr: list,
     indices_arr: object,
     logits_arr: object,
     tokenizer_obj: object,
 ) -> list:
     # exit if some values are missing
-    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
+    if (tokens_arr is None) or (len(tokens_arr) == 0) or (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
         return None
-    # detokenize the IDs
-    __token_str = psaiops.common.tokenizer.postprocess_token_ids(
-        token_arr=indices_arr,
-        tokenizer_obj=tokenizer_obj)
     # compute the rank metric, in [0.5; 1]
     __token_cls = psaiops.score.human.lib.compute_rank_metrics(
         indices_arr=indices_arr,
@@ -237,17 +234,18 @@ def update_human_scores(
         score_arr=__token_cls,
         scale_val=100.0)
     # pad with neutral class 50 (1/2 chance LLM / human) for the tokens which have no logit (IE the first token)
-    __token_cls = max(0, len(__token_str) - len(__token_cls)) * ['50'] + __token_cls
+    __token_cls = max(0, len(tokens_arr) - len(__token_cls)) * ['50'] + __token_cls
     # color each token according to its rank in the LLM's predictions
-    return list(zip(__token_str, __token_cls))
+    return list(zip(tokens_arr, __token_cls))
 
 def update_human_plots(
+    tokens_arr: list,
     indices_arr: object,
     logits_arr: object,
     window_dim: float,
 ) -> object:
     # exit if some values are missing
-    if (window_dim is None) or (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
+    if (window_dim is None) or (tokens_arr is None) or (len(tokens_arr) == 0) or (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
         return None
     # compute the rank metric, in [0.5; 1]
     __yr = psaiops.score.human.lib.compute_rank_metrics(
@@ -340,14 +338,14 @@ def create_app(
         ).then(
         # then compute the scores
             fn=score,
-            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'indices_state', 'logits_state']],
             outputs=__fields['highlight_block'],
             queue=False,
             show_progress='full'
         ).then(
         # and plot the metrics
             fn=update_human_plots,
-            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'window_block']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'indices_state', 'logits_state', 'window_block']],
             outputs=__fields['plot_block'],
             queue=False,
             show_progress='full')
