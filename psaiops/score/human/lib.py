@@ -114,10 +114,10 @@ def _is_token_in_blacklist(
 def compute_unicode_metrics(
     tokens_arr: list, # list of token strings, without escaping the special characters
     unicode_arr: list=UNICODE_RANGES,
-) -> list:
-    return [
+) -> object:
+    return torch.Tensor([[
         0.0 if _is_token_in_blacklist(token_str=__t, unicode_arr=unicode_arr) else 0.5
-        for __t in tokens_arr]
+        for __t in tokens_arr]])
 
 # RANK #########################################################################
 
