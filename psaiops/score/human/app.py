@@ -119,6 +119,7 @@ def create_actions_block() -> dict:
 
 def create_state() -> dict:
     return {
+        'tokens_state': gradio.State(None),
         'indices_state': gradio.State(None),
         'logits_state': gradio.State(None),}
 
@@ -169,6 +170,20 @@ def update_window_range(
     return gradio.update(value=__val, maximum=__max)
 
 # TOKENS #######################################################################
+
+def update_tokens_state(
+    prompt_str: str,
+    tokenizer_obj: object,
+) -> object:
+    # exit if some values are missing
+    if (prompt_str is None) or (tokenizer_obj is None):
+        return None
+    # list of token strings, without escaping
+    return psaiops.common.tokenizer.preprocess_token_str(
+        tokenizer_obj=tokenizer_obj,
+        prompt_str=prompt_str.strip(),)
+
+# INDICES ######################################################################
 
 def update_indices_state(
     prompt_str: str,
@@ -288,7 +303,8 @@ def update_human_plots(
 # APP ##########################################################################
 
 def create_app(
-    tokenize: callable,
+    partition: callable,
+    convert: callable,
     compute: callable,
     score: callable,
     title: str=TITLE,
@@ -300,9 +316,16 @@ def create_app(
         __fields.update(create_layout(intro=intro))
         # init the state
         __fields.update(create_state())
-        # first tokenize to get the token indices
+        # split the string into token sub-strings
         __fields['process_block'].click(
-            fn=tokenize,
+            fn=partition,
+            inputs=__fields['input_block'],
+            outputs=__fields['tokens_state'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
+        # translate the string into token indices
+            fn=convert,
             inputs=__fields['input_block'],
             outputs=__fields['indices_state'],
             queue=False,
@@ -346,9 +369,10 @@ if __name__ == '__main__':
     __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=MODEL, device=__device)
     __model = psaiops.common.model.get_model(name=MODEL, device=__device)
     # adapt the event handlers
-    __tokenize = functools.partial(update_indices_state, tokenizer_obj=__tokenizer)
+    __partition = functools.partial(update_tokens_state, tokenizer_obj=__tokenizer)
+    __convert = functools.partial(update_indices_state, tokenizer_obj=__tokenizer)
     __compute = functools.partial(update_logits_state, model_obj=__model)
     __score = functools.partial(update_human_scores, tokenizer_obj=__tokenizer)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
-    __app = create_app(tokenize=__tokenize, compute=__compute, score=__score)
+    __app = create_app(partition=__partition, convert=__convert, compute=__compute, score=__score)
     __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)
