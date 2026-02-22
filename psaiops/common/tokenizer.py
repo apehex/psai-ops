@@ -22,9 +22,19 @@ def preprocess_token_ids(
     device_str: str='cpu'
 ) -> dict:
     # tokenize
-    __inputs = tokenizer_obj(prompt_str, return_tensors='pt', padding='longest')
+    __data = tokenizer_obj(prompt_str, return_tensors='pt', padding='longest')
     # move to the main device
-    return {__k: __v.to(device_str) for __k, __v in __inputs.items()}
+    return {__k: __v.to(device_str) for __k, __v in __data.items()}
+
+@functools.lru_cache(maxsize=32)
+def preprocess_token_str(
+    tokenizer_obj: object,
+    prompt_str: str,
+) -> list:
+    # tokenize
+    __data = tokenizer_obj(prompt_str, return_offsets_mapping=True, add_special_tokens=False)
+    # partition the original string (avoid escaping special characters)
+    return [prompt_str[__s:__e] for (__s, __e) in __data['offset_mapping']]
 
 # POSTPROCESS ####################################################################
 
