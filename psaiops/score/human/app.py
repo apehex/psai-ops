@@ -247,6 +247,11 @@ def update_human_plots(
     # exit if some values are missing
     if (window_dim is None) or (tokens_arr is None) or (len(tokens_arr) == 0) or (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
         return None
+    # compute the unicode metric, in [0.0; 0.5] and ignore the first token
+    __yu = psaiops.score.human.lib.compute_unicode_metrics(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr,
+        scope_dim=int(window_dim))
     # compute the rank metric, in [0.5; 1]
     __yr = psaiops.score.human.lib.compute_rank_metrics(
         indices_arr=indices_arr,
@@ -267,6 +272,7 @@ def update_human_plots(
         logits_arr=logits_arr,
         scope_dim=int(window_dim))
     # remove the batch axis
+    __yu = __yu.squeeze(dim=0).numpy().tolist()
     __yr = __yr.squeeze(dim=0).numpy().tolist()
     __ye = __ye.squeeze(dim=0).numpy().tolist()
     __yp = __yp.squeeze(dim=0).numpy().tolist()
@@ -277,6 +283,7 @@ def update_human_plots(
     __yp = [0.5] + __yp
     __ys = [0.5] + __ys
     # rescale as a percentage like the token labels
+    __yu = [int(100.0 * __s) for __s in __yu]
     __yr = [int(100.0 * __s) for __s in __yr]
     __ye = [int(100.0 * __s) for __s in __ye]
     __yp = [int(100.0 * __s) for __s in __yp]
@@ -286,6 +293,7 @@ def update_human_plots(
     # plot the first sample
     __figure = matplotlib.pyplot.figure(figsize=(16, 4), dpi=120)
     __axes = __figure.add_subplot(1, 1, 1)
+    __axes.plot(__x, __yu, linestyle='--', label='unicode')
     __axes.plot(__x, __yr, linestyle='--', label='rank')
     __axes.plot(__x, __ye, linestyle='--', label='entropy')
     __axes.plot(__x, __yp, linestyle='--', label='perplexity')
