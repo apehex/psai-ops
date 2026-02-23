@@ -299,6 +299,46 @@ def compute_surprisal_metrics(
         surprisals_arr=__outputs,
         scope_dim=scope_dim)
 
+# FOURIER ######################################################################
+
+def compute_frequency_mask(
+    mask_dim: int,
+    lower_val: float,
+    upper_val: float,
+    device_str: str,
+) -> object:
+    # frequencies matching the FFT coefficients (T//2 + 1,)
+    __freqs = torch.fft.rfftfreq(mask_dim, d=1.0).to(device=device_str)
+    # keep only the frequencies in range
+    return (__freqs >= lower_val) & (__freqs <= upper_val)
+
+def compute_spectral_scores(
+    data_arr: object,
+    high_rge: tuple=(1. / 8., 1. / 2.), # periods between 2 and 8 tokens
+    low_rge: tuple=(1. / 1024., 1. / 32.), # periods between 32 and 1024 tokens
+    epsilon_val: float=1e-12,
+) -> torch.Tensor:
+    # parse the data (B, T)
+    __shape = tuple(data_arr.shape)
+    # remove mean
+    __inputs = data_arr - data_arr.mean(dim=-1, keepdim=True)
+    # taper with Hann window to reduce spectral leakage (1, T)
+    __window = torch.hann_window(__shape[-1], device=data_arr.device, dtype=data_arr.dtype)
+    __inputs = __inputs * __window.reshape(mlable.shapes.filter(__shape, axes=[-1]))
+    # rFFT and power (B, T//2 + 1)
+    __fft = torch.fft.rfft(__inputs, dim=-1)
+    __powers = (__fft.real**2 + __fft.imag**2)
+    # masks for the high and lows frequencies of the FFT (T//2 +1,)
+    __high_mask = compute_frequency_mask(mask_dim=__shape[-1], lower_val=high_rge[0], upper_val=high_rge[-1], device_str=data_arr.device)
+    __low_mask = compute_frequency_mask(mask_dim=__shape[-1], lower_val=low_rge[0], upper_val=low_rge[-1], device_str=data_arr.device)
+    # separate the high from the low powers in the FFT
+    __high_powers = __powers[:, __high_mask].sum(dim=-1)
+    __low_powers  = __powers[:, __low_mask].sum(dim=-1)
+    # high-frequency fraction of the FFT
+    __scores = __high_powers / (__high_powers + __low_powers + epsilon_val)
+    # Optional: clamp (numerical safety)
+    return __scores.clamp(min=0.0, max=1.0)
+
 # FINAL SCORES #################################################################
 
 def postprocess_score_cls(
