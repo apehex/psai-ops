@@ -10,6 +10,8 @@ import mlable.shapes
 
 # META ###########################################################################
 
+EPSILON_VAL = 1e-12
+
 VOCABULARY_DIM = 201088 # size of the vocabulary used by gpt-oss
 
 RANK_DIM_MIN = 1
@@ -98,6 +100,7 @@ def compute_average_pooling(
 def compute_probability_conflation(
     metrics_arr: list,
     axis_idx: int=-1,
+    epsilon_val: float=EPSILON_VAL
 ) -> object:
     # stack all the metrics on the given axis
     __outputs = torch.stack(metrics_arr, dim=axis_idx)
@@ -105,7 +108,8 @@ def compute_probability_conflation(
     return (
         torch.prod(__outputs, dim=-1, keepdim=False)
         / (
-            torch.prod(__outputs, dim=-1, keepdim=False)
+            epsilon_val
+            + torch.prod(__outputs, dim=-1, keepdim=False)
             + torch.prod(1.0 - __outputs, dim=-1, keepdim=False)))
 
 # UNICODE ######################################################################
