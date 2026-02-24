@@ -115,7 +115,7 @@ def create_window_block(label: str='Window', prefix: str='') -> dict:
 # ACTIONS ######################################################################
 
 def create_actions_block() -> dict:
-    __process = gradio.Button('Score', variant='primary', size='lg', scale=1, interactive=True)
+    __process = gradio.Button('Process', variant='primary', size='lg', scale=1, interactive=True)
     return {'process_block': __process,}
 
 # STATE ########################################################################
@@ -142,7 +142,7 @@ def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block(label='Prompt', prefix=''))
             with gradio.Row(equal_height=True):
-                __fields.update(create_highlight_block(label='Scores', prefix='', cmap=create_score_cmap()))
+                __fields.update(create_highlight_block(label='Results', prefix='', cmap=create_score_cmap()))
             with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
         with gradio.Tab('Graphs') as __graphs_tab:
