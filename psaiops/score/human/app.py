@@ -38,9 +38,12 @@ DOCS = '''The model used as critic is `openai/gpt-oss-20b`.'''
 # ENUMS ########################################################################
 
 # metric types
-TOKENS = 1
-CRITIC = 2
-SAMPLING = 4
+UNICODE = 1
+RANK = 2
+ENTROPY = 4
+PERPLEXITY = 8
+SURPRISAL = 16
+FINAL = 32
 
 # COLORS #######################################################################
 
@@ -102,7 +105,7 @@ def create_highlight_block(label: str='Score', prefix: str='', cmap: dict=create
 # REDUCTION ####################################################################
 
 def create_metrics_block(label: str='Metrics', prefix: str='') -> dict:
-    __metrics = gradio.CheckboxGroup(label=label, type='value', value=[CRITIC, TOKENS], choices=[('Critic', CRITIC), ('Tokens', TOKENS)], interactive=True)
+    __metrics = gradio.CheckboxGroup(label=label, type='value', value=[UNICODE, RANK, ENTROPY, PERPLEXITY, SURPRISAL, FINAL], choices=[('Unicode', UNICODE), ('Rank', RANK), ('Entropy', ENTROPY), ('Perplexity', PERPLEXITY), ('Surprisal', SURPRISAL), ('Final', FINAL)], interactive=True)
     return {prefix + 'metric_block': __metrics,}
 
 def create_window_block(label: str='Window', prefix: str='') -> dict:
@@ -257,7 +260,7 @@ def update_surprisal_state(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
 
-# RANK #########################################################################
+# HIGHLIGHTS ###################################################################
 
 def update_token_highlights(
     tokens_arr: list,
@@ -284,12 +287,15 @@ def update_token_highlights(
     # color each token according to its rank in the LLM's predictions
     return list(zip(tokens_arr, __token_cls))
 
+# PLOTS ########################################################################
+
 def update_metric_plots(
     unicode_arr: object,
     rank_arr: object,
     entropy_arr: object,
     surprisal_arr: object,
     perplexity_arr: object,
+    selection_arr: list,
     window_dim: float,
 ) -> object:
     # exit if some values are missing
@@ -312,7 +318,7 @@ def update_metric_plots(
     __yf = psaiops.score.human.lib.compute_probability_conflation(
         metrics_arr=[unicode_arr, __yp, __ys],
         axis_idx=-1)
-    # remove the batch axis
+    # remove the batch axis: plot only the first sample
     __yu = unicode_arr.squeeze(dim=0).numpy().tolist()
     __yr = rank_arr.squeeze(dim=0).numpy().tolist()
     __ye = __ye.squeeze(dim=0).numpy().tolist()
@@ -328,15 +334,22 @@ def update_metric_plots(
     __yf = [int(100.0 * __s) for __s in __yf]
     # match the metrics with their token position
     __x = range(len(__yr))
-    # plot the first sample
+    # prepare a wide canvas
     __figure = matplotlib.pyplot.figure(figsize=(16, 4), dpi=120)
     __axes = __figure.add_subplot(1, 1, 1)
-    __axes.plot(__x, __yf, linestyle='--', label='final')
-    __axes.plot(__x, __yu, linestyle='--', label='unicode')
-    __axes.plot(__x, __yr, linestyle='--', label='rank')
-    __axes.plot(__x, __ye, linestyle='--', label='entropy')
-    __axes.plot(__x, __yp, linestyle='--', label='perplexity')
-    __axes.plot(__x, __ys, linestyle='--', label='surprisal')
+    # toggle each curve on / off
+    if FINAL in selection_arr:
+        __axes.plot(__x, __yf, linestyle='--', label='final')
+    if UNICODE in selection_arr:
+        __axes.plot(__x, __yu, linestyle='--', label='unicode')
+    if RANK in selection_arr:
+        __axes.plot(__x, __yr, linestyle='--', label='rank')
+    if ENTROPY in selection_arr:
+        __axes.plot(__x, __ye, linestyle='--', label='entropy')
+    if PERPLEXITY in selection_arr:
+        __axes.plot(__x, __yp, linestyle='--', label='perplexity')
+    if SURPRISAL in selection_arr:
+        __axes.plot(__x, __ys, linestyle='--', label='surprisal')
     # display the legend and remove the extra padding
     __axes.legend()
     __figure.tight_layout()
@@ -426,14 +439,21 @@ def create_app(
         ).then(
         # and plot the metrics
             fn=update_metric_plots,
-            inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'window_block']],
+            inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'metric_block', 'window_block']],
+            outputs=__fields['plot_block'],
+            queue=False,
+            show_progress='full')
+        # update the plots when the metric selection changes
+        __fields['metric_block'].change(
+            fn=update_metric_plots,
+            inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'metric_block', 'window_block']],
             outputs=__fields['plot_block'],
             queue=False,
             show_progress='full')
         # update the plots when the window changes
         __fields['window_block'].change(
             fn=update_metric_plots,
-            inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'window_block']],
+            inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'metric_block', 'window_block']],
             outputs=__fields['plot_block'],
             queue=False,
             show_progress='full')
