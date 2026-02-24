@@ -8,7 +8,7 @@ import torch.nn.functional
 
 import mlable.shapes
 
-# META ###########################################################################
+# META #########################################################################
 
 EPSILON_VAL = 1e-12
 
@@ -26,7 +26,7 @@ PERPLEXITY_DIM_MAX = 33
 SURPRISAL_DIM_MIN = 1
 SURPRISAL_DIM_MAX = 33
 
-# UNICODE ########################################################################
+# UNICODE ######################################################################
 
 UNICODE_RANGES = [
     (0x0100, 0x017f), # latin extended A: used to offset special characters of ASCII
@@ -45,7 +45,7 @@ UNICODE_RANGES = [
     (0x2300, 0x2d7f), # a whole bunch of fancy symbols, if you care partition this
     (0x010000, 0xffffff),] # anything outside the basic multilingual plane is suspicious
 
-# GENERATE #######################################################################
+# GENERATE #####################################################################
 
 def compute_raw_logits(
     indices_arr: object,
@@ -65,7 +65,25 @@ def compute_raw_logits(
     # (B, T, V)
     return __outputs.logits
 
-# POOLING ########################################################################
+# PADDING ######################################################################
+
+def pad_left(
+    data_arr: object,
+    fill_val: float,
+    fill_dim: int,
+    axis_idx: int,
+) -> object:
+    # normalize
+    __shape = tuple(data_arr.shape)
+    __axis = axis_idx % len(__shape)
+    # keep all the dimensions except on the target axis
+    __shape = tuple(fill_dim if (__axis == __i) else __d for (__i, __d) in enumerate(__shape))
+    # match the input metadata
+    __padding = torch.full(__shape, fill_value=fill_val, dtype=data_arr.dtype, device=data_arr.device, requires_grad=False)
+    # (..., T + P, ...)
+    return torch.cat([__padding, data_arr], dim=__axis)
+
+# POOLING ######################################################################
 
 def compute_average_pooling(
     data_arr: object,
@@ -166,6 +184,8 @@ def postprocess_ranks(
     __lupper = math.log(1 + upper_val)
     # the metric is in [0.5; 1] with shape (B, T-1)
     __outputs = 0.5 * (1.0 + torch.clamp((torch.log(1 + ranks_arr) - __llower) / (__lupper - __llower), min=0.0, max=1.0))
+    # add a neutral score for the first token
+    __outputs = pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
     # compute the average in the scope to smooth the output (B, T-1)
     return compute_average_pooling(__outputs, pool_dim=__dim, axis_idx=1)
 
@@ -207,6 +227,8 @@ def postprocess_entropies(
     __dim = max(ENTROPY_DIM_MIN, min(ENTROPY_DIM_MAX, scope_dim))
     # normalize (B, T-1)
     __outputs = entropies_arr / math.log(VOCABULARY_DIM)
+    # add a neutral score for the first token
+    __outputs = pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
     # and average over the scope (B, T-1)
     return compute_average_pooling(__outputs, pool_dim=__dim, axis_idx=1)
 
@@ -247,7 +269,9 @@ def postprocess_nllikelihoods(
     # compute the log of the perplexity E(-log(p(t)))
     __outputs = compute_average_pooling(nlls_arr, pool_dim=__dim, axis_idx=1)
     # rescale the metric to cover [0; 1] (B, T-1)
-    return torch.clamp((__outputs - lower_val) / (upper_val - lower_val), min=0.0, max=1.0)
+    __outputs = torch.clamp((__outputs - lower_val) / (upper_val - lower_val), min=0.0, max=1.0)
+    # add a neutral score for the first token
+    return pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
 
 def compute_perplexity_metrics(
     indices_arr: object,
@@ -277,6 +301,8 @@ def postprocess_surprisals(
     __dim = max(SURPRISAL_DIM_MIN, min(SURPRISAL_DIM_MAX, scope_dim))
     # normalize (B, T-1)
     __outputs = torch.clamp(0.5 + (surprisals_arr / math.log(VOCABULARY_DIM)), min=0.0, max=1.0)
+    # add a neutral score for the first token
+    __outputs = pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
     # and average over the scope (B, T-1)
     return compute_average_pooling(__outputs, pool_dim=__dim, axis_idx=1)
 

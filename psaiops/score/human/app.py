@@ -225,7 +225,7 @@ def update_unicode_state(
     tokens_arr: list,
 ) -> object:
     return psaiops.score.human.lib.compute_unicode_metrics(
-        tokens_arr=tokens_arr,)[:, 1:]
+        tokens_arr=tokens_arr,)
 
 def update_rank_state(
     indices_arr: object,
@@ -284,8 +284,6 @@ def update_human_scores(
     __token_cls = psaiops.score.human.lib.postprocess_score_cls(
         score_arr=__token_cls,
         scale_val=100.0)
-    # pad with neutral class 50 (1/2 chance LLM / human) for the tokens which have no logit (IE the first token)
-    __token_cls = max(0, len(tokens_arr) - len(__token_cls)) * ['50'] + __token_cls
     # color each token according to its rank in the LLM's predictions
     return list(zip(tokens_arr, __token_cls))
 
@@ -310,13 +308,6 @@ def update_human_plots(
     __yp = perplexity_arr.squeeze(dim=0).numpy().tolist()
     __ys = surprisal_arr.squeeze(dim=0).numpy().tolist()
     __yf = __yf.squeeze(dim=0).numpy().tolist()
-    # add the missing score for the first token
-    __yu = [0.5] + __yu
-    __yr = [0.5] + __yr
-    __ye = [0.5] + __ye
-    __yp = [0.5] + __yp
-    __ys = [0.5] + __ys
-    __yf = [0.5] + __yf
     # rescale as a percentage like the token labels
     __yu = [int(100.0 * __s) for __s in __yu]
     __yr = [int(100.0 * __s) for __s in __yr]
