@@ -175,26 +175,20 @@ def postprocess_ranks(
     ranks_arr: object,
     lower_val: int=100,
     upper_val: int=VOCABULARY_DIM,
-    scope_dim: int=RANK_DIM_MIN,
 ) -> object:
-    # prevent the pooling from flattening the ranks
-    __dim = max(RANK_DIM_MIN, min(RANK_DIM_MAX, scope_dim))
     # normalization factors ()
     __llower = math.log(1 + lower_val)
     __lupper = math.log(1 + upper_val)
     # the metric is in [0.5; 1] with shape (B, T-1)
     __outputs = 0.5 * (1.0 + torch.clamp((torch.log(1 + ranks_arr) - __llower) / (__lupper - __llower), min=0.0, max=1.0))
     # add a neutral score for the first token
-    __outputs = pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
-    # compute the average in the scope to smooth the output (B, T-1)
-    return compute_average_pooling(__outputs, pool_dim=__dim, axis_idx=1)
+    return pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
 
 def compute_rank_metrics(
     indices_arr: object,
     logits_arr: object,
     lower_val: int=100,
     upper_val: int=VOCABULARY_DIM,
-    scope_dim: int=RANK_DIM_MIN,
 ) -> object:
     # compute the raw ranks (B, T-1)
     __outputs = compute_ranks(
@@ -204,8 +198,7 @@ def compute_rank_metrics(
     return postprocess_ranks(
         ranks_arr=__outputs,
         lower_val=lower_val,
-        upper_val=upper_val,
-        scope_dim=scope_dim)
+        upper_val=upper_val)
 
 # ENTROPY ######################################################################
 
@@ -221,28 +214,21 @@ def compute_entropies(
 
 def postprocess_entropies(
     entropies_arr: object,
-    scope_dim: int=ENTROPY_DIM_MIN,
 ) -> object:
-    # prevent the entropy from just accumulating over time (when the window is the length of the sample)
-    __dim = max(ENTROPY_DIM_MIN, min(ENTROPY_DIM_MAX, scope_dim))
     # normalize (B, T-1)
     __outputs = entropies_arr / math.log(VOCABULARY_DIM)
     # add a neutral score for the first token
-    __outputs = pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
-    # and average over the scope (B, T-1)
-    return compute_average_pooling(__outputs, pool_dim=__dim, axis_idx=1)
+    return pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
 
 def compute_entropy_metrics(
     logits_arr: object,
-    scope_dim: int=ENTROPY_DIM_MIN,
 ) -> object:
     # compute the raw entropies (B, T-1)
     __outputs = compute_entropies(
         logits_arr=logits_arr)
     # and normalize them (B, T-1)
     return postprocess_entropies(
-        entropies_arr=__outputs,
-        scope_dim=scope_dim)
+        entropies_arr=__outputs)
 
 # PERPLEXITY ###################################################################
 
@@ -262,14 +248,9 @@ def postprocess_nllikelihoods(
     nlls_arr: object,
     lower_val: float=math.log(2), # perplexity 2 => average probability of 0.5, values below are rare and considered the extrem of LLM sampling
     upper_val: float=math.log(800), # perplexity 800 => computed so the 0.5 * (L + U) = log(40) => perplexity 40 is undecided between LLM / human
-    scope_dim: int=PERPLEXITY_DIM_MIN,
 ) -> object:
-    # prevent the perplexity from just accumulating over time, and avoid computing the perplexity of a single token
-    __dim = max(PERPLEXITY_DIM_MIN, min(PERPLEXITY_DIM_MAX, scope_dim))
-    # compute the log of the perplexity E(-log(p(t)))
-    __outputs = compute_average_pooling(nlls_arr, pool_dim=__dim, axis_idx=1)
     # rescale the metric to cover [0; 1] (B, T-1)
-    __outputs = torch.clamp((__outputs - lower_val) / (upper_val - lower_val), min=0.0, max=1.0)
+    __outputs = torch.clamp((nlls_arr - lower_val) / (upper_val - lower_val), min=0.0, max=1.0)
     # add a neutral score for the first token
     return pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
 
@@ -278,7 +259,6 @@ def compute_perplexity_metrics(
     logits_arr: object,
     lower_val: float=math.log(2), # perplexity 2 => average probability of 0.5, values below are rare and considered the extrem of LLM sampling
     upper_val: float=math.log(800), # perplexity 800 => computed so the 0.5 * (L + U) = log(40) => perplexity 40 is undecided between LLM / human
-    scope_dim: int=PERPLEXITY_DIM_MIN,
 ) -> object:
     # compute the negative log likelihoods (B, T-1)
     __outputs = compute_nllikelihoods(
@@ -288,28 +268,21 @@ def compute_perplexity_metrics(
     return postprocess_nllikelihoods(
         nlls_arr=__outputs,
         lower_val=lower_val,
-        upper_val=upper_val,
-        scope_dim=scope_dim)
+        upper_val=upper_val)
 
 # SURPRISAL ####################################################################
 
 def postprocess_surprisals(
     surprisals_arr: object,
-    scope_dim: int=SURPRISAL_DIM_MIN,
 ) -> object:
-    # prevent the surprisal from just accumulating over time (when the window is the length of the sample)
-    __dim = max(SURPRISAL_DIM_MIN, min(SURPRISAL_DIM_MAX, scope_dim))
     # normalize (B, T-1)
     __outputs = torch.clamp(0.5 + (surprisals_arr / math.log(VOCABULARY_DIM)), min=0.0, max=1.0)
     # add a neutral score for the first token
-    __outputs = pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
-    # and average over the scope (B, T-1)
-    return compute_average_pooling(__outputs, pool_dim=__dim, axis_idx=1)
+    return pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
 
 def compute_surprisal_metrics(
     indices_arr: object,
     logits_arr: object,
-    scope_dim: int=SURPRISAL_DIM_MIN,
 ) -> object:
     # compute the raw entropies (B, T-1)
     __expectations = compute_entropies(
@@ -322,8 +295,7 @@ def compute_surprisal_metrics(
     __outputs = __realizations - __expectations
     # normalized like the entropy (B, T-1)
     return postprocess_surprisals(
-        surprisals_arr=__outputs,
-        scope_dim=scope_dim)
+        surprisals_arr=__outputs,)
 
 # FOURIER ######################################################################
 
