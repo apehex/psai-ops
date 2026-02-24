@@ -121,7 +121,12 @@ def create_state() -> dict:
     return {
         'tokens_state': gradio.State(None),
         'indices_state': gradio.State(None),
-        'logits_state': gradio.State(None),}
+        'logits_state': gradio.State(None),
+        'unicode_state': gradio.State(None),
+        'rank_state': gradio.State(None),
+        'entropy_state': gradio.State(None),
+        'perplexity_state': gradio.State(None),
+        'surprisal_state': gradio.State(None),}
 
 # LAYOUT #######################################################################
 
@@ -214,32 +219,66 @@ def update_logits_state(
         indices_arr=indices_arr.to(device=model_obj.device),
         model_obj=model_obj).cpu()
 
+# METRICS ######################################################################
+
+def update_unicode_state(
+    tokens_arr: list,
+) -> object:
+    return psaiops.score.human.lib.compute_unicode_metrics(
+        tokens_arr=tokens_arr,)[:, 1:]
+
+def update_rank_state(
+    indices_arr: object,
+    logits_arr: object,
+    window_dim: float,
+) -> object:
+    return psaiops.score.human.lib.compute_rank_metrics(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr,
+        scope_dim=int(window_dim))
+
+def update_entropy_state(
+    logits_arr: object,
+    window_dim: float,
+) -> object:
+    return psaiops.score.human.lib.compute_entropy_metrics(
+        logits_arr=logits_arr,
+        scope_dim=int(window_dim))
+
+def update_perplexity_state(
+    indices_arr: object,
+    logits_arr: object,
+    window_dim: float,
+) -> object:
+    return psaiops.score.human.lib.compute_perplexity_metrics(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr,
+        scope_dim=int(window_dim))
+
+def update_surprisal_state(
+    indices_arr: object,
+    logits_arr: object,
+    window_dim: float,
+) -> object:
+    return psaiops.score.human.lib.compute_surprisal_metrics(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr,
+        scope_dim=int(window_dim))
+
 # RANK #########################################################################
 
 def update_human_scores(
     tokens_arr: list,
-    indices_arr: object,
-    logits_arr: object,
-    window_dim: float,
+    unicode_arr: object,
+    surprisal_arr: object,
+    perplexity_arr: object,
 ) -> list:
     # exit if some values are missing
-    if (tokens_arr is None) or (len(tokens_arr) == 0) or (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
+    if (tokens_arr is None) or (len(tokens_arr) == 0) or (unicode_arr is None) or (len(unicode_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0):
         return None
-    # compute all the metrics, in [0.0; 1]
-    __token_cls = [
-        psaiops.score.human.lib.compute_perplexity_metrics(
-            indices_arr=indices_arr,
-            logits_arr=logits_arr,
-            scope_dim=int(window_dim)),
-        psaiops.score.human.lib.compute_surprisal_metrics(
-            indices_arr=indices_arr,
-            logits_arr=logits_arr,
-            scope_dim=int(window_dim)),
-        psaiops.score.human.lib.compute_unicode_metrics(
-            tokens_arr=tokens_arr)[:, 1:]] # ignore the first token to match the shape of the other metrics
     # combine the metrics
     __token_cls = psaiops.score.human.lib.compute_probability_conflation(
-        metrics_arr=__token_cls,
+        metrics_arr=[unicode_arr, surprisal_arr, perplexity_arr],
         axis_idx=-1)
     # scale into a [0; 100] label
     __token_cls = psaiops.score.human.lib.postprocess_score_cls(
@@ -251,46 +290,25 @@ def update_human_scores(
     return list(zip(tokens_arr, __token_cls))
 
 def update_human_plots(
-    tokens_arr: list,
-    indices_arr: object,
-    logits_arr: object,
-    window_dim: float,
+    unicode_arr: object,
+    rank_arr: object,
+    entropy_arr: object,
+    surprisal_arr: object,
+    perplexity_arr: object,
 ) -> object:
     # exit if some values are missing
-    if (window_dim is None) or (tokens_arr is None) or (len(tokens_arr) == 0) or (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
+    if (unicode_arr is None) or (len(unicode_arr) == 0) or (rank_arr is None) or (len(rank_arr) == 0) or (entropy_arr is None) or (len(entropy_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0):
         return None
-    # compute the unicode metric, in [0.0; 0.5] and ignore the first token
-    __yu = psaiops.score.human.lib.compute_unicode_metrics(
-        tokens_arr=tokens_arr,)[:, 1:]
-    # compute the rank metric, in [0.5; 1]
-    __yr = psaiops.score.human.lib.compute_rank_metrics(
-        indices_arr=indices_arr,
-        logits_arr=logits_arr,
-        scope_dim=int(window_dim))
-    # compute the entropy metric
-    __ye = psaiops.score.human.lib.compute_entropy_metrics(
-        logits_arr=logits_arr,
-        scope_dim=int(window_dim))
-    # compute the perplexity metric
-    __yp = psaiops.score.human.lib.compute_perplexity_metrics(
-        indices_arr=indices_arr,
-        logits_arr=logits_arr,
-        scope_dim=int(window_dim))
-    # and the surprisal metric
-    __ys = psaiops.score.human.lib.compute_surprisal_metrics(
-        indices_arr=indices_arr,
-        logits_arr=logits_arr,
-        scope_dim=int(window_dim))
     # combine all the metrics into a final score
     __yf = psaiops.score.human.lib.compute_probability_conflation(
-        metrics_arr=[__yp, __ys, __yu],
+        metrics_arr=[unicode_arr, surprisal_arr, perplexity_arr],
         axis_idx=-1)
     # remove the batch axis
-    __yu = __yu.squeeze(dim=0).numpy().tolist()
-    __yr = __yr.squeeze(dim=0).numpy().tolist()
-    __ye = __ye.squeeze(dim=0).numpy().tolist()
-    __yp = __yp.squeeze(dim=0).numpy().tolist()
-    __ys = __ys.squeeze(dim=0).numpy().tolist()
+    __yu = unicode_arr.squeeze(dim=0).numpy().tolist()
+    __yr = rank_arr.squeeze(dim=0).numpy().tolist()
+    __ye = entropy_arr.squeeze(dim=0).numpy().tolist()
+    __yp = perplexity_arr.squeeze(dim=0).numpy().tolist()
+    __ys = surprisal_arr.squeeze(dim=0).numpy().tolist()
     __yf = __yf.squeeze(dim=0).numpy().tolist()
     # add the missing score for the first token
     __yu = [0.5] + __yu
@@ -362,23 +380,58 @@ def create_app(
             queue=False,
             show_progress='hidden'
         ).then(
+        # compute the unicode scores
+            fn=update_unicode_state,
+            inputs=[__fields[__k] for __k in ['tokens_state']],
+            outputs=__fields['unicode_state'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
+        # compute the rank scores
+            fn=update_rank_state,
+            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'window_block']],
+            outputs=__fields['rank_state'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
+        # compute the entropy scores
+            fn=update_entropy_state,
+            inputs=[__fields[__k] for __k in ['logits_state', 'window_block']],
+            outputs=__fields['entropy_state'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
+        # compute the perplexity scores
+            fn=update_perplexity_state,
+            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'window_block']],
+            outputs=__fields['perplexity_state'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
+        # compute the surprisal scores
+            fn=update_surprisal_state,
+            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'window_block']],
+            outputs=__fields['surprisal_state'],
+            queue=False,
+            show_progress='hidden'
+        ).then(
         # then compute the scores
             fn=update_human_scores,
-            inputs=[__fields[__k] for __k in ['tokens_state', 'indices_state', 'logits_state', 'window_block']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state']],
             outputs=__fields['highlight_block'],
             queue=False,
             show_progress='full'
         ).then(
         # and plot the metrics
             fn=update_human_plots,
-            inputs=[__fields[__k] for __k in ['tokens_state', 'indices_state', 'logits_state', 'window_block']],
+            inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state']],
             outputs=__fields['plot_block'],
             queue=False,
             show_progress='full')
         # update the plots when the window changes
         __fields['window_block'].change(
             fn=update_human_plots,
-            inputs=[__fields[__k] for __k in ['tokens_state', 'indices_state', 'logits_state', 'window_block']],
+            inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state']],
             outputs=__fields['plot_block'],
             queue=False,
             show_progress='full')
