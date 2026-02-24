@@ -142,14 +142,16 @@ def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block(label='Prompt', prefix=''))
             with gradio.Row(equal_height=True):
-                __fields.update(create_highlight_block(label='By Token', prefix='', cmap=create_score_cmap()))
-            with gradio.Row(equal_height=True):
-                __fields.update(create_plot_block(label='By Position', prefix=''))
-            with gradio.Row(equal_height=True):
-                __fields.update(create_metrics_block(label='Metrics', prefix=''))
-                __fields.update(create_window_block(label='Window', prefix=''))
+                __fields.update(create_highlight_block(label='Scores', prefix='', cmap=create_score_cmap()))
             with gradio.Row(equal_height=True):
                 __fields.update(create_actions_block())
+        with gradio.Tab('Graphs') as __graphs_tab:
+            __fields.update({'settings_tab': __graphs_tab})
+            with gradio.Row(equal_height=True):
+                __fields.update(create_plot_block(label='Metrics', prefix=''))
+            with gradio.Row(equal_height=True):
+                __fields.update(create_metrics_block(label='Selection', prefix=''))
+                __fields.update(create_window_block(label='Window', prefix=''))
         with gradio.Tab('Settings') as __settings_tab:
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Row(equal_height=True):
