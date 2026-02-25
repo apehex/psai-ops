@@ -269,22 +269,27 @@ def update_token_highlights(
     surprisal_arr: object,
     perplexity_arr: object,
     selection_arr: list,
+    window_dim: float,
 ) -> list:
     # exit if some values are missing
-    if (tokens_arr is None) or (len(tokens_arr) == 0) or (unicode_arr is None) or (len(unicode_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0):
+    if (tokens_arr is None) or (len(tokens_arr) == 0) or (unicode_arr is None) or (len(unicode_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0) or (selection_arr is None) or (window_dim is None):
         return None
     # local tendency
+    __surprisal_arr = psaiops.score.human.lib.compute_average_pooling(
+        data_arr=surprisal_arr,
+        pool_dim=max(1, int(window_dim)),
+        axis_idx=-1)
     __perplexity_arr = psaiops.score.human.lib.compute_average_pooling(
         data_arr=perplexity_arr,
-        pool_dim=17,
+        pool_dim=max(9, int(window_dim)),
         axis_idx=-1)
     # toggle the metrics according to the selection
     __token_cls = (
         [0.5 * torch.ones_like(unicode_arr, device=unicode_arr.device, dtype=unicode_arr.dtype)]
         + (UNICODE in selection_arr) * [unicode_arr]
-        + (SURPRISAL in selection_arr) * [surprisal_arr]
+        + (SURPRISAL in selection_arr) * [__surprisal_arr]
         + (PERPLEXITY in selection_arr) * [__perplexity_arr])
-    # add a neutral score in case all other have been toggled off (so that the conflation doesn't error)
+    # there is an extra neutral score in case all other have been toggled off (so that the conflation doesn't error)
     __token_cls = psaiops.score.human.lib.compute_probability_conflation(
         metrics_arr=__token_cls,
         axis_idx=-1)
@@ -438,7 +443,7 @@ def create_app(
         ).then(
         # then compute the scores
             fn=update_token_highlights,
-            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
             outputs=__fields['highlight_block'],
             queue=False,
             show_progress='full'
@@ -452,7 +457,7 @@ def create_app(
         # update the plots when the metric selection changes
         __fields['selection_block'].change(
             fn=update_token_highlights,
-            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
             outputs=__fields['highlight_block'],
             queue=False,
             show_progress='full'
@@ -464,6 +469,12 @@ def create_app(
             show_progress='full')
         # update the plots when the window changes
         __fields['window_block'].change(
+            fn=update_token_highlights,
+            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
+            outputs=__fields['highlight_block'],
+            queue=False,
+            show_progress='full'
+        ).then(
             fn=update_metric_plots,
             inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
             outputs=__fields['plot_block'],
