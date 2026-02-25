@@ -312,7 +312,7 @@ def update_metric_plots(
     window_dim: float,
 ) -> object:
     # exit if some values are missing
-    if (unicode_arr is None) or (len(unicode_arr) == 0) or (rank_arr is None) or (len(rank_arr) == 0) or (entropy_arr is None) or (len(entropy_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0):
+    if (unicode_arr is None) or (len(unicode_arr) == 0) or (rank_arr is None) or (len(rank_arr) == 0) or (entropy_arr is None) or (len(entropy_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0) or (selection_arr is None) or (window_dim is None):
         return None
     # smooth the curves
     __ye = psaiops.score.human.lib.compute_average_pooling(
@@ -331,22 +331,15 @@ def update_metric_plots(
     __yf = psaiops.score.human.lib.compute_probability_conflation(
         metrics_arr=[unicode_arr, __yp, __ys],
         axis_idx=-1)
-    # remove the batch axis: plot only the first sample
-    __yu = unicode_arr.squeeze(dim=0).numpy().tolist()
-    __yr = rank_arr.squeeze(dim=0).numpy().tolist()
-    __ye = __ye.squeeze(dim=0).numpy().tolist()
-    __yp = __yp.squeeze(dim=0).numpy().tolist()
-    __ys = __ys.squeeze(dim=0).numpy().tolist()
-    __yf = __yf.squeeze(dim=0).numpy().tolist()
-    # rescale as a percentage like the token labels
-    __yu = [int(100.0 * __s) for __s in __yu]
-    __yr = [int(100.0 * __s) for __s in __yr]
-    __ye = [int(100.0 * __s) for __s in __ye]
-    __yp = [int(100.0 * __s) for __s in __yp]
-    __ys = [int(100.0 * __s) for __s in __ys]
-    __yf = [int(100.0 * __s) for __s in __yf]
+    # keep only the first sample and rescale as a percentage
+    __yu = 100.0 * unicode_arr.squeeze(dim=0).numpy()
+    __yr = 100.0 * rank_arr.squeeze(dim=0).numpy()
+    __ye = 100.0 * __ye.squeeze(dim=0).numpy()
+    __yp = 100.0 * __yp.squeeze(dim=0).numpy()
+    __ys = 100.0 * __ys.squeeze(dim=0).numpy()
+    __yf = 100.0 * __yf.squeeze(dim=0).numpy()
     # match the metrics with their token position
-    __x = range(len(__yr))
+    __x = numpy.arange(len(__yr))
     # prepare a wide canvas
     __figure = matplotlib.pyplot.figure(figsize=(16, 4), dpi=120)
     __axes = __figure.add_subplot(1, 1, 1)
