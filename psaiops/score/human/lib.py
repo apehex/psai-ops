@@ -113,6 +113,20 @@ def compute_average_pooling(
     # move the axis back
     return __data.movedim(source=-1, destination=__axis)
 
+def compute_deviation_pooling(
+    data_arr: object,
+    pool_dim: int,
+    axis_idx: int=1,
+    epsilon_val: float=EPSILON_VAL,
+) -> object:
+    # use element-wise average pooling
+    __u = compute_average_pooling(data_arr, pool_dim=pool_dim, axis_idx=axis_idx)
+    __u2 = compute_average_pooling(data_arr * data_arr, pool_dim=pool_dim, axis_idx=axis_idx)
+    # variance identity
+    __v = (__u2 - __u * __u).clamp(min=0.0)
+    # avoid floating point precision errors
+    return torch.sqrt(__v + epsilon_val)
+
 # CONFLATION ###################################################################
 
 def compute_probability_conflation(
