@@ -83,6 +83,37 @@ def pad_left(
     # (..., T + P, ...)
     return torch.cat([__padding, data_arr], dim=__axis)
 
+# RAMPING ######################################################################
+
+def sigmoid_ramp(
+    time_dim: int,
+    step_val: float=0.25, # middle of the step
+    rate_val: float=10.0, # steepness of the step
+) -> object:
+    # has exactly T values despite the confusing argument "steps" (IE not T+1)
+    __time = torch.linspace(start=0.0, end=1.0, steps=time_dim,)
+    # starts slightly above 0, 0.5 when the time ratio is at the step value, and ends slighly below 1
+    return torch.sigmoid(rate_val * (__time - step_val))
+
+def apply_time_ramp(
+    data_arr: object,
+    neutral_val: float=0.5,
+    step_val: float=0.25, # middle of the step
+    rate_val: float=10.0, # steepness of the step
+    axis_idx: int=1, # time axis
+) -> object:
+    # parse the input data
+    __device = data_arr.device
+    __dtype = data_arr.dtype
+    __shape = mlable.shapes.filter(data_arr.shape, axes=[axis_idx])
+    __dim = __shape[axis_idx % len(__shape)]
+    # sigmoid centered on the index given by the ratio `step_val`, goes from 0 to 1 along the time axis
+    __weight = sigmoid_ramp(time_dim=__dim, step_val=step_val, rate_val=rate_val)
+    # match the input format
+    __weight = __weight.to(device=__device, dtype=__dtype).reshape(tuple(__shape))
+    # compress the distance to the neutral value at the start and gradually lift the compression
+    return neutral_val + __weight * (data_arr - neutral_val)
+
 # POOLING ######################################################################
 
 def compute_average_pooling(
