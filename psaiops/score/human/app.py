@@ -350,17 +350,17 @@ def update_metric_plots(
     # prepare a wide canvas
     __figure = matplotlib.pyplot.figure(figsize=(16, 4), dpi=120)
     __axes = __figure.add_subplot(1, 1, 1)
-    __axes.plot(__x, __yf, linestyle='--', label='final')
+    __axes.plot(__x, __yf, linestyle='-', label='final', color='#FF5555') # vibrant coral
     # toggle each curve on / off
     if UNICODE in selection_arr:
-        __axes.plot(__x, __yu, linestyle='--', label='unicode')
+        __axes.plot(__x, __yu, linestyle='--', label='unicode', color='#005555') # slate grey
     if PERPLEXITY in selection_arr:
-        __axes.plot(__x, __yp, linestyle='--', label='perplexity')
+        __axes.plot(__x, __yp, linestyle='--', label='perplexity', color='#5555FF') # full blue
     if SURPRISAL in selection_arr:
-        __axes.plot(__x, __ys, linestyle='--', label='surprisal')
+        __axes.plot(__x, __ys, linestyle='--', label='surprisal', color='#550055') # deep purple
     if INTERMEDIATE in selection_arr:
-        __axes.plot(__x, __yr, linestyle='--', label='rank')
-        __axes.plot(__x, __ye, linestyle='--', label='entropy')
+        __axes.plot(__x, __yr, linestyle=':', label='rank', color='#442222') # expresso
+        __axes.plot(__x, __ye, linestyle=':', label='entropy', color='#222244') # indigo
     # display the legend and remove the extra padding
     __axes.legend()
     __figure.tight_layout()
