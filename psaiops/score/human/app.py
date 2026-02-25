@@ -108,8 +108,8 @@ def create_metrics_block(label: str='Metrics', prefix: str='') -> dict:
     __metrics = gradio.CheckboxGroup(label=label, type='value', value=[UNICODE, RANK, ENTROPY, PERPLEXITY, SURPRISAL, FINAL], choices=[('Unicode', UNICODE), ('Rank', RANK), ('Entropy', ENTROPY), ('Perplexity', PERPLEXITY), ('Surprisal', SURPRISAL), ('Final', FINAL)], interactive=True)
     return {prefix + 'metric_block': __metrics,}
 
-def create_window_block(label: str='Window', prefix: str='') -> dict:
-    __window = gradio.Slider(label=label, value=5, minimum=1, maximum=32, step=1, scale=1, interactive=True)
+def create_window_block(label: str='Scope', prefix: str='', value: int=5) -> dict:
+    __window = gradio.Slider(label=label, value=value, minimum=1, maximum=32, step=1, scale=1, interactive=True)
     return {prefix + 'window_block': __window,}
 
 # ACTIONS ######################################################################
@@ -143,15 +143,10 @@ def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
                 __fields.update(create_inputs_block(label='Prompt', prefix=''))
             with gradio.Row(equal_height=True):
                 __fields.update(create_highlight_block(label='Results', prefix='', cmap=create_score_cmap()))
-            with gradio.Row(equal_height=True):
-                __fields.update(create_actions_block())
         with gradio.Tab('Graphs') as __graphs_tab:
             __fields.update({'settings_tab': __graphs_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_plot_block(label='Metrics', prefix=''))
-            with gradio.Row(equal_height=True):
-                __fields.update(create_metrics_block(label='Selection', prefix=''))
-                __fields.update(create_window_block(label='Window', prefix=''))
         with gradio.Tab('Settings') as __settings_tab:
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Row(equal_height=True):
@@ -161,6 +156,11 @@ def create_layout(intro: str=INTRO, docs: str=DOCS) -> dict:
         with gradio.Tab('Docs') as __docs_tab:
             __fields.update({'docs_tab': __docs_tab})
             __fields.update(create_text_block(text=docs))
+    with gradio.Row(equal_height=True):
+        __fields.update(create_metrics_block(label='Selection', prefix=''))
+        __fields.update(create_window_block(label='Window', prefix='', value=1))
+    with gradio.Row(equal_height=True):
+        __fields.update(create_actions_block())
     return __fields
 
 # WINDOW #######################################################################
