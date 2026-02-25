@@ -489,4 +489,4 @@ if __name__ == '__main__':
     __compute = functools.partial(update_logits_state, model_obj=__model)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
     __app = create_app(partition=__partition, convert=__convert, compute=__compute)
-    __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.BUTTON, share=True, debug=True)
+    __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.ALL, share=True, debug=True)
