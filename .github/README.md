@@ -26,7 +26,7 @@ They are showcased in the [demo notebook][colab-demo].
 To run a given application all you need is to call the associated `app.py`:
 
 ```python
-python psaiops.compose.contrast.app
+python psaiops/compose/contrast/app.py
 ```
 
 All the apps run with the model `gpt-oss-20b` by default so it is highly recommanded to use a GPU.
