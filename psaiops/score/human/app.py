@@ -122,16 +122,16 @@ def create_state() -> dict:
 
 # LAYOUT #######################################################################
 
-def create_layout(intro: str=INTRO, tuto: list=[(__t, '50') for __t in TUTO.split(' ')], docs: str=DOCS) -> dict:
+def create_layout(intro: str=INTRO, tuto: str=TUTO, docs: str=DOCS) -> dict:
     __fields = {}
     __fields.update(create_highlight_block(label='', prefix='intro_', value=intro, cmap=create_score_cmap(), show_label=False))
     with gradio.Tabs():
         with gradio.Tab('Scores') as __main_tab:
             __fields.update({'main_tab': __main_tab})
             with gradio.Row(equal_height=True):
-                __fields.update(create_inputs_block(label='Prompt', prefix=''))
+                __fields.update(create_inputs_block(label='Prompt', prefix='', value=tuto))
             with gradio.Row(equal_height=True):
-                __fields.update(create_highlight_block(label='Results', prefix='', value=tuto, cmap=create_score_cmap()))
+                __fields.update(create_highlight_block(label='Results', prefix='', value=[(__t, '50') for __t in tuto.split(' ')], cmap=create_score_cmap()))
         with gradio.Tab('Graphs') as __graphs_tab:
             __fields.update({'settings_tab': __graphs_tab})
             with gradio.Row(equal_height=True):
