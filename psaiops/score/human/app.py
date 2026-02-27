@@ -147,7 +147,7 @@ def create_layout(intro: str=INTRO, tuto: str=TUTO, docs: str=DOCS) -> dict:
             __fields.update(create_text_block(text=docs))
     with gradio.Row(equal_height=True):
         __fields.update(create_selection_block(label='Selection', prefix=''))
-        __fields.update(create_window_block(label='Window', prefix='', value=1))
+        __fields.update(create_window_block(label='Window', prefix='', value=5))
     with gradio.Row(equal_height=True):
         __fields.update(create_actions_block())
     return __fields
@@ -264,19 +264,22 @@ def update_token_highlights(
     # exit if some values are missing
     if (tokens_arr is None) or (len(tokens_arr) == 0) or (unicode_arr is None) or (len(unicode_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0) or (selection_arr is None) or (window_dim is None):
         return None
+    # normalize and force an odd window size
+    __window_dim = 2 * (int(window_dim) // 2) + 1
     # common arguments
     __args = {'axis_idx': -1, 'step_val': 0.25, 'rate_val': 10.0, 'neutral_val': 0.5}
     # downplay the scores near the begining because the model is lacking context
     __surprisal_arr = psaiops.score.human.lib.apply_time_ramp(data_arr=surprisal_arr, **__args) if (RAMPING in selection_arr) else surprisal_arr
     __perplexity_arr = psaiops.score.human.lib.apply_time_ramp(data_arr=perplexity_arr, **__args) if (RAMPING in selection_arr) else perplexity_arr
     # compute the scores on a sliding window
-    __surprisal_arr = psaiops.score.human.lib.compute_average_pooling(
+    __surprisal_arr = psaiops.score.human.lib.compute_topk_pooling(
         data_arr=__surprisal_arr,
-        pool_dim=max(1, int(window_dim)),
+        pool_dim=__window_dim,
+        topk_dim=(__window_dim + 1) // 2,
         axis_idx=-1)
     __perplexity_arr = psaiops.score.human.lib.compute_average_pooling(
         data_arr=__perplexity_arr,
-        pool_dim=max(9, int(window_dim)),
+        pool_dim=max(9, __window_dim),
         axis_idx=-1)
     # toggle the metrics according to the selection
     __token_cls = (
@@ -309,6 +312,8 @@ def update_metric_plots(
     # exit if some values are missing
     if (unicode_arr is None) or (len(unicode_arr) == 0) or (rank_arr is None) or (len(rank_arr) == 0) or (entropy_arr is None) or (len(entropy_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0) or (selection_arr is None) or (window_dim is None):
         return None
+    # normalize and force an odd window size
+    __window_dim = 2 * (int(window_dim) // 2) + 1
     # time ramp to downplay the first few tokens because they have no context
     __yt = psaiops.score.human.lib.sigmoid_ramp(
         time_dim=int(unicode_arr.shape[-1]),
@@ -317,15 +322,16 @@ def update_metric_plots(
     # smooth the curves
     __ye = psaiops.score.human.lib.compute_average_pooling(
         data_arr=entropy_arr,
-        pool_dim=int(window_dim),
+        pool_dim=__window_dim,
         axis_idx=-1)
     __yp = psaiops.score.human.lib.compute_average_pooling(
         data_arr=perplexity_arr,
-        pool_dim=int(window_dim),
+        pool_dim=__window_dim,
         axis_idx=-1)
-    __ys = psaiops.score.human.lib.compute_average_pooling(
+    __ys = psaiops.score.human.lib.compute_topk_pooling(
         data_arr=surprisal_arr,
-        pool_dim=int(window_dim),
+        pool_dim=__window_dim,
+        topk_dim=(__window_dim + 1) // 2,
         axis_idx=-1)
     # combine all the metrics into a final score
     __yf = psaiops.score.human.lib.compute_probability_conflation(

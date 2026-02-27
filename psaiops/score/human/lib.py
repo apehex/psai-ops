@@ -158,6 +158,47 @@ def compute_deviation_pooling(
     # avoid floating point precision errors
     return torch.sqrt(__v + epsilon_val)
 
+# SLIDING ######################################################################
+
+def add_sliding_axis(
+    data_arr: object,
+    window_dim: int,
+    axis_idx: int=1,
+    padding_val: float=0.5
+) -> object:
+    # force an odd window dimension
+    __window = 2 * (window_dim // 2) + 1
+    # interpret negative indices
+    __axis = axis_idx % data_arr.ndim
+    # move the target axis to the end (..., L)
+    __data = data_arr.movedim(source=__axis, destination=-1)
+    # save the shape before flattening
+    *__prefix, __dim = tuple(__data.shape)
+    # pad on both sides to preserve length, on the last axis (..., L + W - 1)
+    __data = torch.nn.functional.pad(__data, pad=(__window // 2, __window // 2), value=padding_val, mode='constant')
+    # unfold the last dimension (..., L, W)
+    return __data.unfold(dimension=-1, size=__window, step=1)
+
+def compute_topk_pooling(
+    data_arr: object,
+    topk_dim: int,
+    pool_dim: int,
+    axis_idx: int=1,
+    padding_val: float=0.5
+) -> object:
+    # avoid incoherent k values
+    __k = max(1, min(pool_dim, topk_dim))
+    # create a view with an extra axis holding the values window by window (..., L, W)
+    __data = add_sliding_axis(
+        data_arr=data_arr,
+        window_dim=pool_dim,
+        axis_idx=axis_idx,
+        padding_val=padding_val)
+    # select the top-k values (..., L, K)
+    __data = torch.topk(__data, k=__k, dim=-1, largest=True).values
+    # reduce the top-k values
+    return __data.mean(dim=-1)
+
 # CONFLATION ###################################################################
 
 def compute_probability_conflation(
