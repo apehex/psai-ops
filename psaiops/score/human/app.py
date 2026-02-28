@@ -140,8 +140,6 @@ def create_layout(intro: str=INTRO, tuto: str=TUTO, docs: str=DOCS) -> dict:
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_model_block())
-            with gradio.Row(equal_height=True):
-                __fields.update(create_sampling_block())
         with gradio.Tab('Docs') as __docs_tab:
             __fields.update({'docs_tab': __docs_tab})
             __fields.update(create_text_block(text=docs))
