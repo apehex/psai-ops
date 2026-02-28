@@ -18,6 +18,8 @@ To calculate this score, the input string provided by the user is processed as f
 7. all the indicators are combined into a single score in `[0; 1]` using a conflation function
 8. the final score is expressed as a percentage in the UI (highlights and graphs)
 
+---
+
 ## Assumptions And Limitations
 
 ### Context
@@ -41,22 +43,26 @@ Of course, this hypothesis has many sharp edges: the culture evolves rapidly, ne
 
 In short, this tool is most reliable on common languages and contexts, and you should use it with a critical eye in other settings (code, non western language, etc).
 
+---
+
 ## Conflation Of Probabilities
 
 Each of the calculated metrics evaluates the input text from a different angle.
 
 These evidence are combined with a conflation function, which has specific properties.
-Given a set of probabilities $\{ p\_{j} \}$, adding another probability $p$ will:
+Given a set of probabilities $\{ p_{j} \}$, adding another probability $p$ will:
 
-- leave the conflation score unchanged if $p = 0.5$: $C(\{ p\_{j}, 0.5 \}) = C(\{ p\_{j} \})$
-- increase the score if $p > 0.5$: $C(\{ p\_{j}, p \}) > C(\{ p\_{j} \})$
+- leave the conflation score unchanged if $p = 0.5$: $C(\{ p_{j}, 0.5 \}) = C(\{ p_{j} \})$
+- increase the score if $p > 0.5$: $C(\{ p_{j}, p \}) > C(\{ p_{j} \})$
 - decrease the score otherwise
 
 The conflation function is defined by:
 
 $$\begin{align}
-C(\{ p\_{j} \}) = \frac{\Prod\_{j=1}\^{M} p\_{j}}{(\Prod\_{j=1}\^{M} p\_{j}) + \Prod\_{j=1}\^{M} (1 - p\_{j})}
+C(\{ p_{j} \}) = \frac{\prod_{j=1}^{M} p_{j}}{(\prod_{j=1}^{M} p_{j}) + \prod_{j=1}^{M} (1 - p_{j})}
 \end{align}$$
+
+---
 
 ## Indicators And Metrics
 
@@ -77,7 +83,7 @@ As you will see, this is often wrong (for example with emojis) but also an obvio
 First the whole distribution of logits is reduced into its entropy:
 
 $$\begin{align}
-H\_{t} = \Sum\_{i=1}\^{i=N} - P(x\_{t} = V(i)| X\_{< t}) \log P(x\_{t} = V(i)| X\_{< t})
+H_{t} = \sum_{i=1}^{i=N} - P(x_{t} = V(i) \vert X_{< t}) \log P(x_{t} = V(i) \vert X_{< t})
 \end{align}$$
 
 This indicator measures the spread of the probability distribution, in other words how uncertain the model is about each token prediction.
@@ -85,13 +91,13 @@ This indicator measures the spread of the probability distribution, in other wor
 The entropy of all the token possibilities is then compared with the likelihood of the token actually in the sample:
 
 $$\begin{align}
-\Delta\_{t} = - \log P(x\_{t} = X\_{t} | X\_{< t}) - H\_{t}
+\Delta_{t} = - \log P(x_{t} = X_{t} \vert X_{< t}) - H_{t}
 \end{align}$$
 
 And this difference is rescaled and centered into the final surprisal metric:
 
 $$\begin{align}
-S\_{t} = 0.5 + \frac{\Delta\_{t}}{\log V}
+S_{t} = 0.5 + \frac{\Delta_{t}}{\log V}
 \end{align}$$
 
 So when the expectations and realizations agree the delta is null and the surprisal has the neutral value $0.5$.
@@ -104,34 +110,38 @@ Since the spikes in this curve are meaningful evidence, they are preserved durin
 The surprisal gives a high frequency metric and it is balanced with a low frequency average, the simple negative log likelihoods:
 
 $$\begin{align}
-NLL\_{t} = E\_{j \in \[t-W; t+W\]} - \log P(x\_{j} = X\_{j} | X\_{< j})
+NLL_{t} = \frac{1}{2W + 1} \sum_{j=t-W}^{t+W} - \log P(x_{j} = X_{j} \vert X_{< j})
 \end{align}$$
 
 Having observed this indicator on various inputs, I decided that an average NLL of $\log 40$ was a decent estimation for the neutral balance between AI / human.
 Then I rescaled the NLL accordingly to calculate the perplexity metric:
 
 $$\begin{align}
-PP\_{t} = \frac{NLL\_{t} - \log 2}{\log 800 - \log 2}
+PP_{t} = \frac{NLL_{t} - \log 2}{\log 800 - \log 2}
 \end{align}$$
 
 This is obviously not the "canon" perplexity of information theory, just a connex function that makes sense in the context of this app.
+
+---
 
 ## Notations
 
 | Symbol                                                                    | Meaning                                                                           |
 | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | $V$                                                                       | The vocabulary, a collection of tokens used by the models                         |
-| $N = | V |$                                                               | The size of the vocabulary                                                        |
+| $N = \vert V \vert$                                                       | The size of the vocabulary                                                        |
 | $X$                                                                       | The input text sample, as a sequence of tokens                                    |
-| $T = | X |$                                                               | The length of the input, counted in tokens                                        |
+| $T = \vert X \vert$                                                       | The length of the input, counted in tokens                                        |
 | $i$, $j$, $k$                                                             | Generic indices, spanning the vocabulary or other axes                            |
 | $t$                                                                       | Another indice dedicated to the time axis / token position                        |
-| $x\_{t}$                                                                  | The token at position $t$ in $X$, either meant as a token string or index         |
-| $P(x\_{t} = V(i)| x\_{< t})$                                              | The probability that the next token is $V(i)$, estimated by the LLM               |
+| $x_{t}$                                                                   | The token at position $t$ in $X$, either meant as a token string or index         |
+| $P(x_{t} = V(i) \vert X_{< t})$                                           | The probability that the next token is $V(i)$, estimated by the LLM               |
+
+---
 
 ## TODO / Improvements
 
-[ ] add a few representative samples to show the behavior of the model and scores
-[ ] generate variants of the input prompts with small perturbations:
-    [ ] a batch with small syntactic variations that don't affect the meaning
-    [ ] another batch with conservative rewording (expansion and contraction of words, synonyms, etc)
+- add a few representative samples to show the behavior of the model and scores
+- generate variants of the input prompts with small perturbations:
+    - a batch with small syntactic variations that don't affect the meaning
+    - another batch with conservative rewording (expansion and contraction of words, synonyms, etc)

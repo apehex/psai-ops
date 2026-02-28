@@ -53,7 +53,7 @@ def create_score_cmap() -> dict:
 # INTRO ########################################################################
 
 def create_text_block(text: str) -> dict:
-    __text = gradio.Markdown(text, line_breaks=True)
+    __text = gradio.Markdown(text, line_breaks=True, latex_delimiters=[{'left': '$$', 'right': '$$', 'display': True}, {'left': '$', 'right': '$', 'display': False}])
     return {'text_block': __text}
 
 # MODEL ########################################################################
