@@ -9,8 +9,6 @@ It is a WIP, some apps are not functional yet.
 
 The [human / LLM detector][hface-human] is improving though.
 
----
-
 ## Installation
 
 The package is available on pypi:
@@ -22,8 +20,6 @@ pip install -U psaiops
 All the apps run on a single GPU and can be launched from a Google Colab notebook.
 
 They are showcased in the [demo notebook][colab-demo].
-
----
 
 ## Overview
 
@@ -37,8 +33,6 @@ All the apps run with the model `gpt-oss-20b` by default so it is highly recomma
 
 Some of the apps are specific to `gpt-oss-20b` but most can be used with another model.
 You can look at the section `__main__` at the bottom of the file `app.py` for more details on the setup.
-
----
 
 ## Apps
 
@@ -73,8 +67,6 @@ It is using techniques scattered over several other apps that:
 - score the input tokens according to the attention they get during the generation
 - view the expert logits and associate the routing with the input tokens
 - view the flow of residuals and assess the contribution of the layers to the final output 
-
----
 
 ## License
 
