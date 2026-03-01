@@ -1,12 +1,12 @@
 import torch
 import torch.nn
 
-import deformers.models.openai.gptoss
+import transformers.models.gpt_oss.modeling_gpt_oss
 
 # LOAD #########################################################################
 
 def get_model(name: str, device: str='cpu'):
-    __model = deformers.models.openai.gptoss.GptOssForCausalInference.from_pretrained(
+    __model = transformers.models.gpt_oss.modeling_gpt_oss.GptOssForCausalLM.from_pretrained(
         name,
         dtype='auto',
         device_map=device)
