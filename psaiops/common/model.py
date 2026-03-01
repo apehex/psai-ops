@@ -5,10 +5,10 @@ import transformers.models.gpt_oss.modeling_gpt_oss
 
 # LOAD #########################################################################
 
-def get_model(name: str, device: str='cpu'):
+def get_model(name: str, device: str='cpu', dtype: str='auto'):
     __model = transformers.models.gpt_oss.modeling_gpt_oss.GptOssForCausalLM.from_pretrained(
         name,
-        dtype='auto',
+        dtype=dtype,
         device_map=device)
     # toggle the inference mode (not training)
     __model.eval()
