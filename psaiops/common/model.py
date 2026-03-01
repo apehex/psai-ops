@@ -1,5 +1,3 @@
-import functools
-
 import torch
 import torch.nn
 
@@ -7,7 +5,6 @@ import deformers.models.openai.gptoss
 
 # LOAD #########################################################################
 
-@functools.lru_cache(maxsize=1)
 def get_model(name: str, device: str='cpu'):
     __model = deformers.models.openai.gptoss.GptOssForCausalInference.from_pretrained(
         name,
@@ -45,7 +42,6 @@ def get_prefix(
 
 # GENERATE #####################################################################
 
-@functools.lru_cache(maxsize=32)
 def generate_token_ids(
     model_obj: object,
     input_ids: torch.Tensor,

@@ -1,4 +1,3 @@
-import functools
 import math
 
 import matplotlib
@@ -9,7 +8,6 @@ import mlable.shapes
 
 # GENERATE #######################################################################
 
-@functools.lru_cache(maxsize=32)
 def generate_token_ids(
     model_obj: object,
     input_ids: torch.Tensor,

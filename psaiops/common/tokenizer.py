@@ -1,11 +1,8 @@
-import functools
-
 import torch
 import transformers
 
 # LOAD #########################################################################
 
-@functools.lru_cache(maxsize=4)
 def get_tokenizer(name: str, device: str='cpu'):
     return transformers.AutoTokenizer.from_pretrained(
         name,
@@ -15,7 +12,6 @@ def get_tokenizer(name: str, device: str='cpu'):
 
 # PREPROCESS #####################################################################
 
-@functools.lru_cache(maxsize=32)
 def preprocess_token_ids(
     tokenizer_obj: object,
     prompt_str: str,
@@ -26,7 +22,6 @@ def preprocess_token_ids(
     # move to the main device
     return {__k: __v.to(device_str) for __k, __v in __data.items()}
 
-@functools.lru_cache(maxsize=32)
 def preprocess_token_str(
     tokenizer_obj: object,
     prompt_str: str,
@@ -38,7 +33,6 @@ def preprocess_token_str(
 
 # POSTPROCESS ####################################################################
 
-@functools.lru_cache(maxsize=32)
 def postprocess_token_ids(
     tokenizer_obj: object,
     token_arr: torch.Tensor,
