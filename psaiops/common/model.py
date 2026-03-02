@@ -6,7 +6,8 @@ import transformers.models.gpt_oss.modeling_gpt_oss
 # LOAD #########################################################################
 
 def get_model(name: str, device: str='cpu', dtype: str='auto', **kwargs: dict):
-    __model = transformers.models.gpt_oss.modeling_gpt_oss.GptOssForCausalLM.from_pretrained(
+    # select the config and class automatically
+    __model = transformers.AutoModelForCausalLM.from_pretrained(
         name,
         dtype=dtype,
         device_map=device,
