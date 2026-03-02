@@ -117,10 +117,8 @@ def steer_model_output(
     # attach to the model
     __handle = model_obj.model.layers[__index].register_forward_hook(__hook)
     with torch.no_grad():
-        # inference mode
-        model_obj.eval().to(device_str)
         # prefill with a single forward
-        __outputs = model_obj(**__inputs, use_cache=True, output_attentions=False, output_hidden_states=False, return_dict=True)
+        __outputs = model_obj(**__inputs, use_cache=False, return_dict=True)
     # stop capturing activations
     __handle.remove()
     # select only the positions where the tokens differ
