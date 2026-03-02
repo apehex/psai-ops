@@ -47,7 +47,8 @@ def save_to_disk(data: object, path: str) -> None:
 
 def load_from_disk(path: str) -> object:
     global _PATH
-    return torch.load(os.path.join(_PATH, 'data', path))
+    __path = os.path.join(_PATH, 'data', path)
+    return torch.load(__path) if os.path.exists(__path) else None
 
 # COLORS #######################################################################
 
@@ -126,14 +127,14 @@ def create_actions_block() -> dict:
 
 def create_state() -> dict:
     return {
-        'tokens_state': gradio.State(None),
-        'indices_state': gradio.State(None),
-        'logits_state': gradio.State(None),
-        'unicode_state': gradio.State(None),
-        'rank_state': gradio.State(None),
-        'entropy_state': gradio.State(None),
-        'perplexity_state': gradio.State(None),
-        'surprisal_state': gradio.State(None),}
+        'tokens_state': gradio.State(load_from_disk('tokens.pt')),
+        'indices_state': gradio.State(load_from_disk('indices.pt')),
+        'logits_state': gradio.State(None), # too large and not useful on startup
+        'unicode_state': gradio.State(load_from_disk('unicodes.pt')),
+        'rank_state': gradio.State(load_from_disk('ranks.pt')),
+        'entropy_state': gradio.State(load_from_disk('entropies.pt')),
+        'perplexity_state': gradio.State(load_from_disk('perplexities.pt')),
+        'surprisal_state': gradio.State(load_from_disk('surprisals.pt')),}
 
 # LAYOUT #######################################################################
 
@@ -146,7 +147,7 @@ def create_layout(intro: str=INTRO, tuto: str=TUTO, docs: str=DOCS) -> dict:
             with gradio.Row(equal_height=True):
                 __fields.update(create_inputs_block(label='Prompt', prefix='', value=tuto))
             with gradio.Row(equal_height=True):
-                __fields.update(create_highlight_block(label='Results', prefix='', value=[(__t, '50') for __t in tuto.split(' ')], cmap=create_score_cmap()))
+                __fields.update(create_highlight_block(label='Results', prefix='', value=load_from_disk('labels.pt'), cmap=create_score_cmap()))
         with gradio.Tab('Graphs') as __graphs_tab:
             __fields.update({'settings_tab': __graphs_tab})
             with gradio.Row(equal_height=True):
