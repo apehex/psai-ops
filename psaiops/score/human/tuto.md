@@ -11,10 +11,10 @@ IE anything that is highly predictable is deemed "AI": more precisely, this app 
 Believe it or not this entire introduction was written by hand, so you can see the limits of my tool!
 More than individual scores, the "aspect" of whole sections is reliable.
 Use your judgment to assess where your sample sits between the two extrems:
-- a sentence with one or more green tokens is likely human, at least reworked by a human to some extent
+- a sentence with several green tokens is likely human, at least reworked by a human to some extent
 - a sentence that is all red is highly generic, which often indicates templated or LLM writing
 
-Lemme plug in some personal opinion on text: phrases like "sincerely yours" are copypasta at best, not human intention.
+People already wrote generic copypasta like "sincerely yours" before LLMs, and IMHO they deserve to be in red.
 
 The final probability score is a combination of several metrics, computed token by token (word by word):
 - the `unicode` metric outlines invisible or relatively rare glyphs like the infamous em-dash "—" or the curly quotes "“"
