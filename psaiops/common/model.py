@@ -5,7 +5,12 @@ import transformers.models.gpt_oss.modeling_gpt_oss
 
 # LOAD #########################################################################
 
-def get_model(name: str, device: str='cpu', dtype: str='auto', **kwargs: dict):
+def get_model(
+    name: str,
+    device: str='cpu',
+    dtype: str='auto',
+    **kwargs: dict
+) -> object:
     # select the config and class automatically
     __model = transformers.AutoModelForCausalLM.from_pretrained(
         name,
@@ -16,6 +21,20 @@ def get_model(name: str, device: str='cpu', dtype: str='auto', **kwargs: dict):
     __model.eval()
     # transformers model
     return __model
+
+# FREE #########################################################################
+
+def free_memory(
+    model: object
+) -> None:
+    # drop references
+    del model
+    # run garbage collection
+    gc.collect()
+    # free CUDA memory
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
 
 # PREFIX #######################################################################
 
