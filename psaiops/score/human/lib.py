@@ -55,13 +55,9 @@ def compute_raw_logits(
     with torch.no_grad():
         __outputs = model_obj(
             input_ids=indices_arr,
-            attention_mask=torch.ones_like(indices_arr),
-            output_hidden_states=False,
-            output_attentions=False,
-            output_scores=False,
-            output_logits=True,
+            attention_mask=torch.ones_like(indices_arr).to(device=indices_arr.device, dtype=torch.bool),
             return_dict=True,
-            use_cache=True)
+            use_cache=False)
     # (B, T, V)
     return __outputs.logits
 
