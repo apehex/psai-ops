@@ -92,7 +92,7 @@ def create_sampling_block() -> dict:
 # INPUTS #######################################################################
 
 def create_inputs_block(label: str='Prompt', prefix: str='', value: str='') -> dict:
-    __input = gradio.Textbox(label=label, value=value, placeholder='A text sample to score.', lines=4, scale=1, interactive=True)
+    __input = gradio.Textbox(label=label, value=value, placeholder='A text sample to score.', lines=4, max_lines=4, scale=1, interactive=True)
     return {prefix + 'input_block': __input}
 
 # PLOTS ########################################################################
@@ -161,7 +161,7 @@ def create_layout(intro: str=INTRO, tuto: str=TUTO, docs: str=DOCS) -> dict:
             __fields.update(create_text_block(text=docs))
     with gradio.Row(equal_height=True):
         __fields.update(create_selection_block(label='Selection', prefix=''))
-        __fields.update(create_window_block(label='Window', prefix='', value=5))
+        __fields.update(create_window_block(label='Window', prefix='', value=3))
     with gradio.Row(equal_height=True):
         __fields.update(create_actions_block())
     return __fields
