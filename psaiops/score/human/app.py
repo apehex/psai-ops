@@ -17,6 +17,7 @@ import psaiops.score.human.lib
 
 _PATH = os.path.dirname(__file__)
 _LEGEND = {'AI': '0', 'human': '100',}
+_EXPORT = False
 
 MODEL = 'openai/gpt-oss-20b'
 
@@ -33,6 +34,20 @@ UNICODE = 2
 SURPRISAL = 4
 PERPLEXITY = 8
 INTERMEDIATE = 16
+
+# IO ###########################################################################
+
+def is_export_enabled() -> bool:
+    global _EXPORT
+    return _EXPORT
+
+def save_to_disk(data: object, path: str) -> None:
+    global _PATH
+    torch.save(data, os.path.join(_PATH, 'data', path))
+
+def load_from_disk(path: str) -> object:
+    global _PATH
+    return torch.load(os.path.join(_PATH, 'data', path))
 
 # COLORS #######################################################################
 
@@ -171,83 +186,121 @@ def update_window_range(
 def update_tokens_state(
     prompt_str: str,
     tokenizer_obj: object,
+    export_opt: bool=is_export_enabled(),
 ) -> object:
     # exit if some values are missing
     if (prompt_str is None) or (tokenizer_obj is None):
         return None
     # list of token strings, without escaping
-    return psaiops.common.tokenizer.preprocess_token_str(
+    __tokens = psaiops.common.tokenizer.preprocess_token_str(
         tokenizer_obj=tokenizer_obj,
         prompt_str=prompt_str.strip(),)
+    # save the data to pre-fill the UI on startup
+    if export_opt: save_to_disk(__tokens, 'tokens.pt')
+    # the token partition is used to highlight the sample token by token
+    return __tokens
 
 # INDICES ######################################################################
 
 def update_indices_state(
     prompt_str: str,
     tokenizer_obj: object,
+    export_opt: bool=is_export_enabled(),
 ) -> object:
     # exit if some values are missing
     if (prompt_str is None) or (tokenizer_obj is None):
         return None
     # dictionary {'input_ids': _, 'attention_mask': _}
-    __input_data = psaiops.common.tokenizer.preprocess_token_ids(
+    __inputs = psaiops.common.tokenizer.preprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
         prompt_str=prompt_str.strip(),
         device_str='cpu')
+    # save the data to pre-fill the UI on startup
+    if export_opt: save_to_disk(__inputs['input_ids'], 'indices.pt')
     # discard the mask, which is all ones
-    return __input_data['input_ids'].cpu()
+    return __inputs['input_ids'].cpu()
 
 # LOGITS #######################################################################
 
 def update_logits_state(
     indices_arr: object,
     model_obj: object,
+    export_opt: bool=is_export_enabled(),
 ) -> object:
     # exit if some values are missing
     if (indices_arr is None) or (model_obj is None):
         return None
     # move the output back to the CPU
-    return psaiops.score.human.lib.compute_raw_logits(
+    __logits = psaiops.score.human.lib.compute_raw_logits(
         indices_arr=indices_arr.to(device=model_obj.device),
         model_obj=model_obj).cpu()
+    # save the data to pre-fill the UI on startup
+    if export_opt: save_to_disk(__logits, 'logits.pt')
+    # used to compute all the indicators from the critic LLM
+    return __logits
 
 # METRICS ######################################################################
 
 def update_unicode_state(
     tokens_arr: list,
+    export_opt: bool=is_export_enabled(),
 ) -> object:
-    return psaiops.score.human.lib.compute_unicode_metrics(
+    __unicodes = psaiops.score.human.lib.compute_unicode_metrics(
         tokens_arr=tokens_arr,)
+    # save the data to pre-fill the UI on startup
+    if export_opt: save_to_disk(__unicodes, 'unicodes.pt')
+    # identify rare glyphs as LLM outputs
+    return __unicodes
 
 def update_rank_state(
     indices_arr: object,
     logits_arr: object,
+    export_opt: bool=is_export_enabled(),
 ) -> object:
-    return psaiops.score.human.lib.compute_rank_metrics(
+    __ranks = psaiops.score.human.lib.compute_rank_metrics(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
+    # save the data to pre-fill the UI on startup
+    if export_opt: save_to_disk(__ranks, 'ranks.pt')
+    # rank of each token in the LLM predictions, log-scaled
+    return __ranks
 
 def update_entropy_state(
     logits_arr: object,
+    export_opt: bool=is_export_enabled(),
 ) -> object:
-    return psaiops.score.human.lib.compute_entropy_metrics(
+    __entropies = psaiops.score.human.lib.compute_entropy_metrics(
         logits_arr=logits_arr)
+    # save the data to pre-fill the UI on startup
+    if export_opt: save_to_disk(__entropies, 'entropies.pt')
+    # measures the spread of the predictions probabilities, over the vocabulary
+    return __entropies
 
 def update_perplexity_state(
     indices_arr: object,
     logits_arr: object,
+    export_opt: bool=is_export_enabled(),
 ) -> object:
-    return psaiops.score.human.lib.compute_perplexity_metrics(
+    __perplexities = psaiops.score.human.lib.compute_perplexity_metrics(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
+    # save the data to pre-fill the UI on startup
+    if export_opt: save_to_disk(__perplexities, 'perplexities.pt')
+    # measures how surprising the whole neighbordhood of each token is
+    return __perplexities
 
 def update_surprisal_state(
     indices_arr: object,
     logits_arr: object,
+    export_opt: bool=is_export_enabled(),
 ) -> object:
-    return psaiops.score.human.lib.compute_surprisal_metrics(
+    __surprisals = psaiops.score.human.lib.compute_surprisal_metrics(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
+    # save the data to pre-fill the UI on startup
+    if export_opt: save_to_disk(__surprisals, 'surprisals.pt')
+    # measures how surprising each token is, comparent to the model's predictions
+    return __surprisals
 
 # HIGHLIGHTS ###################################################################
 
@@ -258,6 +311,7 @@ def update_token_highlights(
     perplexity_arr: object,
     selection_arr: list,
     window_dim: float,
+    export_opt: bool=is_export_enabled(),
 ) -> list:
     # exit if some values are missing
     if (tokens_arr is None) or (len(tokens_arr) == 0) or (unicode_arr is None) or (len(unicode_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0) or (selection_arr is None) or (window_dim is None):
@@ -294,7 +348,11 @@ def update_token_highlights(
         score_arr=__token_cls,
         scale_val=100.0)
     # color each token according to its rank in the LLM's predictions
-    return list(zip(tokens_arr, __token_cls))
+    __labels = list(zip(tokens_arr, __token_cls))
+    # save the data to pre-fill the UI on startup
+    if export_opt: save_to_disk(__labels, 'labels.pt')
+    # list of (token, label), where each label is mapped to a color
+    return __labels
 
 # PLOTS ########################################################################
 
@@ -379,7 +437,12 @@ def create_app(
     intro: str=INTRO,
     tuto: str=TUTO,
     docs: str=DOCS,
+    export: bool=_EXPORT,
 ) -> gradio.Blocks:
+    global _EXPORT
+    # toggle the automatic export of all the computed tensors
+    _EXPORT = export
+    # holds all the UI widgets
     __fields = {}
     with gradio.Blocks(title=title) as __app:
         # create the UI
