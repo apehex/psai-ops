@@ -18,7 +18,7 @@ def preprocess_token_ids(
     device_str: str='cpu'
 ) -> dict:
     # tokenize
-    __data = tokenizer_obj(prompt_str, return_tensors='pt', padding='longest')
+    __data = tokenizer_obj(prompt_str, return_tensors='pt', padding='longest', add_special_tokens=False, truncation=False)
     # move to the main device
     return {__k: __v.to(device_str) for __k, __v in __data.items()}
 
@@ -27,7 +27,7 @@ def preprocess_token_str(
     prompt_str: str,
 ) -> list:
     # tokenize
-    __data = tokenizer_obj(prompt_str, return_offsets_mapping=True, add_special_tokens=False)
+    __data = tokenizer_obj(prompt_str, padding='longest', return_offsets_mapping=True, add_special_tokens=False, truncation=False)
     # partition the original string (avoid escaping special characters)
     return [prompt_str[__s:__e] for (__s, __e) in __data['offset_mapping']]
 
