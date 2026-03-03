@@ -92,7 +92,7 @@ def create_sampling_block() -> dict:
 # INPUTS #######################################################################
 
 def create_inputs_block(label: str='Prompt', prefix: str='', value: str='') -> dict:
-    __input = gradio.Textbox(label=label, value=value, placeholder='A text sample to score.', lines=4, max_lines=4, scale=1, interactive=True)
+    __input = gradio.Textbox(label=label, value=value, placeholder='A text sample to score.', lines=4, scale=1, interactive=True)
     return {prefix + 'input_block': __input}
 
 # PLOTS ########################################################################
@@ -144,10 +144,12 @@ def create_layout(intro: str=INTRO, tuto: str=TUTO, docs: str=DOCS) -> dict:
     with gradio.Tabs():
         with gradio.Tab('Scores') as __main_tab:
             __fields.update({'main_tab': __main_tab})
-            with gradio.Row(equal_height=True):
-                __fields.update(create_inputs_block(label='Prompt', prefix='', value=tuto))
-            with gradio.Row(equal_height=True):
-                __fields.update(create_highlight_block(label='Results', prefix='', value=load_from_disk('labels.pt'), cmap=create_score_cmap()))
+            with gradio.Accordion(label='Inputs', open=True, visible=True):
+                with gradio.Row(equal_height=True):
+                    __fields.update(create_inputs_block(label='Prompt', prefix='', value=tuto))
+            with gradio.Accordion(label='Outputs', open=True, visible=True):
+                with gradio.Row(equal_height=True):
+                    __fields.update(create_highlight_block(label='Results', prefix='', value=load_from_disk('labels.pt'), cmap=create_score_cmap()))
         with gradio.Tab('Graphs') as __graphs_tab:
             __fields.update({'settings_tab': __graphs_tab})
             with gradio.Row(equal_height=True):
@@ -159,9 +161,10 @@ def create_layout(intro: str=INTRO, tuto: str=TUTO, docs: str=DOCS) -> dict:
         with gradio.Tab('Docs') as __docs_tab:
             __fields.update({'docs_tab': __docs_tab})
             __fields.update(create_text_block(text=docs))
-    with gradio.Row(equal_height=True):
-        __fields.update(create_selection_block(label='Selection', prefix=''))
-        __fields.update(create_window_block(label='Window', prefix='', value=3))
+    with gradio.Accordion(label='Metrics', open=True, visible=True):
+        with gradio.Row(equal_height=True):
+            __fields.update(create_selection_block(label='Selection', prefix=''))
+            __fields.update(create_window_block(label='Window', prefix='', value=3))
     with gradio.Row(equal_height=True):
         __fields.update(create_actions_block())
     return __fields
