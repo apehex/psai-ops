@@ -270,8 +270,10 @@ def compute_rank_metrics(
     indices_arr: object,
     logits_arr: object,
     lower_val: int=100,
-    upper_val: int=VOCABULARY_DIM,
+    upper_val: int=-1,
 ) -> object:
+    # infer the vocab length from the last dimension of the logits
+    __upper = max(upper_val, int(logits_arr.shape[-1]))
     # compute the raw ranks (B, T-1)
     __outputs = compute_ranks(
         indices_arr=indices_arr,
@@ -280,7 +282,7 @@ def compute_rank_metrics(
     return postprocess_ranks(
         ranks_arr=__outputs,
         lower_val=lower_val,
-        upper_val=upper_val)
+        upper_val=__upper)
 
 # ENTROPY ######################################################################
 
@@ -296,21 +298,25 @@ def compute_entropies(
 
 def postprocess_entropies(
     entropies_arr: object,
+    upper_val: float=float(VOCABULARY_DIM),
 ) -> object:
     # normalize (B, T-1)
-    __outputs = entropies_arr / math.log(VOCABULARY_DIM)
+    __outputs = entropies_arr / math.log(upper_val)
     # add a neutral score for the first token
     return pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
 
 def compute_entropy_metrics(
     logits_arr: object,
 ) -> object:
+    # infer the vocab length from the last dimension of the logits
+    __upper = float(logits_arr.shape[-1])
     # compute the raw entropies (B, T-1)
     __outputs = compute_entropies(
         logits_arr=logits_arr)
     # and normalize them (B, T-1)
     return postprocess_entropies(
-        entropies_arr=__outputs)
+        entropies_arr=__outputs,
+        upper_val=__upper)
 
 # PERPLEXITY ###################################################################
 
@@ -356,9 +362,10 @@ def compute_perplexity_metrics(
 
 def postprocess_surprisals(
     surprisals_arr: object,
+    upper_val: float=float(VOCABULARY_DIM),
 ) -> object:
     # normalize (B, T-1)
-    __outputs = torch.clamp(0.5 + (surprisals_arr / math.log(VOCABULARY_DIM)), min=0.0, max=1.0)
+    __outputs = torch.clamp(0.5 + (surprisals_arr / math.log(upper_val)), min=0.0, max=1.0)
     # add a neutral score for the first token
     return pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
 
@@ -366,6 +373,8 @@ def compute_surprisal_metrics(
     indices_arr: object,
     logits_arr: object,
 ) -> object:
+    # infer the vocab length from the last dimension of the logits
+    __upper = float(logits_arr.shape[-1])
     # compute the raw entropies (B, T-1)
     __expectations = compute_entropies(
         logits_arr=logits_arr)
@@ -377,7 +386,8 @@ def compute_surprisal_metrics(
     __outputs = __realizations - __expectations
     # normalized like the entropy (B, T-1)
     return postprocess_surprisals(
-        surprisals_arr=__outputs,)
+        surprisals_arr=__outputs,
+        upper_val=__upper)
 
 # FOURIER ######################################################################
 
