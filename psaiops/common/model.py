@@ -1,7 +1,8 @@
+import gc
+
 import torch
 import torch.nn
-
-import transformers.models.gpt_oss.modeling_gpt_oss
+import transformers
 
 # LOAD #########################################################################
 
