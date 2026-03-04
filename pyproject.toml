@@ -1,6 +1,6 @@
 [project]
 name = "psaiops"
-version = "0.8.7"
+version = "0.8.8"
 description = "Web apps to inspect & engineer NN activations."
 authors = [{ name = "apehex", email = "17317183+apehex@users.noreply.github.com" }]
 readme = ".github/README.md"
@@ -9,13 +9,12 @@ license-files = [".github/LICENSE.md"]
 requires-python = ">=3.10, <3.14"
 dependencies = [
     "accelerate>=1.12",
-    # "deformers>=0.1",
     "gradio>=6.4",
     "kernels>=0.12",
     "matplotlib>=3.10",
     "mlable-torch>=0.3",
     "requests>=2.0",
-    "transformers>=5.2",
+    "transformers>=5.0",
     "triton>=3.4",]
 
 [dependency-groups]
