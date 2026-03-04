@@ -7,8 +7,7 @@ def get_tokenizer(name: str, device: str='cpu'):
     return transformers.AutoTokenizer.from_pretrained(
         name,
         use_fast=True,
-        dtype='auto',
-        device_map=device)
+        dtype='auto')
 
 # PREPROCESS #####################################################################
 
