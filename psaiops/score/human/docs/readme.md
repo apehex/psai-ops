@@ -9,6 +9,7 @@ Some texts that were originally human written are considered "AI" here:
 IE anything that is highly predictable is deemed "AI": more precisely, this app asks the question "what is *original* human work in this text?".
 
 Believe it or not this entire introduction was written by hand, so you can see the limits of my tool!
+
 More than individual scores, the "aspect" of whole sections is reliable.
 Use your judgment to assess where your sample sits between the two extrems:
 - a sentence with several green tokens is likely human, at least reworked by a human to some extent

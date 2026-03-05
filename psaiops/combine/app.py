@@ -33,7 +33,7 @@ def create_intro_block(intro: str) -> dict:
 # MODEL ########################################################################
 
 def create_template_block() -> dict:
-    __template = gradio.Dropdown(label='Template', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b', ''], scale=1, allow_custom_value=False, multiselect=False, interactive=True)
+    __template = gradio.Dropdown(label='Template', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b', 'google/gemma-3-27b-it'], scale=1, allow_custom_value=False, multiselect=False, interactive=True)
     return {
         'template_block': __template,}
 

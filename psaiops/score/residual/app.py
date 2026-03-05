@@ -13,10 +13,10 @@ import psaiops.score.residual.lib
 
 # META #########################################################################
 
-MODEL = 'openai/gpt-oss-20b'
+MODEL = 'qwen/qwen3.5-9b'
 
 TITLE = '''Visualization Of Residuals'''
-INTRO = '''Plot the hidden states for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.\nSee the tab "docs" for more details on the implementation and formulas.'''
+INTRO = '''Plot the hidden states for a given prompt.\nUnder construction, only "qwen/qwen3.5-9b" is available for now.\nSee the tab "docs" for more details on the implementation and formulas.'''
 DOCS = '''Given:
 - a layer index `l` (-1 to select all the layers)
 - a token index `i` (-1 to select all the tokens)
@@ -62,7 +62,7 @@ def create_text_block(text: str) -> dict:
 # MODEL ########################################################################
 
 def create_model_block() -> dict:
-    __model = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
+    __model = gradio.Dropdown(label='Model', value='qwen/qwen3.5-9b', choices=['qwen/qwen3.5-9b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
     return {'model_block': __model,}
 
 # SAMPLING #####################################################################
@@ -111,7 +111,7 @@ def create_token_selection_block(label: str='Token', prefix: str='') -> dict:
     return {prefix + 'position_block': __position,}
 
 def create_layer_selection_block(label: str='Layer', prefix: str='') -> dict:
-    __layer = gradio.Slider(label=label, value=-1, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
+    __layer = gradio.Slider(label=label, value=-1, minimum=-1, maximum=31, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
     return {prefix + 'layer_block': __layer,}
 
 # ACTIONS ######################################################################

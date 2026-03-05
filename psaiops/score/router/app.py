@@ -12,10 +12,10 @@ import psaiops.score.router.lib
 
 # META #########################################################################
 
-MODEL = 'openai/gpt-oss-20b'
+MODEL = 'qwen/qwen3.5-35b-a3b'
 
 TITLE = '''Router Scoring'''
-INTRO = '''Plot the logits of the router for a given prompt.\nUnder construction, only "openai/gpt-oss-20b" is available for now.\nSee the tab "docs" for more details on the implementation and formulas.'''
+INTRO = '''Plot the logits of the router for a given prompt.\nUnder construction, only "qwen/qwen3.5-35b-a3b" is available for now.\nSee the tab "docs" for more details on the implementation and formulas.'''
 DOCS = '''The router weights are displayed for a selection position `i` along the sequence axis.
 
 With a position `-1`, all the tokens are selected and the router weights are average along the sequence axis.
@@ -47,7 +47,7 @@ def create_text_block(text: str) -> dict:
 # MODEL ########################################################################
 
 def create_model_block() -> dict:
-    __model = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
+    __model = gradio.Dropdown(label='Model', value='qwen/qwen3.5-35b-a3b', choices=['qwen/qwen3.5-35b-a3b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
     return {'model_block': __model,}
 
 # SAMPLING #####################################################################

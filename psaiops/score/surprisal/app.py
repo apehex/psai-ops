@@ -15,7 +15,12 @@ import psaiops.score.surprisal.lib
 
 # META #########################################################################
 
-MODEL = 'openai/gpt-oss-20b'
+MODEL = 'qwen/qwen3.5-9b'
+LAYERS = {
+    'qwen/qwen3.5-9b': 32,
+    'qwen/qwen3.5-27b': 64,
+    'qwen/qwen3.5-35b-a3b': 40,
+    'qwen/qwen3.5-35b-a3b-fp8': 40,}
 
 TITLE = '''Surprisal Scoring'''
 INTRO = '''Plot the following metrics to measure how unexpected each token is:\n- the probability of each token\n- the rank of each token among the output logits\n- the KL divergence between the final residuals and those at depth L\n\nSee the tab "docs" for more informations, in particular the exact formulas of the computations.'''
@@ -96,7 +101,7 @@ def create_text_block(text: str) -> dict:
 # MODEL ########################################################################
 
 def create_model_block() -> dict:
-    __model = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
+    __model = gradio.Dropdown(label='Model', value='qwen/qwen3.5-9b', choices=['qwen/qwen3.5-9b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
     return {'model_block': __model,}
 
 # SAMPLING #####################################################################
@@ -140,7 +145,7 @@ def create_token_selection_block(label: str='Token', prefix: str='') -> dict:
     return {prefix + 'position_block': __position,}
 
 def create_layer_selection_block(label: str='Layer', prefix: str='') -> dict:
-    __layer = gradio.Slider(label=label, value=13, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
+    __layer = gradio.Slider(label=label, value=13, minimum=-1, maximum=31, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
     return {prefix + 'layer_block': __layer,}
 
 # ACTIONS ######################################################################
@@ -205,6 +210,12 @@ def update_position_range(
     __val = min(int(current_val), __max)
     # return a gradio update dictionary
     return gradio.update(maximum=__max, value=__val)
+
+def update_layer_range(value: float, model: str, layers: dict=LAYERS) -> dict:
+    # number of hidden blocks in the model
+    __count = layers.get(model, 32)
+    # try to keep the former value
+    return gradio.update(maximum=__count, value=min(__count, int(value)))
 
 # HIGHLIGHT ####################################################################
 

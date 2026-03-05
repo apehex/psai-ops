@@ -12,9 +12,14 @@ import psaiops.score.attention.lib
 # META #########################################################################
 
 TITLE = '''Attention Scoring'''
-INTRO = '''Display the influence of each token on the prediction, according to a given slice of the attention weights.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
+INTRO = '''Display the influence of each token on the prediction, according to a given slice of the attention weights.\nUnder construction, only "qwen/qwen3.5-9b" is available for now.'''
 
-MODEL = 'openai/gpt-oss-20b'
+MODEL = 'qwen/qwen3.5-9b'
+LAYERS = {
+    'qwen/qwen3.5-9b': 32,
+    'qwen/qwen3.5-27b': 64,
+    'qwen/qwen3.5-35b-a3b': 40,
+    'qwen/qwen3.5-35b-a3b-fp8': 40,}
 
 # COLORS #######################################################################
 
@@ -32,7 +37,7 @@ def create_text_block(text: str) -> dict:
 # MODEL ########################################################################
 
 def create_model_block() -> dict:
-    __model = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
+    __model = gradio.Dropdown(label='Model', value='qwen/qwen3.5-9b', choices=['qwen/qwen3.5-9b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
     return {'model_block': __model,}
 
 # SAMPLING #####################################################################
@@ -74,7 +79,7 @@ def create_outputs_block() -> dict:
 
 def create_selection_block() -> dict:
     __position = gradio.Slider(label='Token Position', value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
-    __layer = gradio.Slider(label='Layer Depth', value=12, minimum=-1, maximum=23, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
+    __layer = gradio.Slider(label='Layer Depth', value=15, minimum=-1, maximum=31, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
     __head = gradio.Slider(label='Attention Head', value=-1, minimum=-1, maximum=63, step=1, scale=1, interactive=True) # info='-1 to average on all heads'
     return {
         'position_block': __position,
@@ -125,8 +130,11 @@ def create_layout(intro: str=INTRO) -> dict:
 
 # EVENTS #######################################################################
 
-def update_layer_range(value: float, model: str) -> dict:
-    return gradio.update(maximum=35, value=min(35, int(value))) if '120b' in model else gradio.update(maximum=23, value=min(23, int(value)))
+def update_layer_range(value: float, model: str, layers: dict=LAYERS) -> dict:
+    # number of hidden blocks in the model
+    __count = layers.get(model, 32)
+    # try to keep the former value
+    return gradio.update(maximum=__count, value=min(__count, int(value)))
 
 def update_position_range(value: float, tokens: float) -> dict:
     return gradio.update(maximum=int(tokens) - 1, value=min(int(tokens) - 1, int(value)))

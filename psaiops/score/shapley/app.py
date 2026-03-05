@@ -11,9 +11,14 @@ import psaiops.common.tokenizer
 # META #########################################################################
 
 TITLE = '''Shapley Scoring'''
-INTRO = '''Score each token according to their [Shapley value](https://en.wikipedia.org/wiki/Shapley_value).\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
+INTRO = '''Score each token according to their [Shapley value](https://en.wikipedia.org/wiki/Shapley_value).\nUnder construction, only "qwen/qwen3.5-9b" is available for now.'''
 
-MODEL = 'openai/gpt-oss-20b'
+MODEL = 'qwen/qwen3.5-9b'
+LAYERS = {
+    'qwen/qwen3.5-9b': 32,
+    'qwen/qwen3.5-27b': 64,
+    'qwen/qwen3.5-35b-a3b': 40,
+    'qwen/qwen3.5-35b-a3b-fp8': 40,}
 
 # COLORS #######################################################################
 
@@ -31,7 +36,7 @@ def create_intro_block(intro: str) -> dict:
 # MODEL ########################################################################
 
 def create_model_block() -> dict:
-    __model = gradio.Dropdown(label='Model', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
+    __model = gradio.Dropdown(label='Model', value='qwen/qwen3.5-9b', choices=['qwen/qwen3.5-9b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
     return {'model_block': __model,}
 
 # SAMPLING #####################################################################
@@ -116,8 +121,11 @@ def create_layout(intro: str=INTRO) -> dict:
 
 # EVENTS #######################################################################
 
-def update_layer_range(value: float, model: str) -> dict:
-    return gradio.update(maximum=35, value=min(35, int(value))) if '120b' in model else gradio.update(maximum=23, value=min(23, int(value)))
+def update_layer_range(value: float, model: str, layers: dict=LAYERS) -> dict:
+    # number of hidden blocks in the model
+    __count = layers.get(model, 32)
+    # try to keep the former value
+    return gradio.update(maximum=__count, value=min(__count, int(value)))
 
 def update_position_range(value: float, tokens: float) -> dict:
     return gradio.update(maximum=int(tokens) - 1, value=min(int(tokens) - 1, int(value)))

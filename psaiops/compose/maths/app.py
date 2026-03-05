@@ -12,10 +12,15 @@ import psaiops.common.tokenizer
 
 # META #########################################################################
 
-MODEL = 'openai/gpt-oss-20b'
+MODEL = 'qwen/qwen3.5-9b'
+LAYERS = {
+    'qwen/qwen3.5-9b': 32,
+    'qwen/qwen3.5-27b': 64,
+    'qwen/qwen3.5-35b-a3b': 40,
+    'qwen/qwen3.5-35b-a3b-fp8': 40,}
 
 TITLE = '''Activation Maths'''
-INTRO = '''Compose prompts in the latent space from the combinations of elementary prompts with chosen operators.\nUnder construction, only "openai/gpt-oss-20b" is available for now.'''
+INTRO = '''Compose prompts in the latent space from the combinations of elementary prompts with chosen operators.\nUnder construction, only "qwen/qwen3.5-9b" is available for now.'''
 
 COUNT = 8
 
@@ -35,8 +40,8 @@ def create_intro_block(intro: str) -> dict:
 # MODEL ########################################################################
 
 def create_model_block() -> dict:
-    __model = gradio.Dropdown(label='Model ID', value='openai/gpt-oss-20b', choices=['openai/gpt-oss-20b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
-    __layer = gradio.Slider(label='Layer Depth', value=12, minimum=0, maximum=23, step=1, scale=1, interactive=True)
+    __model = gradio.Dropdown(label='Model ID', value='qwen/qwen3.5-9b', choices=['qwen/qwen3.5-9b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
+    __layer = gradio.Slider(label='Layer Depth', value=15, minimum=0, maximum=32, step=1, scale=1, interactive=True)
     return {
         'model_block': __model,
         'layer_block': __layer,}
@@ -217,8 +222,11 @@ def hide_input_row(rows: list, index: int) -> tuple:
 
 # EVENTS #######################################################################
 
-def update_layer_range(value: float, model: str) -> dict:
-    return gradio.update(maximum=35, value=min(35, int(value))) if '120b' in model else gradio.update(maximum=23, value=min(23, int(value)))
+def update_layer_range(value: float, model: str, layers: dict=LAYERS) -> dict:
+    # number of hidden blocks in the model
+    __count = layers.get(model, 32)
+    # try to keep the former value
+    return gradio.update(maximum=__count, value=min(__count, int(value)))
 
 def update_input_cache(cache: list, value: any, index: int, field: str) -> list:
     __cache = list(cache)

@@ -9,7 +9,7 @@ This tool estimates a "human score" for each token, a probability ranging from:
 To calculate this score, the input string provided by the user is processed as follows:
 
 0. it is tokenized using `o200k-harmony` from OpenAI into a sequence of token IDs
-1. these IDs are then transformed into raw logits by a forward pass in `openai/gpt-oss-20b`
+1. these IDs are then transformed into raw logits by a forward pass in `qwen/qwen3.5-27b`
 2. the logits and indices are used to calculate raw indicators like the entropy
 3. the indicators are log-scaled and mapped to `[0; 1]` probabilities
 4. the tensors are padded and aligned with the tokens along the sequence axis
