@@ -154,7 +154,7 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
                 with gradio.Row(equal_height=True):
                     __fields.update(create_highlight_block(label='Results', prefix='', value=load_from_disk('labels.pt'), cmap=create_score_cmap()))
         with gradio.Tab('Graphs') as __graphs_tab:
-            __fields.update({'settings_tab': __graphs_tab})
+            __fields.update({'graphs_tab': __graphs_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_plot_block(label='Metrics', prefix=''))
         with gradio.Tab('Settings') as __settings_tab:
