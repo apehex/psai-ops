@@ -80,7 +80,7 @@ def create_outputs_block() -> dict:
 def create_selection_block() -> dict:
     __position = gradio.Slider(label='Token Position', value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all tokens'
     __layer = gradio.Slider(label='Layer Depth', value=15, minimum=-1, maximum=31, step=1, scale=1, interactive=True) # info='-1 to average on all layers'
-    __head = gradio.Slider(label='Attention Head', value=-1, minimum=-1, maximum=63, step=1, scale=1, interactive=True) # info='-1 to average on all heads'
+    __head = gradio.Slider(label='Attention Head', value=-1, minimum=-1, maximum=15, step=1, scale=1, interactive=True) # info='-1 to average on all heads'
     return {
         'position_block': __position,
         'layer_block': __layer,
