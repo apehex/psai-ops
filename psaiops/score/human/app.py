@@ -138,9 +138,12 @@ def create_state() -> dict:
 
 # LAYOUT #######################################################################
 
-def create_layout(intro: str=INTRO, tuto: str=TUTO, docs: str=DOCS) -> dict:
+def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=DOCS) -> dict:
     __fields = {}
-    __fields.update(create_highlight_block(label='', prefix='intro_', value=intro, cmap=create_score_cmap(), show_label=False))
+    with gradio.Row(equal_height=True):
+        __fields.update(create_text_block(text='# ' + title))
+    with gradio.Row(equal_height=True):
+        __fields.update(create_highlight_block(label='', prefix='intro_', value=intro, cmap=create_score_cmap(), show_label=False))
     with gradio.Tabs():
         with gradio.Tab('Scores') as __main_tab:
             __fields.update({'main_tab': __main_tab})
@@ -450,7 +453,7 @@ def create_app(
     __fields = {}
     with gradio.Blocks(title=title) as __app:
         # create the UI
-        __fields.update(create_layout(intro=intro, tuto=tuto, docs=docs))
+        __fields.update(create_layout(title=title, intro=intro, tuto=tuto, docs=docs))
         # init the state
         __fields.update(create_state())
         # split the string into token sub-strings
