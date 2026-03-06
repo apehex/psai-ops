@@ -310,21 +310,21 @@ def create_app(tabulate: callable, title: str=TITLE, intro: str=INTRO, limit: in
             fn=show_input_row,
             inputs=[__inputs['cache_block']],
             outputs=[__inputs['cache_block']] + get_input_rows(inputs=__inputs, limit=limit),
-            queue=False,
+            queue=True,
             show_progress='hidden')
         # update the table TODO
         __inputs['view_tab'].select(
             fn=tabulate,
             inputs=[__inputs[f'content_{__i}_block'] for __i in range(limit)] + [__inputs['output_block']],
             outputs=__inputs['table_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         # fetch the list of matching datasets
         __inputs['search_block'].change(
             fn=update_dataset_list,
             inputs=__inputs['search_block'],
             outputs=__inputs['search_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         # link each row of inputs to the cache
         for __i in range(limit):
@@ -333,35 +333,35 @@ def create_app(tabulate: callable, title: str=TITLE, intro: str=INTRO, limit: in
                 fn=update_role_cache,
                 inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'role_{__i}_block']],
                 outputs=__inputs['cache_block'],
-                queue=False,
+                queue=True,
                 show_progress='hidden')
             # update the target channel in the cache
             __inputs[f'channel_{__i}_block'].change(
                 fn=update_channel_cache,
                 inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'channel_{__i}_block']],
                 outputs=__inputs['cache_block'],
-                queue=False,
+                queue=True,
                 show_progress='hidden')
             # update the target column in the cache
             __inputs[f'source_{__i}_block'].change(
                 fn=update_source_cache,
                 inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'source_{__i}_block']],
                 outputs=__inputs['cache_block'],
-                queue=False,
+                queue=True,
                 show_progress='hidden')
             # update the target content in the cache
             __inputs[f'content_{__i}_block'].change(
                 fn=update_content_cache,
                 inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'content_{__i}_block']],
                 outputs=__inputs['cache_block'],
-                queue=False,
+                queue=True,
                 show_progress='hidden')
             # hide the target row
             __inputs[f'button_{__i}_block'].click(
                 fn=hide_input_row,
                 inputs=[__inputs['cache_block'], gradio.State(__i)],
                 outputs=[__inputs['cache_block']] + get_input_rows(inputs=__inputs, limit=limit),
-                queue=False,
+                queue=True,
                 show_progress='hidden')
         # gradio application
         return __app

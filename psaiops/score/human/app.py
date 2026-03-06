@@ -460,96 +460,96 @@ def create_app(
             fn=partition,
             inputs=__fields['input_block'],
             outputs=__fields['tokens_state'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         ).then(
         # translate the string into token indices
             fn=convert,
             inputs=__fields['input_block'],
             outputs=__fields['indices_state'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         ).then(
         # then compute the associated logits
             fn=compute,
             inputs=__fields['indices_state'],
             outputs=__fields['logits_state'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         ).then(
         # compute the unicode scores
             fn=update_unicode_state,
             inputs=[__fields[__k] for __k in ['tokens_state']],
             outputs=__fields['unicode_state'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         ).then(
         # compute the rank scores
             fn=update_rank_state,
             inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
             outputs=__fields['rank_state'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         ).then(
         # compute the entropy scores
             fn=update_entropy_state,
             inputs=[__fields[__k] for __k in ['logits_state']],
             outputs=__fields['entropy_state'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         ).then(
         # compute the perplexity scores
             fn=update_perplexity_state,
             inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
             outputs=__fields['perplexity_state'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         ).then(
         # compute the surprisal scores
             fn=update_surprisal_state,
             inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
             outputs=__fields['surprisal_state'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         ).then(
         # then compute the scores
             fn=update_token_highlights,
             inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
             outputs=__fields['highlight_block'],
-            queue=False,
+            queue=True,
             show_progress='full'
         ).then(
         # and plot the metrics
             fn=update_metric_plots,
             inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
             outputs=__fields['plot_block'],
-            queue=False,
+            queue=True,
             show_progress='full')
         # update the plots when the metric selection changes
         __fields['selection_block'].change(
             fn=update_token_highlights,
             inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
             outputs=__fields['highlight_block'],
-            queue=False,
+            queue=True,
             show_progress='full'
         ).then(
             fn=update_metric_plots,
             inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
             outputs=__fields['plot_block'],
-            queue=False,
+            queue=True,
             show_progress='full')
         # update the plots when the window changes
         __fields['window_block'].change(
             fn=update_token_highlights,
             inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
             outputs=__fields['highlight_block'],
-            queue=False,
+            queue=True,
             show_progress='full'
         ).then(
             fn=update_metric_plots,
             inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
             outputs=__fields['plot_block'],
-            queue=False,
+            queue=True,
             show_progress='full')
         # gradio application
         return __app

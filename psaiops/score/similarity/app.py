@@ -142,13 +142,13 @@ def create_app(title: str=TITLE, intro: str=INTRO, model: str=MODEL) -> gradio.B
             fn=update_position_range,
             inputs=[__fields[__k] for __k in ['position_block', 'tokens_block']],
             outputs=__fields['position_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         __fields['model_block'].change(
             fn=update_layer_range,
             inputs=[__fields[__k] for __k in ['layer_block', 'model_block']],
             outputs=__fields['layer_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         # gradio application
         return __app

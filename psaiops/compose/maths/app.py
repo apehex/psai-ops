@@ -268,21 +268,21 @@ def create_app(tabulate: callable, title: str=TITLE, intro: str=INTRO, limit: in
             fn=update_layer_range,
             inputs=[__inputs[__k] for __k in ['layer_block', 'model_block']],
             outputs=__inputs['layer_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         # show hidden row
         __inputs['show_block'].click(
             fn=show_input_row,
             inputs=[__inputs['cache_block']],
             outputs=[__inputs['cache_block']] + get_input_rows(inputs=__inputs, limit=limit),
-            queue=False,
+            queue=True,
             show_progress='hidden')
         # update the table
         __inputs['details_tab'].select(
             fn=tabulate,
             inputs=[__inputs[f'prompt_{__i}_block'] for __i in range(limit)] + [__inputs['output_block']],
             outputs=__inputs['table_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         # link each row of inputs to the cache
         for __i in range(limit):
@@ -291,28 +291,28 @@ def create_app(tabulate: callable, title: str=TITLE, intro: str=INTRO, limit: in
                 fn=update_operation_cache,
                 inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'operation_{__i}_block']],
                 outputs=__inputs['cache_block'],
-                queue=False,
+                queue=True,
                 show_progress='hidden')
             # update the target factor in the cache
             __inputs[f'factor_{__i}_block'].change(
                 fn=update_factor_cache,
                 inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'factor_{__i}_block']],
                 outputs=__inputs['cache_block'],
-                queue=False,
+                queue=True,
                 show_progress='hidden')
             # update the target prompt in the cache
             __inputs[f'prompt_{__i}_block'].change(
                 fn=update_prompt_cache,
                 inputs=[__inputs['cache_block'], gradio.State(__i), __inputs[f'prompt_{__i}_block']],
                 outputs=__inputs['cache_block'],
-                queue=False,
+                queue=True,
                 show_progress='hidden')
             # hide the target row
             __inputs[f'button_{__i}_block'].click(
                 fn=hide_input_row,
                 inputs=[__inputs['cache_block'], gradio.State(__i)],
                 outputs=[__inputs['cache_block']] + get_input_rows(inputs=__inputs, limit=limit),
-                queue=False,
+                queue=True,
                 show_progress='hidden')
         # gradio application
         return __app

@@ -202,19 +202,19 @@ def create_app(compute: callable, tabulate: callable, title: str=TITLE, intro: s
             fn=update_layer_range,
             inputs=[__fields[__k] for __k in ['layer_block', 'model_block']],
             outputs=__fields['layer_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         __fields['details_tab'].select(
             fn=tabulate,
             inputs=[__fields[__k] for __k in ['prompt_0_block', 'prompt_1_block', 'prompt_2_block', 'output_block']],
             outputs=__fields['table_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         __fields['process_block'].click(
             fn=compute,
             inputs=[__fields[__k] for __k in ['prompt_0_block', 'prompt_1_block', 'prompt_2_block', 'factor_0_block', 'factor_1_block', 'factor_2_block', 'tokens_block', 'topk_block', 'topp_block', 'layer_block']],
             outputs=__fields['output_block'],
-            queue=False,
+            queue=True,
             show_progress='full')
         # gradio application
         return __app

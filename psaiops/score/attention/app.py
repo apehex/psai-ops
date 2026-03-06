@@ -264,37 +264,37 @@ def create_app(compute: callable, title: str=TITLE, intro: str=INTRO) -> gradio.
             fn=update_position_range,
             inputs=[__fields[__k] for __k in ['position_block', 'tokens_block']],
             outputs=__fields['position_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         __fields['model_block'].change(
             fn=update_layer_range,
             inputs=[__fields[__k] for __k in ['layer_block', 'model_block']],
             outputs=__fields['layer_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         __fields['process_block'].click(
             fn=compute,
             inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'position_block', 'layer_block', 'head_block', 'input_block']],
             outputs=[__fields[__k] for __k in ['output_block', 'input_state', 'output_state', 'attention_state']],
-            queue=False,
+            queue=True,
             show_progress='full')
         __fields['position_block'].change(
             fn=update_text_highlight,
             inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'head_block', 'input_state', 'output_state', 'attention_state']],
             outputs=__fields['output_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         __fields['layer_block'].change(
             fn=update_text_highlight,
             inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'head_block', 'input_state', 'output_state', 'attention_state']],
             outputs=__fields['output_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         __fields['head_block'].change(
             fn=update_text_highlight,
             inputs=[__fields[__k] for __k in ['position_block', 'layer_block', 'head_block', 'input_state', 'output_state', 'attention_state']],
             outputs=__fields['output_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         # gradio application
         return __app

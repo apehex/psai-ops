@@ -366,66 +366,66 @@ def create_app(compute: callable, highlight: callable, title: str=TITLE, intro: 
             fn=compute,
             inputs=[__fields[__k] for __k in ['tokens_block', 'topk_block', 'topp_block', 'input_block']],
             outputs=[__fields[__k] for __k in ['output_state', 'hidden_state']],
-            queue=False,
+            queue=True,
             show_progress='full'
         ).then(
         # update the range of the position sliders when the output changes
             fn=update_position_range,
             inputs=[__fields[__k] for __k in ['left_position_block', 'tokens_block', 'output_state']],
             outputs=__fields['left_position_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         ).then(
             fn=update_position_range,
             inputs=[__fields[__k] for __k in ['right_position_block', 'tokens_block', 'output_state']],
             outputs=__fields['right_position_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         ).then(
         # update the token highlight when the output data changes
             fn=highlight,
             inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['highlight_block'],
-            queue=False,
+            queue=True,
             show_progress='full'
         ).then(
         # update the plot when the hidden data changes
             fn=update_hidden_plot,
             inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['left_plot_block'],
-            queue=False,
+            queue=True,
             show_progress='full'
         ).then(
             fn=update_hidden_plot,
             inputs=[__fields[__k] for __k in ['right_position_block', 'right_layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['right_plot_block'],
-            queue=False,
+            queue=True,
             show_progress='full')
         # update the range of the position slider when the settings change
         __fields['tokens_block'].change(
             fn=update_position_range,
             inputs=[__fields[__k] for __k in ['left_position_block', 'tokens_block', 'output_state']],
             outputs=__fields['left_position_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         ).then(
             fn=update_position_range,
             inputs=[__fields[__k] for __k in ['right_position_block', 'tokens_block', 'output_state']],
             outputs=__fields['right_position_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         # update the left plot when the focus changes
         __fields['left_position_block'].change(
             fn=update_hidden_plot,
             inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['left_plot_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         __fields['left_layer_block'].change(
             fn=update_hidden_plot,
             inputs=[__fields[__k] for __k in ['left_position_block', 'left_layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['left_plot_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         )
         # update the right plot when the focus changes
@@ -433,13 +433,13 @@ def create_app(compute: callable, highlight: callable, title: str=TITLE, intro: 
             fn=update_hidden_plot,
             inputs=[__fields[__k] for __k in ['right_position_block', 'right_layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['right_plot_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         __fields['right_layer_block'].change(
             fn=update_hidden_plot,
             inputs=[__fields[__k] for __k in ['right_position_block', 'right_layer_block', 'axes_block', 'points_block', 'hidden_state']],
             outputs=__fields['right_plot_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden'
         )
         # update the token highlight when the token focus changes
@@ -447,13 +447,13 @@ def create_app(compute: callable, highlight: callable, title: str=TITLE, intro: 
             fn=highlight,
             inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['highlight_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         __fields['right_position_block'].change(
             fn=highlight,
             inputs=[__fields[__k] for __k in ['left_position_block', 'right_position_block', 'output_state']],
             outputs=__fields['highlight_block'],
-            queue=False,
+            queue=True,
             show_progress='hidden')
         # gradio application
         return __app
