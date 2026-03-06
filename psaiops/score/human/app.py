@@ -161,13 +161,12 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_model_block())
+            with gradio.Row(equal_height=True):
+                __fields.update(create_selection_block(label='Metrics', prefix=''))
+                __fields.update(create_window_block(label='Window', prefix='', value=3))
         with gradio.Tab('Docs') as __docs_tab:
             __fields.update({'docs_tab': __docs_tab})
             __fields.update(create_text_block(text=docs))
-    with gradio.Accordion(label='Metrics', open=True, visible=True):
-        with gradio.Row(equal_height=True):
-            __fields.update(create_selection_block(label='Selection', prefix=''))
-            __fields.update(create_window_block(label='Window', prefix='', value=3))
     with gradio.Row(equal_height=True):
         __fields.update(create_actions_block())
     return __fields
