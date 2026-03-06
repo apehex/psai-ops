@@ -160,7 +160,7 @@ def create_action_block() -> dict:
 # TABLE ########################################################################
 
 def create_table_block() -> dict:
-    __table = gradio.DataFrame(label='Table', type='numpy', headers=None,  row_count=4, col_count=256, scale=1, interactive=False)
+    __table = gradio.DataFrame(label='Table', type='numpy', headers=None,  row_count=4, column_count=256, scale=1, interactive=False)
     return {'table_block': __table,}
 
 # STATE ########################################################################
