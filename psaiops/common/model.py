@@ -1,6 +1,7 @@
 import gc
 
 import torch
+import torch.cuda
 import torch.nn
 import transformers
 
