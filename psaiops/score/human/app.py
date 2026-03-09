@@ -76,7 +76,10 @@ def create_text_block(text: str) -> dict:
 
 def create_model_block() -> dict:
     __model = gradio.Dropdown(label='Model', value='qwen/qwen3.5-9b', choices=['qwen/qwen3.5-9b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
-    return {'model_block': __model,}
+    __load = gradio.Button('Load', variant='primary', size='lg', scale=1, interactive=True)
+    return {
+        'model_block': __model,
+        'load_block': __load,}
 
 # SAMPLING #####################################################################
 
@@ -440,6 +443,7 @@ def update_metric_plots(
 # APP ##########################################################################
 
 def create_app(
+    load: callable,
     partition: callable,
     convert: callable,
     compute: callable,
@@ -555,6 +559,13 @@ def create_app(
             outputs=__fields['plot_block'],
             queue=True,
             show_progress='full')
+        # switch the model
+        __fields['load_block'].change(
+            fn=load,
+            inputs=__fields['model_block'],
+            outputs=__fields['highlight_block'],
+            queue=True,
+            show_progress='full')
         # gradio application
         return __app
 
@@ -566,9 +577,10 @@ if __name__ == '__main__':
     __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=MODEL, device=__device)
     __model = psaiops.common.model.get_model(name=MODEL, device=__device)
     # adapt the event handlers
+    __load = lambda: None
     __partition = functools.partial(update_tokens_state, tokenizer_obj=__tokenizer)
     __convert = functools.partial(update_indices_state, tokenizer_obj=__tokenizer)
     __compute = functools.partial(update_logits_state, model_obj=__model)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
-    __app = create_app(partition=__partition, convert=__convert, compute=__compute)
+    __app = create_app(load=__load, partition=__partition, convert=__convert, compute=__compute)
     __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.ALL, share=True, debug=True)
