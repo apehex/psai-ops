@@ -19,7 +19,7 @@ _PATH = os.path.dirname(__file__)
 _LEGEND = {'AI': '0', 'human': '100',}
 _EXPORT = False
 
-MODEL = 'qwen/qwen3.5-27b'
+MODEL = 'qwen/qwen3.5-9b'
 
 TITLE = '''De-Generate 🔎 🤖'''
 INTRO = list((__t, _LEGEND.get(__t, '50')) for __t in '''Detect AI generated text sections and tell them apart from human written text, using an open source LLM as critic.'''.split(' '))
@@ -75,7 +75,7 @@ def create_text_block(text: str) -> dict:
 # MODEL ########################################################################
 
 def create_model_block() -> dict:
-    __model = gradio.Dropdown(label='Model', value='qwen/qwen3.5-27b', choices=['qwen/qwen3.5-27b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
+    __model = gradio.Dropdown(label='Model', value='qwen/qwen3.5-9b', choices=['qwen/qwen3.5-9b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
     return {'model_block': __model,}
 
 # SAMPLING #####################################################################
