@@ -180,10 +180,10 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
 
 # BUTTONS ######################################################################
 
-def enable_button(): -> dict:
+def enable_button() -> dict:
     return gradio.update(interactive=True)
 
-def disable_button(): -> dict:
+def disable_button() -> dict:
     return gradio.update(interactive=False)
 
 # WINDOW #######################################################################
