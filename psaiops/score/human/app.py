@@ -81,11 +81,13 @@ def create_model_block() -> dict:
 # SAMPLING #####################################################################
 
 def create_sampling_block() -> dict:
-    __tokens = gradio.Slider(label='Tokens', value=64, minimum=1, maximum=256, step=1, scale=1, interactive=True)
+    __reps = gradio.Slider(label='Penalty', value=1.1, minimum=0.0, maximum=2.0, step=0.05, scale=1, interactive=True)
+    __temp = gradio.Slider(label='Temperature', value=0.8, minimum=0.0, maximum=2.0, step=0.05, scale=1, interactive=True)
     __topk = gradio.Slider(label='Top K', value=24, minimum=1, maximum=2048, step=1, scale=1, interactive=True)
     __topp = gradio.Slider(label='Top P', value=0.95, minimum=0.0, maximum=1.0, step=0.01, scale=1, interactive=True)
     return {
-        'tokens_block': __tokens,
+        'reps_block': __reps,
+        'temp_block': __temp,
         'topk_block': __topk,
         'topp_block': __topp,}
 
@@ -161,6 +163,8 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Row(equal_height=True):
                 __fields.update(create_model_block())
+            with gradio.Row(equal_height=True):
+                __fields.update(create_sampling_block())
             with gradio.Row(equal_height=True):
                 __fields.update(create_selection_block(label='Metrics', prefix=''))
                 __fields.update(create_window_block(label='Window', prefix='', value=3))
