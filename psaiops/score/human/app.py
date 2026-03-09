@@ -19,7 +19,7 @@ _PATH = os.path.dirname(__file__)
 _LEGEND = {'AI': '0', 'human': '100',}
 _EXPORT = False
 
-MODEL = 'qwen/qwen3.5-9b'
+MODELS = ['qwen/qwen3.5-9b', 'qwen/qwen3.5-27b']
 
 TITLE = '''De-Generate 🔎 🤖'''
 INTRO = list((__t, _LEGEND.get(__t, '50')) for __t in '''Detect AI generated text sections and tell them apart from human written text, using an open source LLM as critic.'''.split(' '))
@@ -74,9 +74,9 @@ def create_text_block(text: str) -> dict:
 
 # MODEL ########################################################################
 
-def create_model_block() -> dict:
-    __model = gradio.Dropdown(label='Model', value='qwen/qwen3.5-9b', choices=['qwen/qwen3.5-9b'], scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
-    __load = gradio.Button('Load', variant='primary', size='lg', scale=1, interactive=True)
+def create_model_block(models: list=MODELS) -> dict:
+    __model = gradio.Dropdown(label='Model', value=models[0], choices=models, scale=1, allow_custom_value=False, multiselect=False, interactive=True) # 'openai/gpt-oss-120b'
+    __load = gradio.Button('Load', variant='primary', size='lg', scale=1, interactive=False)
     return {
         'model_block': __model,
         'load_block': __load,}
@@ -143,7 +143,7 @@ def create_state() -> dict:
 
 # LAYOUT #######################################################################
 
-def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=DOCS) -> dict:
+def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=DOCS, models: list=MODELS) -> dict:
     __fields = {}
     with gradio.Row(equal_height=True):
         __fields.update(create_text_block(text='# ' + title))
@@ -165,7 +165,7 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
         with gradio.Tab('Settings') as __settings_tab:
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Row(equal_height=True):
-                __fields.update(create_model_block())
+                __fields.update(create_model_block(models=models))
             with gradio.Row(equal_height=True):
                 __fields.update(create_sampling_block())
             with gradio.Row(equal_height=True):
@@ -177,6 +177,14 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
     with gradio.Row(equal_height=True):
         __fields.update(create_actions_block())
     return __fields
+
+# BUTTONS ######################################################################
+
+def enable_button(): -> dict:
+    return gradio.update(interactive=True)
+
+def disable_button(): -> dict:
+    return gradio.update(interactive=False)
 
 # WINDOW #######################################################################
 
@@ -443,7 +451,8 @@ def update_metric_plots(
 # APP ##########################################################################
 
 def create_app(
-    load: callable,
+    switch: callable,
+    current: callable,
     partition: callable,
     convert: callable,
     compute: callable,
@@ -453,14 +462,14 @@ def create_app(
     docs: str=DOCS,
     export: bool=_EXPORT,
 ) -> gradio.Blocks:
-    global _EXPORT
+    global _EXPORT, MODELS
     # toggle the automatic export of all the computed tensors
     _EXPORT = export
     # holds all the UI widgets
     __fields = {}
     with gradio.Blocks(title=title) as __app:
         # create the UI
-        __fields.update(create_layout(title=title, intro=intro, tuto=tuto, docs=docs))
+        __fields.update(create_layout(title=title, intro=intro, tuto=tuto, docs=docs, models=current().get('choices', MODELS)))
         # init the state
         __fields.update(create_state())
         # split the string into token sub-strings
@@ -559,13 +568,34 @@ def create_app(
             outputs=__fields['plot_block'],
             queue=True,
             show_progress='full')
-        # switch the model
-        __fields['load_block'].change(
-            fn=load,
-            inputs=__fields['model_block'],
-            outputs=__fields['highlight_block'],
+        # activate the loading button when selecting another model
+        __fields['model_block'].change(
+            fn=enable_button,
+            inputs=[],
+            outputs=__fields['load_block'],
             queue=True,
             show_progress='full')
+        # require an explicit button press to load the selected model
+        __fields['load_block'].click(
+            fn=switch,
+            inputs=__fields['model_block'],
+            outputs=__fields['model_block'],
+            queue=True,
+            show_progress='full')
+        # make sure the loaded model is selected (in case the user changed the selection without loading the model)
+        __fields['settings_tab'].select(
+            fn=current,
+            inputs=[],
+            outputs=__fields['model_block'],
+            queue=True,
+            show_progress='hidden'
+        ).then(
+        # disable the loading button
+            fn=disable_button,
+            inputs=[],
+            outputs=__fields['load_block'],
+            queue=True,
+            show_progress='hidden')
         # gradio application
         return __app
 
@@ -574,13 +604,14 @@ def create_app(
 if __name__ == '__main__':
     # load the model
     __device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=MODEL, device=__device)
-    __model = psaiops.common.model.get_model(name=MODEL, device=__device)
+    __tokenizer = psaiops.common.tokenizer.get_tokenizer(name=MODELS[0], device=__device)
+    __model = psaiops.common.model.get_model(name=MODELS[0], device=__device)
     # adapt the event handlers
-    __load = lambda: None
+    __current = lambda: gradio.update(value=MODELS[0], choices=MODELS) # list of the models with the current model at index 0
+    __switch = lambda: __current() # disable model switching here
     __partition = functools.partial(update_tokens_state, tokenizer_obj=__tokenizer)
     __convert = functools.partial(update_indices_state, tokenizer_obj=__tokenizer)
     __compute = functools.partial(update_logits_state, model_obj=__model)
     # the event handlers are created outside so that they can be wrapped with `spaces.GPU` if necessary
-    __app = create_app(load=__load, partition=__partition, convert=__convert, compute=__compute)
+    __app = create_app(switch=__switch, current=__current, partition=__partition, convert=__convert, compute=__compute)
     __app.launch(theme=gradio.themes.Soft(), css=psaiops.common.style.ALL, share=True, debug=True)
