@@ -1,6 +1,8 @@
 import copy
 import functools
+import json
 import os
+import random
 
 import gradio
 import numpy
@@ -25,6 +27,20 @@ TITLE = '''De-Generate 🔎 🤖'''
 INTRO = list((__t, _LEGEND.get(__t, '50')) for __t in '''Detect AI generated text sections and tell them apart from human written text, using an open source LLM as critic.'''.split(' '))
 TUTO = open(os.path.join(_PATH, 'docs', 'readme.md'), 'r').read()
 DOCS = open(os.path.join(_PATH, 'docs', 'scoring.md'), 'r').read()
+
+# SAMPLES ######################################################################
+
+SAMPLES = {
+    'standalone': {
+        'readme': TUTO,
+        'documentation': DOCS,
+        'contract': open(os.path.join(_PATH, 'data', 'contract.md'), 'r').read(),
+        'cookies': open(os.path.join(_PATH, 'data', 'cookies.txt'), 'r').read(),
+        'license': open(os.path.join(_PATH, 'data', 'license.txt'), 'r').read(),
+        'wikipedia': open(os.path.join(_PATH, 'data', 'wikipedia.txt'), 'r').read(),},
+    'datasets': {
+        'hc3': json.load(open(os.path.join(_PATH, 'data', 'hc3.json'), 'r')),
+        'trace': json.load(open(os.path.join(_PATH, 'data', 'trace.json'), 'r')),},}
 
 # ENUMS ########################################################################
 
@@ -94,6 +110,13 @@ def create_sampling_block() -> dict:
         'topk_block': __topk,
         'topp_block': __topp,}
 
+# DATASETS #####################################################################
+
+def create_dataset_block(options: list, prefix: str='') -> dict:
+    return {
+        prefix + __o.lower() + '_block': gradio.Button(__o, variant='primary', size='lg', scale=1, interactive=True)
+        for __o in options}
+
 # INPUTS #######################################################################
 
 def create_inputs_block(label: str='Prompt', prefix: str='', value: str='') -> dict:
@@ -158,6 +181,20 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
             with gradio.Accordion(label='Outputs', open=True, visible=True):
                 with gradio.Row(equal_height=True):
                     __fields.update(create_highlight_block(label='Results', prefix='', value=load_from_disk('labels.pt'), cmap=create_score_cmap()))
+        with gradio.Tab('Samples') as __samples_tab:
+            __fields.update({'samples_tab': __samples_tab})
+            with gradio.Accordion(label='De-Generate App', open=True, visible=True):
+                with gradio.Row(equal_height=True):
+                    __fields.update(create_dataset_block(options=['Readme', 'Documentation'], prefix='degen'))
+            with gradio.Accordion(label='Known Text', open=True, visible=True):
+                with gradio.Row(equal_height=True):
+                    __fields.update(create_dataset_block(options=['Wikipedia', 'License', 'Cookies', 'Contract'], prefix='known'))
+            with gradio.Accordion(label='HC3 Dataset', open=True, visible=True):
+                with gradio.Row(equal_height=True):
+                    __fields.update(create_dataset_block(options=['Human', 'AI', ], prefix='hc3'))
+            with gradio.Accordion(label='LLM Trace Dataset', open=True, visible=True):
+                with gradio.Row(equal_height=True):
+                    __fields.update(create_dataset_block(options=['Human', 'AI', ], prefix='trace'))
         with gradio.Tab('Graphs') as __graphs_tab:
             __fields.update({'graphs_tab': __graphs_tab})
             with gradio.Row(equal_height=True):
@@ -185,6 +222,26 @@ def enable_button() -> dict:
 
 def disable_button() -> dict:
     return gradio.update(interactive=False)
+
+# SAMPLES ######################################################################
+
+def sample_input_text(
+    dataset_str: str,
+    type_str: str,
+    samples_arr: dict=SAMPLES,
+) -> str:
+    global DOCS
+    # return the documentation by default
+    __sample = DOCS
+    # text samples taken from the application itself or well known (at least to the LLMs) text samples
+    if dataset_str in ['degen', 'known']:
+        __sample = samples_arr.get('standalone', {}).get(type_str, DOCS)
+    # human chatgpt comparison corpus (hc3) and llmtrace dataset
+    if dataset_str in ['hc3', 'trace']:
+        __dataset = samples_arr.get('datasets', {}).get(dataset_str, [{}])
+        __sample = random.choice(__dataset).get(type_str, DOCS)
+    # a single string
+    return __sample
 
 # WINDOW #######################################################################
 
@@ -594,6 +651,67 @@ def create_app(
             fn=disable_button,
             inputs=[],
             outputs=__fields['load_block'],
+            queue=True,
+            show_progress='hidden')
+        # buttons to fill the input with random samples
+        __fields['degen_readme_block'].click(
+            fn=sample_input_text,
+            inputs=[gradio.State('degen'), gradio.State('readme')],
+            outputs=__fields['input_block'],
+            queue=True,
+            show_progress='hidden')
+        __fields['degen_documentation_block'].click(
+            fn=sample_input_text,
+            inputs=[gradio.State('degen'), gradio.State('documentation')],
+            outputs=__fields['input_block'],
+            queue=True,
+            show_progress='hidden')
+        __fields['known_contract_block'].click(
+            fn=sample_input_text,
+            inputs=[gradio.State('known'), gradio.State('contract')],
+            outputs=__fields['input_block'],
+            queue=True,
+            show_progress='hidden')
+        __fields['known_cookies_block'].click(
+            fn=sample_input_text,
+            inputs=[gradio.State('known'), gradio.State('cookies')],
+            outputs=__fields['input_block'],
+            queue=True,
+            show_progress='hidden')
+        __fields['known_license_block'].click(
+            fn=sample_input_text,
+            inputs=[gradio.State('known'), gradio.State('license')],
+            outputs=__fields['input_block'],
+            queue=True,
+            show_progress='hidden')
+        __fields['known_wikipedia_block'].click(
+            fn=sample_input_text,
+            inputs=[gradio.State('known'), gradio.State('wikipedia')],
+            outputs=__fields['input_block'],
+            queue=True,
+            show_progress='hidden')
+        __fields['hc3_human_block'].click(
+            fn=sample_input_text,
+            inputs=[gradio.State('hc3'), gradio.State('human')],
+            outputs=__fields['input_block'],
+            queue=True,
+            show_progress='hidden')
+        __fields['hc3_ai_block'].click(
+            fn=sample_input_text,
+            inputs=[gradio.State('hc3'), gradio.State('ai')],
+            outputs=__fields['input_block'],
+            queue=True,
+            show_progress='hidden')
+        __fields['trace_human_block'].click(
+            fn=sample_input_text,
+            inputs=[gradio.State('trace'), gradio.State('human')],
+            outputs=__fields['input_block'],
+            queue=True,
+            show_progress='hidden')
+        __fields['trace_ai_block'].click(
+            fn=sample_input_text,
+            inputs=[gradio.State('trace'), gradio.State('ai')],
+            outputs=__fields['input_block'],
             queue=True,
             show_progress='hidden')
         # gradio application

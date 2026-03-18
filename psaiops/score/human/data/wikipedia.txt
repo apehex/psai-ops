@@ -1,0 +1,15 @@
+== Perplexity of a probability distribution ==
+
+The perplexity {{math|PP}} of a discrete [[probability distribution]] {{mvar|p}} is a concept widely used in information theory, [[machine learning]], and statistical modeling. It is defined as
+<math display="block">\mathrm{PP}(p) = \prod_x p(x)^{-p(x)} = b^{-\sum_x p(x)\log_b p(x)} ,</math>
+where {{mvar|x}} ranges over the [[Event (probability theory)|events]], where {{math|0{{sup|−0}}}} is defined to be {{math|1}}, and where the value of {{mvar|b}} does not affect the result; {{mvar|b}} can be chosen to be {{math|2}}, {{math|10}}, [[e (mathematical constant)|{{mvar|e}}]], or any other positive value other than {{math|1}}.  In some contexts, this measure is also referred to as the ''[[Diversity index|(order-1 true) diversity]]''.
+
+The logarithm {{math|log PP(''p'')}} is the [[entropy (information theory)|entropy]] of the distribution; it is given the unit [[shannon (unit)|shannon]] (bit) if the base of the logarithm is {{math|2}}, and [[Nat (unit)|nat]] if the [[natural logarithm]] is used.
+
+Perplexity of a [[random variable]] {{mvar|X}} may be defined as the perplexity of the distribution over its possible values {{mvar|x}}. It can be thought of as a measure of uncertainty or "surprise" related to the outcomes.
+
+For a probability distribution {{mvar|p}} where exactly {{mvar|k}} outcomes each have a probability of {{math|1 / ''k''}} and all other outcomes have a probability of zero, the perplexity of this distribution is simply {{mvar|k}}. This is because the distribution models a fair {{mvar|k}}-sided [[Dice|die]], with each of the {{mvar|k}} outcomes being equally likely. In this context, the perplexity {{mvar|k}} indicates that there is as much uncertainty as there would be when rolling a fair {{mvar|k}}-sided die. Even if a random variable has more than {{mvar|k}} possible outcomes, the perplexity will still be {{mvar|k}} if the distribution is uniform over {{mvar|k}} outcomes and zero for the rest. Thus, a random variable with a perplexity of {{mvar|k}} can be described as being "{{mvar|k}}-ways perplexed", meaning it has the same level of uncertainty as a fair {{mvar|k}}-sided die.
+
+Perplexity is sometimes used as a measure of the difficulty of a prediction problem. It is, however, generally not a straightforward representation of the relevant probability. For example, if you have two choices, one with probability {{math|0.9}}, your probability of a correct guess using the optimal strategy is {{math|0.9}}. Yet, the perplexity is {{math|1=0.9<sup>−0.9</sup> 0.1<sup>−0.1</sup> = 1.38}}. The inverse of the perplexity, {{math|1=1/1.38 = 0.72}}, is not equal to the probability {{math|0.9}}.
+
+The perplexity is the exponentiation of the entropy, a more commonly encountered quantity. Entropy measures the expected or "average" number of bits required to encode the outcome of the random variable using an optimal [[variable-length code]]. It can also be regarded as the expected information gain from learning the outcome of the random variable, providing insight into the uncertainty and complexity of the underlying probability distribution.
