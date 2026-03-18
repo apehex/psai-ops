@@ -66,7 +66,7 @@ It is using techniques scattered over several other apps that:
 - use a LLM as critic to estimate how surprising each token is
 - score the input tokens according to the attention they get during the generation
 - view the expert logits and associate the routing with the input tokens
-- view the flow of residuals and assess the contribution of the layers to the final output 
+- view the flow of residuals and assess the contribution of the layers to the final output
 
 ## License
 
