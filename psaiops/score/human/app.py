@@ -185,16 +185,16 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
             __fields.update({'samples_tab': __samples_tab})
             with gradio.Accordion(label='De-Generate App', open=True, visible=True):
                 with gradio.Row(equal_height=True):
-                    __fields.update(create_dataset_block(options=['Readme', 'Documentation'], prefix='degen'))
+                    __fields.update(create_dataset_block(options=['Readme', 'Documentation'], prefix='degen_'))
             with gradio.Accordion(label='Known Text', open=True, visible=True):
                 with gradio.Row(equal_height=True):
-                    __fields.update(create_dataset_block(options=['Wikipedia', 'License', 'Cookies', 'Contract'], prefix='known'))
+                    __fields.update(create_dataset_block(options=['Wikipedia', 'License', 'Cookies', 'Contract'], prefix='known_'))
             with gradio.Accordion(label='HC3 Dataset', open=True, visible=True):
                 with gradio.Row(equal_height=True):
-                    __fields.update(create_dataset_block(options=['Human', 'AI', ], prefix='hc3'))
+                    __fields.update(create_dataset_block(options=['Human', 'AI', ], prefix='hc3_'))
             with gradio.Accordion(label='LLM Trace Dataset', open=True, visible=True):
                 with gradio.Row(equal_height=True):
-                    __fields.update(create_dataset_block(options=['Human', 'AI', ], prefix='trace'))
+                    __fields.update(create_dataset_block(options=['Human', 'AI', ], prefix='trace_'))
         with gradio.Tab('Graphs') as __graphs_tab:
             __fields.update({'graphs_tab': __graphs_tab})
             with gradio.Row(equal_height=True):
