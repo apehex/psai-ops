@@ -57,13 +57,11 @@ def is_export_enabled() -> bool:
     global _EXPORT
     return _EXPORT
 
-def save_to_disk(data: object, path: str) -> None:
-    global _PATH
-    torch.save(data, os.path.join(_PATH, 'data', path))
+def save_to_disk(data: object, name: str, path: str=os.path.join(_PATH, 'data', 'state')) -> None:
+    torch.save(data, os.path.join(path, name))
 
-def load_from_disk(path: str) -> object:
-    global _PATH
-    __path = os.path.join(_PATH, 'data', path)
+def load_from_disk(name: str, path: str=os.path.join(_PATH, 'data', 'state')) -> object:
+    __path = os.path.join(path, name)
     return torch.load(__path) if os.path.exists(__path) else None
 
 # COLORS #######################################################################
