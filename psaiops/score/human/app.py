@@ -508,13 +508,14 @@ def create_app(
     tuto: str=TUTO,
     docs: str=DOCS,
     export: str='',
+    models: list=MODELS,
+    samples: dict=SAMPLES,
 ) -> gradio.Blocks:
-    global MODELS
     # holds all the UI widgets
     __fields = {}
     with gradio.Blocks(title=title) as __app:
         # create the UI
-        __fields.update(create_layout(title=title, intro=intro, tuto=tuto, docs=docs, models=current().get('choices', MODELS)))
+        __fields.update(create_layout(title=title, intro=intro, tuto=tuto, docs=docs, models=current().get('choices', models)))
         # init the state
         __fields.update(create_state(export_str=export))
         # split the string into token sub-strings
@@ -642,66 +643,15 @@ def create_app(
             queue=True,
             show_progress='hidden')
         # buttons to fill the input with random samples
-        __fields['degen_readme_block'].click(
-            fn=sample_input_text,
-            inputs=[gradio.State('degen'), gradio.State('readme')],
-            outputs=__fields['input_block'],
-            queue=True,
-            show_progress='hidden')
-        __fields['degen_documentation_block'].click(
-            fn=sample_input_text,
-            inputs=[gradio.State('degen'), gradio.State('documentation')],
-            outputs=__fields['input_block'],
-            queue=True,
-            show_progress='hidden')
-        __fields['known_contract_block'].click(
-            fn=sample_input_text,
-            inputs=[gradio.State('known'), gradio.State('contract')],
-            outputs=__fields['input_block'],
-            queue=True,
-            show_progress='hidden')
-        __fields['known_cookies_block'].click(
-            fn=sample_input_text,
-            inputs=[gradio.State('known'), gradio.State('cookies')],
-            outputs=__fields['input_block'],
-            queue=True,
-            show_progress='hidden')
-        __fields['known_license_block'].click(
-            fn=sample_input_text,
-            inputs=[gradio.State('known'), gradio.State('license')],
-            outputs=__fields['input_block'],
-            queue=True,
-            show_progress='hidden')
-        __fields['known_wikipedia_block'].click(
-            fn=sample_input_text,
-            inputs=[gradio.State('known'), gradio.State('wikipedia')],
-            outputs=__fields['input_block'],
-            queue=True,
-            show_progress='hidden')
-        __fields['hc3_human_block'].click(
-            fn=sample_input_text,
-            inputs=[gradio.State('hc3'), gradio.State('human')],
-            outputs=__fields['input_block'],
-            queue=True,
-            show_progress='hidden')
-        __fields['hc3_ai_block'].click(
-            fn=sample_input_text,
-            inputs=[gradio.State('hc3'), gradio.State('ai')],
-            outputs=__fields['input_block'],
-            queue=True,
-            show_progress='hidden')
-        __fields['trace_human_block'].click(
-            fn=sample_input_text,
-            inputs=[gradio.State('trace'), gradio.State('human')],
-            outputs=__fields['input_block'],
-            queue=True,
-            show_progress='hidden')
-        __fields['trace_ai_block'].click(
-            fn=sample_input_text,
-            inputs=[gradio.State('trace'), gradio.State('ai')],
-            outputs=__fields['input_block'],
-            queue=True,
-            show_progress='hidden')
+        for __dataset in samples.keys():
+            for __label in samples[__dataset].keys()
+            # fill the input textbox when the user clicks on a given sample
+            __fields[f'{__dataset}_{__label}_block'].click(
+                fn=sample_input_text,
+                inputs=[gradio.State(__dataset), gradio.State(__label)],
+                outputs=__fields['input_block'],
+                queue=True,
+                show_progress='hidden')
         # gradio application
         return __app
 
