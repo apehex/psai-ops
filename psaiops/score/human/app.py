@@ -637,14 +637,14 @@ def create_app(
             show_progress='hidden')
         # buttons to fill the input with random samples
         for __dataset in samples.keys():
-            for __label in samples[__dataset].keys()
-            # fill the input textbox when the user clicks on a given sample
-            __fields[f'{__dataset}_{__label}_block'].click(
-                fn=sample_input_text,
-                inputs=[gradio.State(__dataset), gradio.State(__label)],
-                outputs=__fields['input_block'],
-                queue=True,
-                show_progress='hidden')
+            for __label in samples[__dataset].keys():
+                # fill the input textbox when the user clicks on a given sample
+                __fields[f'{__dataset}_{__label}_block'].click(
+                    fn=sample_input_text,
+                    inputs=[gradio.State(__dataset), gradio.State(__label)],
+                    outputs=__fields['input_block'],
+                    queue=True,
+                    show_progress='hidden')
         # gradio application
         return __app
 
