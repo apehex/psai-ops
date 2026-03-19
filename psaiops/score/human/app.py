@@ -171,6 +171,10 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
             with gradio.Accordion(label='Outputs', open=True, visible=True):
                 with gradio.Row(equal_height=True):
                     __fields.update(create_highlight_block(label='Results', prefix='', value=load_from_disk('labels.pt'), cmap=create_score_cmap()))
+        with gradio.Tab('Graphs') as __graphs_tab:
+            __fields.update({'graphs_tab': __graphs_tab})
+            with gradio.Row(equal_height=True):
+                __fields.update(create_plot_block(label='Metrics', prefix=''))
         with gradio.Tab('Samples') as __samples_tab:
             __fields.update({'samples_tab': __samples_tab})
             with gradio.Accordion(label='De-Generate App', open=True, visible=True):
@@ -185,10 +189,6 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
             with gradio.Accordion(label='LLM Trace Dataset', open=True, visible=True):
                 with gradio.Row(equal_height=True):
                     __fields.update(create_dataset_block(options=['Human', 'AI', ], prefix='trace_'))
-        with gradio.Tab('Graphs') as __graphs_tab:
-            __fields.update({'graphs_tab': __graphs_tab})
-            with gradio.Row(equal_height=True):
-                __fields.update(create_plot_block(label='Metrics', prefix=''))
         with gradio.Tab('Settings') as __settings_tab:
             __fields.update({'settings_tab': __settings_tab})
             with gradio.Row(equal_height=True):
