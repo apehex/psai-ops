@@ -174,7 +174,7 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
             with gradio.Accordion(label='System Prompts', open=True, visible=True):
                 with gradio.Row(equal_height=True):
                     __fields.update(create_dataset_block(options=['ChatGPT', 'Claude', 'Gemini', 'Grok', 'Soul'], prefix='system_'))
-            with gradio.Accordion(label='System Prompts', open=True, visible=True):
+            with gradio.Accordion(label='Jailbreak Prompts', open=True, visible=True):
                 with gradio.Row(equal_height=True):
                     __fields.update(create_dataset_block(options=['ChatGPT', 'Claude', 'Gemini', 'Grok'], prefix='jailbreak_'))
             with gradio.Accordion(label='HC3 Dataset', open=True, visible=True):
