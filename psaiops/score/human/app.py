@@ -30,16 +30,12 @@ DOCS = open(os.path.join(_PATH, 'docs', 'scoring.md'), 'r').read()
 # SAMPLES ######################################################################
 
 SAMPLES = {
-    'standalone': {
+    'degen': {
         'readme': TUTO,
-        'documentation': DOCS,
-        'contract': open(os.path.join(_PATH, 'data', 'contract.md'), 'r').read(),
-        'cookies': open(os.path.join(_PATH, 'data', 'cookies.txt'), 'r').read(),
-        'license': open(os.path.join(_PATH, 'data', 'license.txt'), 'r').read(),
-        'wikipedia': open(os.path.join(_PATH, 'data', 'wikipedia.txt'), 'r').read(),},
-    'datasets': {
-        'hc3': json.load(open(os.path.join(_PATH, 'data', 'hc3.json'), 'r')),
-        'trace': json.load(open(os.path.join(_PATH, 'data', 'trace.json'), 'r')),},}
+        'documentation': DOCS,},
+    'hc3': json.load(open(os.path.join(_PATH, 'data', 'samples', 'hc3.json'), 'r')),
+    'known': json.load(open(os.path.join(_PATH, 'data', 'samples', 'known.json'), 'r')),
+    'trace': json.load(open(os.path.join(_PATH, 'data', 'samples', 'trace.json'), 'r')),}
 
 # ENUMS ########################################################################
 
@@ -229,10 +225,10 @@ def sample_input_text(
     __sample = DOCS
     # text samples taken from the application itself or well known (at least to the LLMs) text samples
     if dataset_str in ['degen', 'known']:
-        __sample = samples_arr.get('standalone', {}).get(type_str, DOCS)
+        __sample = samples_arr.get(dataset_str, {}).get(type_str, DOCS)
     # human chatgpt comparison corpus (hc3) and llmtrace dataset
     if dataset_str in ['hc3', 'trace']:
-        __dataset = samples_arr.get('datasets', {}).get(dataset_str, [{}])
+        __dataset = samples_arr.get(dataset_str, [{}])
         __sample = random.choice(__dataset).get(type_str, DOCS)
     # a single string
     return __sample
