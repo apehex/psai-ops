@@ -228,8 +228,8 @@ def sample_input_text(
         __sample = samples_arr.get(dataset_str, {}).get(type_str, DOCS)
     # human chatgpt comparison corpus (hc3) and llmtrace dataset
     if dataset_str in ['hc3', 'trace']:
-        __dataset = samples_arr.get(dataset_str, [{}])
-        __sample = random.choice(__dataset).get(type_str, DOCS)
+        __dataset = samples_arr.get(dataset_str, {}).get(type_str, [DOCS])
+        __sample = random.choice(__dataset)
     # a single string
     return __sample
 
