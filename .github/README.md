@@ -68,6 +68,14 @@ It is using techniques scattered over several other apps that:
 - view the expert logits and associate the routing with the input tokens
 - view the flow of residuals and assess the contribution of the layers to the final output
 
+## Credits
+
+The "de-generate" samples include documents from the LLM internals thanks to:
+
+- Ásgeir Thor Johnson for sharing the [system prompts][github-system]
+- Elder Plinius for sharing the [jailbreaks][github-jailbreaks]
+- Richard Weiss for sharing the [soul document][github-soul]
+
 ## License
 
 Licensed under the [AGPLv3][github-license].
@@ -78,6 +86,10 @@ Licensed under the [AGPLv3][github-license].
 
 [github-license]: LICENSE.md
 [github-release]: https://github.com/apehex/psai-ops/releases/latest
+
+[github-jailbreaks]: https://github.com/elder-plinius/L1B3RT4S
+[github-soul]: https://gist.github.com/Richard-Weiss/efe157692991535403bd7e7fb20b6695
+[github-system]: https://github.com/asgeirtj/system_prompts_leaks
 
 [shield-license]: https://img.shields.io/badge/license-aGPLv3-green?style=flat-square
 [shield-release]: https://img.shields.io/github/release/apehex/psai-ops.svg?style=flat-square
