@@ -186,7 +186,7 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
                     __fields.update(create_dataset_block(options=['Wikipedia', 'License', 'Cookies', 'Contract'], prefix='known_'))
             with gradio.Accordion(label='System Prompts', open=True, visible=True):
                 with gradio.Row(equal_height=True):
-                    __fields.update(create_dataset_block(options=['ChatGPT', 'Opus', 'Gemini', 'Grok', 'Soul'], prefix='system_'))
+                    __fields.update(create_dataset_block(options=['ChatGPT', 'Claude', 'Gemini', 'Grok', 'Soul'], prefix='system_'))
             with gradio.Accordion(label='HC3 Dataset', open=True, visible=True):
                 with gradio.Row(equal_height=True):
                     __fields.update(create_dataset_block(options=['Human', 'AI', ], prefix='hc3_'))
