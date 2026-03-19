@@ -34,6 +34,7 @@ SAMPLES = {
         'readme': TUTO,
         'documentation': DOCS,},
     'hc3': json.load(open(os.path.join(_PATH, 'data', 'samples', 'hc3.json'), 'r')),
+    'jailbreak': json.load(open(os.path.join(_PATH, 'data', 'samples', 'jailbreak.json'), 'r')),
     'known': json.load(open(os.path.join(_PATH, 'data', 'samples', 'known.json'), 'r')),
     'system': json.load(open(os.path.join(_PATH, 'data', 'samples', 'system.json'), 'r')),
     'trace': json.load(open(os.path.join(_PATH, 'data', 'samples', 'trace.json'), 'r')),}
@@ -187,6 +188,9 @@ def create_layout(title: str=TITLE, intro: str=INTRO, tuto: str=TUTO, docs: str=
             with gradio.Accordion(label='System Prompts', open=True, visible=True):
                 with gradio.Row(equal_height=True):
                     __fields.update(create_dataset_block(options=['ChatGPT', 'Claude', 'Gemini', 'Grok', 'Soul'], prefix='system_'))
+            with gradio.Accordion(label='System Prompts', open=True, visible=True):
+                with gradio.Row(equal_height=True):
+                    __fields.update(create_dataset_block(options=['ChatGPT', 'Claude', 'Gemini', 'Grok'], prefix='jailbreak_'))
             with gradio.Accordion(label='HC3 Dataset', open=True, visible=True):
                 with gradio.Row(equal_height=True):
                     __fields.update(create_dataset_block(options=['Human', 'AI', ], prefix='hc3_'))
