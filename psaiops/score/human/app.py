@@ -222,16 +222,9 @@ def sample_input_text(
 ) -> str:
     global DOCS
     # return the documentation by default
-    __sample = DOCS
-    # text samples taken from the application itself or well known (at least to the LLMs) text samples
-    if dataset_str in ['degen', 'known']:
-        __sample = samples_arr.get(dataset_str, {}).get(type_str, DOCS)
-    # human chatgpt comparison corpus (hc3) and llmtrace dataset
-    if dataset_str in ['hc3', 'trace']:
-        __dataset = samples_arr.get(dataset_str, {}).get(type_str, [DOCS])
-        __sample = random.choice(__dataset)
-    # a single string
-    return __sample
+    __dataset = samples_arr.get(dataset_str, {}).get(type_str, [DOCS])
+    # return a single string
+    return random.choice(__dataset)
 
 # WINDOW #######################################################################
 
