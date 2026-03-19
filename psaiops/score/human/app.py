@@ -112,7 +112,7 @@ def create_app(
         # update the plots when the metric selection changes
         __fields['selection_block'].change(
             fn=_ux.update_token_highlights,
-            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block', 'export_state']],
             outputs=__fields['highlight_block'],
             queue=True,
             show_progress='full'
@@ -125,7 +125,7 @@ def create_app(
         # update the plots when the window changes
         __fields['window_block'].change(
             fn=_ux.update_token_highlights,
-            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block', 'export_state']],
             outputs=__fields['highlight_block'],
             queue=True,
             show_progress='full'
