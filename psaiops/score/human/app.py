@@ -19,7 +19,6 @@ import psaiops.score.human.lib
 
 _PATH = os.path.dirname(__file__)
 _LEGEND = {'AI': '0', 'human': '100',}
-_EXPORT = False
 
 MODELS = ['qwen/qwen3.5-9b', 'qwen/qwen3.5-27b']
 
@@ -52,10 +51,6 @@ PERPLEXITY = 8
 INTERMEDIATE = 16
 
 # IO ###########################################################################
-
-def is_export_enabled() -> bool:
-    global _EXPORT
-    return _EXPORT
 
 def save_to_disk(data: object, name: str, path: str=os.path.join(_PATH, 'data', 'state')) -> None:
     torch.save(data, os.path.join(path, name))
@@ -151,8 +146,9 @@ def create_actions_block() -> dict:
 
 # STATE ########################################################################
 
-def create_state() -> dict:
+def create_state(export_str: str='') -> dict:
     return {
+        'export_state': gradio.State(export_str),
         'tokens_state': gradio.State(load_from_disk('tokens.pt')),
         'indices_state': gradio.State(load_from_disk('indices.pt')),
         'logits_state': gradio.State(None), # too large and not useful on startup
@@ -261,8 +257,8 @@ def update_window_range(
 
 def update_tokens_state(
     prompt_str: str,
+    export_str: str,
     tokenizer_obj: object,
-    export_opt: bool=is_export_enabled(),
 ) -> object:
     # exit if some values are missing
     if (prompt_str is None) or (tokenizer_obj is None):
@@ -272,7 +268,7 @@ def update_tokens_state(
         tokenizer_obj=tokenizer_obj,
         prompt_str=prompt_str.strip(),)
     # save the data to pre-fill the UI on startup
-    if export_opt: save_to_disk(__tokens, 'tokens.pt')
+    if export_str: save_to_disk(__tokens, name='tokens.pt', path=export_str)
     # the token partition is used to highlight the sample token by token
     return __tokens
 
@@ -280,8 +276,8 @@ def update_tokens_state(
 
 def update_indices_state(
     prompt_str: str,
+    export_str: str,
     tokenizer_obj: object,
-    export_opt: bool=is_export_enabled(),
 ) -> object:
     # exit if some values are missing
     if (prompt_str is None) or (tokenizer_obj is None):
@@ -292,7 +288,7 @@ def update_indices_state(
         prompt_str=prompt_str.strip(),
         device_str='cpu')
     # save the data to pre-fill the UI on startup
-    if export_opt: save_to_disk(__inputs['input_ids'], 'indices.pt')
+    if export_str: save_to_disk(__inputs['input_ids'], name='indices.pt', path=export_str)
     # discard the mask, which is all ones
     return __inputs['input_ids'].cpu()
 
@@ -300,8 +296,8 @@ def update_indices_state(
 
 def update_logits_state(
     indices_arr: object,
+    export_str: str,
     model_obj: object,
-    export_opt: bool=is_export_enabled(),
 ) -> object:
     # exit if some values are missing
     if (indices_arr is None) or (model_obj is None):
@@ -311,7 +307,7 @@ def update_logits_state(
         indices_arr=indices_arr.to(device=model_obj.device),
         model_obj=model_obj).cpu()
     # save the data to pre-fill the UI on startup
-    if export_opt: save_to_disk(__logits, 'logits.pt')
+    if export_str: save_to_disk(__logits, name='logits.pt', path=export_str)
     # used to compute all the indicators from the critic LLM
     return __logits
 
@@ -319,62 +315,62 @@ def update_logits_state(
 
 def update_unicode_state(
     tokens_arr: list,
-    export_opt: bool=is_export_enabled(),
+    export_str: str,
 ) -> object:
     __unicodes = psaiops.score.human.lib.compute_unicode_metrics(
         tokens_arr=tokens_arr,)
     # save the data to pre-fill the UI on startup
-    if export_opt: save_to_disk(__unicodes, 'unicodes.pt')
+    if export_str: save_to_disk(__unicodes, name='unicodes.pt', path=export_str)
     # identify rare glyphs as LLM outputs
     return __unicodes
 
 def update_rank_state(
     indices_arr: object,
     logits_arr: object,
-    export_opt: bool=is_export_enabled(),
+    export_str: str,
 ) -> object:
     __ranks = psaiops.score.human.lib.compute_rank_metrics(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
     # save the data to pre-fill the UI on startup
-    if export_opt: save_to_disk(__ranks, 'ranks.pt')
+    if export_str: save_to_disk(__ranks, name='ranks.pt', path=export_str)
     # rank of each token in the LLM predictions, log-scaled
     return __ranks
 
 def update_entropy_state(
     logits_arr: object,
-    export_opt: bool=is_export_enabled(),
+    export_str: str,
 ) -> object:
     __entropies = psaiops.score.human.lib.compute_entropy_metrics(
         logits_arr=logits_arr)
     # save the data to pre-fill the UI on startup
-    if export_opt: save_to_disk(__entropies, 'entropies.pt')
+    if export_str: save_to_disk(__entropies, name='entropies.pt', path=export_str)
     # measures the spread of the predictions probabilities, over the vocabulary
     return __entropies
 
 def update_perplexity_state(
     indices_arr: object,
     logits_arr: object,
-    export_opt: bool=is_export_enabled(),
+    export_str: str,
 ) -> object:
     __perplexities = psaiops.score.human.lib.compute_perplexity_metrics(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
     # save the data to pre-fill the UI on startup
-    if export_opt: save_to_disk(__perplexities, 'perplexities.pt')
+    if export_str: save_to_disk(__perplexities, name='perplexities.pt', path=export_str)
     # measures how surprising the whole neighbordhood of each token is
     return __perplexities
 
 def update_surprisal_state(
     indices_arr: object,
     logits_arr: object,
-    export_opt: bool=is_export_enabled(),
+    export_str: str,
 ) -> object:
     __surprisals = psaiops.score.human.lib.compute_surprisal_metrics(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
     # save the data to pre-fill the UI on startup
-    if export_opt: save_to_disk(__surprisals, 'surprisals.pt')
+    if export_str: save_to_disk(__surprisals, name='surprisals.pt', path=export_str)
     # measures how surprising each token is, comparent to the model's predictions
     return __surprisals
 
@@ -387,7 +383,7 @@ def update_token_highlights(
     perplexity_arr: object,
     selection_arr: list,
     window_dim: float,
-    export_opt: bool=is_export_enabled(),
+    export_str: str,
 ) -> list:
     # exit if some values are missing
     if (tokens_arr is None) or (len(tokens_arr) == 0) or (unicode_arr is None) or (len(unicode_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0) or (selection_arr is None) or (window_dim is None):
@@ -426,7 +422,7 @@ def update_token_highlights(
     # color each token according to its rank in the LLM's predictions
     __labels = list(zip(tokens_arr, __token_cls))
     # save the data to pre-fill the UI on startup
-    if export_opt: save_to_disk(__labels, 'labels.pt')
+    if export_str: save_to_disk(__labels, name='labels.pt', path=export_str)
     # list of (token, label), where each label is mapped to a color
     return __labels
 
@@ -515,78 +511,76 @@ def create_app(
     intro: str=INTRO,
     tuto: str=TUTO,
     docs: str=DOCS,
-    export: bool=_EXPORT,
+    export: str='',
 ) -> gradio.Blocks:
-    global _EXPORT, MODELS
-    # toggle the automatic export of all the computed tensors
-    _EXPORT = export
+    global MODELS
     # holds all the UI widgets
     __fields = {}
     with gradio.Blocks(title=title) as __app:
         # create the UI
         __fields.update(create_layout(title=title, intro=intro, tuto=tuto, docs=docs, models=current().get('choices', MODELS)))
         # init the state
-        __fields.update(create_state())
+        __fields.update(create_state(export_str=export))
         # split the string into token sub-strings
         __fields['process_block'].click(
             fn=partition,
-            inputs=__fields['input_block'],
+            inputs=[__fields[__k] for __k in ['input_block', 'export_state']],
             outputs=__fields['tokens_state'],
             queue=True,
             show_progress='hidden'
         ).then(
         # translate the string into token indices
             fn=convert,
-            inputs=__fields['input_block'],
+            inputs=[__fields[__k] for __k in ['input_block', 'export_state']],
             outputs=__fields['indices_state'],
             queue=True,
             show_progress='hidden'
         ).then(
         # then compute the associated logits
             fn=compute,
-            inputs=__fields['indices_state'],
+            inputs=[__fields[__k] for __k in ['indices_state', 'export_state']],
             outputs=__fields['logits_state'],
             queue=True,
             show_progress='hidden'
         ).then(
         # compute the unicode scores
             fn=update_unicode_state,
-            inputs=[__fields[__k] for __k in ['tokens_state']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'export_state']],
             outputs=__fields['unicode_state'],
             queue=True,
             show_progress='hidden'
         ).then(
         # compute the rank scores
             fn=update_rank_state,
-            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
+            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'export_state']],
             outputs=__fields['rank_state'],
             queue=True,
             show_progress='hidden'
         ).then(
         # compute the entropy scores
             fn=update_entropy_state,
-            inputs=[__fields[__k] for __k in ['logits_state']],
+            inputs=[__fields[__k] for __k in ['logits_state', 'export_state']],
             outputs=__fields['entropy_state'],
             queue=True,
             show_progress='hidden'
         ).then(
         # compute the perplexity scores
             fn=update_perplexity_state,
-            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
+            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'export_state']],
             outputs=__fields['perplexity_state'],
             queue=True,
             show_progress='hidden'
         ).then(
         # compute the surprisal scores
             fn=update_surprisal_state,
-            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state']],
+            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'export_state']],
             outputs=__fields['surprisal_state'],
             queue=True,
             show_progress='hidden'
         ).then(
         # then compute the scores
             fn=update_token_highlights,
-            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block', 'export_state']],
             outputs=__fields['highlight_block'],
             queue=True,
             show_progress='full'
