@@ -5,6 +5,7 @@ import matplotlib
 import numpy
 import torch
 import torch.nn.functional
+import transformers.generation.logits_process as _post
 
 import mlable.shapes
 
@@ -388,6 +389,51 @@ def compute_surprisal_metrics(
     return postprocess_surprisals(
         surprisals_arr=__outputs,
         upper_val=__upper)
+
+# SAMPLING #####################################################################
+
+def build_sampling_policy(
+    topk_val: int=-1,
+    topp_val: float=1.0,
+    reps_val: float=1.0,
+    temp_val: float=1.0,
+    epsilon_val: float=EPSILON_VAL,
+) -> list:
+    # sanitize the inputs
+    __topk = 0 if (topk_val is None) else max(0, int(topk_val))
+    __topp = 1.0 if (topp_val is None) else max(epsilon_val, float(topp_val))
+    __reps = 1.0 if (reps_val is None) else max(epsilon_val, float(reps_val))
+    __temp = 1.0 if (temp_val is None) else max(epsilon_val, float(temp_val))
+    # only perform postprocessing that make sense (topp == 1.0 keeps all the logits and is useless)
+    return (
+        (__reps != 1.0) * [_post.RepetitionPenaltyLogitsProcessor(penalty=__reps, prompt_ignore_length=0)]
+        + (__temp != 1.0) * [_post.TemperatureLogitsWarper(__temp)]
+        + (__topk > 0) * [_post.TopKLogitsWarper(__topk)]
+        + (__topp < 1.0) * [_post.TopPLogitsWarper(__topp)])
+
+def warp_scores_stepwise(
+    logits_arr: object,
+    indices_arr: object,
+    **kwargs: dict,
+) -> object:
+    __dim = int(indices_arr.shape[1])
+    # unpacked logits
+    __outputs = []
+    # sampling policy as a list of processors
+    __policy = build_sampling_policy(**kwargs)
+    # simulate the decoding loop because the warpers affect the positions in the sequence
+    for __t in range(__dim):
+        # history available at this step, t tokens
+        __prefix = indices_arr[:, : __t + 1] # not strictly correct for the last token
+        # logits for token t+1
+        __scores = logits_arr[:, __t, :].clone()
+        # HF processors and warpers
+        for __f in __policy:
+            __scores = __f(__prefix, __scores)
+        # append (B, V)
+        __outputs.append(__scores)
+    # (B, T, V)
+    return torch.stack(__outputs, dim=1)
 
 # FOURIER ######################################################################
 
