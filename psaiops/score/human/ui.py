@@ -91,7 +91,7 @@ def create_sampling_block() -> dict:
 
 def create_dataset_block(options: list, prefix: str='') -> dict:
     return {
-        prefix + __o.lower() + '_block': gradio.Button(__o, variant='primary', size='lg', scale=1, interactive=True)
+        prefix + __o.lower() + '_block': gradio.Button(__o, variant='secondary', size='lg', scale=1, interactive=True)
         for __o in options}
 
 # INPUTS #######################################################################
