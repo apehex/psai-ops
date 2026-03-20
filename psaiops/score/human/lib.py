@@ -414,13 +414,11 @@ def build_sampling_policy(
 def warp_scores_stepwise(
     logits_arr: object,
     indices_arr: object,
-    **kwargs: dict,
+    policy_arr: list,
 ) -> object:
     __dim = int(indices_arr.shape[1])
     # unpacked logits
     __outputs = []
-    # sampling policy as a list of processors
-    __policy = build_sampling_policy(**kwargs)
     # simulate the decoding loop because the warpers affect the positions in the sequence
     for __t in range(__dim):
         # history available at this step, t tokens
@@ -428,12 +426,60 @@ def warp_scores_stepwise(
         # logits for token t+1
         __scores = logits_arr[:, __t, :].clone()
         # HF processors and warpers
-        for __f in __policy:
+        for __f in policy_arr:
             __scores = __f(__prefix, __scores)
         # append (B, V)
         __outputs.append(__scores)
     # (B, T, V)
     return torch.stack(__outputs, dim=1)
+
+def compute_policy_deltas(
+    indices_arr: object,
+    logits_arr: object,
+    warped_arr: object,
+) -> object:
+    # the first token cannot be rated => (B, T-1, 1) and (B, T-1, V)
+    __indices = indices_arr[:, 1:].detach().int().unsqueeze(-1)
+    __logits = logits_arr[:, :-1].detach().float()
+    __warped = warped_arr[:, :-1].detach().float()
+    # compute the log softmax for both distributions (B, T-1, V)
+    __logits = torch.log_softmax(__logits, dim=-1)
+    __warped = torch.log_softmax(__warped, dim=-1)
+    # compute the difference between the warped logits and the raw logits, on the chosen tokens
+    return __warped.gather(dim=-1, index=__indices) - __logits.gather(dim=-1, index=__indices)
+
+def postprocess_policy_deltas(
+    deltas_arr: object,
+    upper_val: float=float(VOCABULARY_DIM),
+) -> object:
+    # normalize (B, T-1)
+    __outputs = 0.5 + (deltas_arr / math.log(upper_val))
+    # add a neutral score for the first token
+    return pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
+
+def compute_policy_metrics(
+    indices_arr: object,
+    logits_arr: object,
+    **kwargs
+) -> object:
+    # infer the vocab length from the last dimension of the logits
+    __upper = float(logits_arr.shape[-1])
+    # sampling policy as a list of processors
+    __policy = build_sampling_policy(**kwargs)
+    # compute the warped logits (B, T-1)
+    __warped = warp_scores_stepwise(
+        logits_arr=logits_arr,
+        indices_arr=indices_arr,
+        policy_arr=__policy)
+    # compute the logprob deltas
+    __outputs = compute_policy_deltas(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr,
+        warped_arr=__warped)
+    # and normalize them (B, T-1)
+    return postprocess_policy_deltas(
+        deltas_arr=__outputs,
+        upper_val=__upper)
 
 # FOURIER ######################################################################
 
