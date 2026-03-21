@@ -454,16 +454,16 @@ def compute_sampling_deltas(
     # compute the difference between the warped logits and the raw logits, on the chosen tokens
     return __warped.gather(dim=-1, index=__indices) - __logits.gather(dim=-1, index=__indices)
 
-def postprocess_policy_deltas(
+def postprocess_sampling_deltas(
     deltas_arr: object,
     upper_val: float=float(VOCABULARY_DIM),
 ) -> object:
     # normalize (B, T-1)
-    __outputs = 0.5 + (deltas_arr / math.log(upper_val))
+    __outputs = 0.5 + (deltas_arr / math.log(upper_val)).clamp(min=-0.5, max=0.5)
     # add a neutral score for the first token
     return pad_left(__outputs, fill_val=0.5, fill_dim=1, axis_idx=1)
 
-def compute_policy_metrics(
+def compute_sampling_metrics(
     indices_arr: object,
     logits_arr: object,
     **kwargs
@@ -478,12 +478,12 @@ def compute_policy_metrics(
         indices_arr=indices_arr,
         policy_arr=__policy)
     # compute the logprob deltas
-    __outputs = compute_policy_deltas(
+    __outputs = compute_sampling_deltas(
         indices_arr=indices_arr,
         logits_arr=logits_arr,
         warped_arr=__warped)
     # and normalize them (B, T-1)
-    return postprocess_policy_deltas(
+    return postprocess_sampling_deltas(
         deltas_arr=__outputs,
         upper_val=__upper)
 
