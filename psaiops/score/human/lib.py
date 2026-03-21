@@ -439,7 +439,7 @@ def warp_scores_stepwise(
     # (B, T, V)
     return torch.stack(__outputs, dim=1)
 
-def compute_policy_deltas(
+def compute_sampling_deltas(
     indices_arr: object,
     logits_arr: object,
     warped_arr: object,
@@ -448,9 +448,9 @@ def compute_policy_deltas(
     __indices = indices_arr[:, 1:].detach().int().unsqueeze(-1)
     __logits = logits_arr[:, :-1].detach().float()
     __warped = warped_arr[:, :-1].detach().float()
-    # compute the log softmax for both distributions (B, T-1, V)
-    __logits = torch.log_softmax(__logits, dim=-1)
-    __warped = torch.log_softmax(__warped, dim=-1)
+    # compute the NLL for both distributions (B, T-1, V)
+    __logits = -torch.log_softmax(__logits, dim=-1)
+    __warped = -torch.log_softmax(__warped, dim=-1)
     # compute the difference between the warped logits and the raw logits, on the chosen tokens
     return __warped.gather(dim=-1, index=__indices) - __logits.gather(dim=-1, index=__indices)
 
