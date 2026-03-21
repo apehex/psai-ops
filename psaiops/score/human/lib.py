@@ -392,31 +392,6 @@ def compute_surprisal_metrics(
 
 # SAMPLING #####################################################################
 
-def build_sampling_policy(
-    topk_val: int=0,
-    topp_val: float=1.0,
-    reps_val: float=1.0,
-    temp_val: float=1.0,
-    epsilon_val: float=EPSILON_VAL,
-) -> list:
-    __policy = []
-    # sanitize the inputs
-    __topk = 0 if (topk_val is None) else max(0, int(topk_val))
-    __topp = 1.0 if (topp_val is None) else max(epsilon_val, float(topp_val))
-    __reps = 1.0 if (reps_val is None) else max(epsilon_val, float(reps_val))
-    __temp = 1.0 if (temp_val is None) else max(epsilon_val, float(temp_val))
-    # only perform postprocessing that make sense (topp == 1.0 keeps all the logits and is useless)
-    if __reps != 1.0:
-        __policy.append(_post.RepetitionPenaltyLogitsProcessor(penalty=__reps, prompt_ignore_length=0))
-    if __temp != 1.0:
-        __policy.append(_post.TemperatureLogitsWarper(__temp))
-    if __topk > 0:
-        __policy.append(_post.TopKLogitsWarper(__topk))
-    if __topp < 1.0:
-        __policy.append(_post.TopPLogitsWarper(__topp))
-    # list of logits processors, IE functions of (prefix, scores)
-    return __policy
-
 def build_seen_mask(
     indices_arr: object,
     vocab_dim: int,
@@ -442,14 +417,17 @@ def warp_penalty(
     indices_arr: object,
     logits_arr: object,
     penalty_val: float=1.0,
+    epsilon_val: float=EPSILON_VAL,
 ) -> object:
+    # sanitize the inputs
+    __repp = 1.0 if (penalty_val is None) else max(epsilon_val, float(penalty_val))
     # mask all the token indices that were seen
     __mask = build_seen_mask(indices_arr=indices_arr, vocab_dim=int(logits.size(-1)))
     # downscale all the logits of the tokens that were seen, both positive and negative
     return apply_repetition_penalty(
         logits_arr=logits_arr,
         seen_arr=__mask,
-        penalty_val=penalty_val)
+        penalty_val=__repp)
 
 def warp_temperature(
     logits_arr: object,
@@ -467,7 +445,7 @@ def warp_topk(
 ) -> object:
     # sanitize the inputs
     __dim = int(logits_arr.size(-1))
-    __topk = 1 if (topk_val is None) else min(__dim, max(1, int(topk_val)))
+    __topk = __dim if (topk_val is None) else min(__dim, max(1, int(topk_val)))
     # select the indices below the Kth largest logit
     __mask = logits_arr < torch.topk(logits_arr, k=__topk, dim=-1, sorted=True)[0][..., -1:]
     # replace the pruned logits with the minimum logit (instead of -inf)
@@ -494,42 +472,52 @@ def warp_topp(
     # (B, T, V)
     return torch.where(__mask, __min, logits_arr)
 
-def warp_scores_stepwise(
+def warp_scores(
     indices_arr: object,
     logits_arr: object,
-    policy_arr: list,
+    topk_val: int=0,
+    topp_val: float=1.0,
+    repp_val: float=1.0,
+    temp_val: float=1.0,
+    epsilon_val: float=EPSILON_VAL,
 ) -> object:
-    __dim = int(indices_arr.shape[1])
-    # unpacked logits
-    __outputs = []
-    # simulate the decoding loop because the warpers affect the positions in the sequence
-    for __t in range(__dim):
-        # history available at this step, t tokens
-        __prefix = indices_arr[:, : __t + 1] # not strictly correct for the last token
-        # logits for token t+1
-        __scores = logits_arr[:, __t, :].clone()
-        # HF processors and warpers
-        for __f in policy_arr:
-            __scores = __f(__prefix, __scores)
-        # append (B, V)
-        __outputs.append(__scores)
-    # (B, T, V)
-    return torch.stack(__outputs, dim=1)
+    # always apply the temperature first, it is communitative
+    __outputs = warp_temperature(
+        logits_arr=logits_arr,
+        temp_val=temp_val,
+        epsilon_val=epsilon_val)
+    # apply the other operators when it makes sense
+    if (repp_val is not None) and (float(repp_val) != 1.0):
+        __outputs = warp_penalty(
+            indices_arr=indices_arr,
+            logits_arr=logits_arr,
+            penalty_val=repp_val,
+            epsilon_val=epsilon_val)
+    if (topk_val is not None) and (int(topk_val) > 0):
+        __outputs = warp_topk(
+            logits_arr=__outputs,
+            topk_val=topk_val)
+    if (topp_val is not None) and (float(topp_val) < 1.0):
+        __outputs = warp_topp(
+            logits_arr=__outputs,
+            topp_val=topp_val,
+            epsilon_val=epsilon_val)
 
 def compute_sampling_deltas(
     indices_arr: object,
     logits_arr: object,
     warped_arr: object,
 ) -> object:
-    # the first token cannot be rated => (B, T-1, 1) and (B, T-1, V)
-    __indices = indices_arr[:, 1:].detach().int().unsqueeze(-1)
-    __logits = logits_arr[:, :-1].detach().float()
-    __warped = warped_arr[:, :-1].detach().float()
-    # compute the NLL for both distributions (B, T-1, V)
-    __logits = -torch.log_softmax(__logits, dim=-1)
-    __warped = -torch.log_softmax(__warped, dim=-1)
+    # compute the NLL for the raw logits (B, T-1, V)
+    __raws = compute_nllikelihoods(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr)
+    # and the warped logits
+    __warped = compute_nllikelihoods(
+        indices_arr=indices_arr,
+        logits_arr=warped_arr)
     # compute the difference between the warped logits and the raw logits, on the chosen tokens
-    return __warped.gather(dim=-1, index=__indices) - __logits.gather(dim=-1, index=__indices)
+    return __warped - __raws
 
 def postprocess_sampling_deltas(
     deltas_arr: object,
@@ -547,13 +535,11 @@ def compute_sampling_metrics(
 ) -> object:
     # infer the vocab length from the last dimension of the logits
     __upper = float(logits_arr.shape[-1])
-    # sampling policy as a list of processors
-    __policy = build_sampling_policy(**kwargs)
     # compute the warped logits (B, T-1)
-    __warped = warp_scores_stepwise(
+    __warped = warp_scores(
         logits_arr=logits_arr,
         indices_arr=indices_arr,
-        policy_arr=__policy)
+        **kwargs)
     # compute the logprob deltas
     __outputs = compute_sampling_deltas(
         indices_arr=indices_arr,
