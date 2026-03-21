@@ -417,6 +417,40 @@ def build_sampling_policy(
     # list of logits processors, IE functions of (prefix, scores)
     return __policy
 
+def build_seen_mask(
+    indices_arr: object,
+    vocab_dim: int,
+) -> object:
+    # match the input format (B, T, V)
+    __outputs = torch.nn.functional.one_hot(indices_arr, num_classes=vocab_size).to(device=indices_arr.device, dtype=indices_arr.dtype)
+    # mark the tokens on all the positions after their first appearance
+    return __outputs.cumsum(dim=1) > 0
+
+def apply_repetition_penalty(
+    logits_arr: object, # (B, T, V)
+    seen_arr: object, # (B, T, V)
+    penalty_val: float=1.0,
+) -> object:
+    # logits: (B, T, V), seen_mask: (B, T, V) bool
+    __positive = (logits_arr >= 0.0)
+    # divide the positive logits => less probable
+    __outputs = torch.where(seen_arr & __positive, logits / penalty_val, logits_arr)
+    # multiply the negative logits => also less probable
+    return torch.where(seen_arr & (~__positive), __outputs * penalty_val, __outputs)
+
+def warp_penalty(
+    indices_arr: object,
+    logits_arr: object,
+    penalty_val: float=1.0,
+) -> object:
+    # mask all the token indices that were seen
+    __mask = build_seen_mask(indices_arr=indices_arr, vocab_dim=int(logits.size(-1)))
+    # downscale all the logits of the tokens that were seen, both positive and negative
+    return apply_repetition_penalty(
+        logits_arr=logits_arr,
+        seen_arr=__mask,
+        penalty_val=penalty_val)
+
 def warp_temperature(
     logits_arr: object,
     temp_val: float=1.0,
@@ -454,15 +488,15 @@ def warp_topp(
     # select the indices outside of the nucleus (B, T, V)
     __mask = __cumsum > __topp
     # map the sorted indices back the original order (B, T, V)
-    __mask = __mask.scatter(1, __mapping, __mask)
+    __mask = __mask.scatter(-1, __mapping, __mask)
     # replace the pruned logits with the minimum logit (instead of -inf)
     __min = logits_arr.amin(dim=-1, keepdim=True)
     # (B, T, V)
     return torch.where(__mask, __min, logits_arr)
 
 def warp_scores_stepwise(
-    logits_arr: object,
     indices_arr: object,
+    logits_arr: object,
     policy_arr: list,
 ) -> object:
     __dim = int(indices_arr.shape[1])
