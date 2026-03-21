@@ -417,6 +417,49 @@ def build_sampling_policy(
     # list of logits processors, IE functions of (prefix, scores)
     return __policy
 
+def warp_temperature(
+    logits_arr: object,
+    temp_val: float=1.0,
+    epsilon_val: float=EPSILON_VAL,
+) -> object:
+    # sanitize the inputs
+    __temp = 1.0 if (temp_val is None) else max(epsilon_val, float(temp_val))
+    # warp the logits
+    return logits_arr / __temp
+
+def warp_topk(
+    logits_arr: object,
+    topk_val: int=0,
+) -> object:
+    # sanitize the inputs
+    __dim = int(logits_arr.size(-1))
+    __topk = 1 if (topk_val is None) else min(__dim, max(1, int(topk_val)))
+    # select the indices below the Kth largest logit
+    __mask = logits_arr < torch.topk(logits_arr, k=__topk, dim=-1, sorted=True)[0][..., -1:]
+    # replace the pruned logits with the minimum logit (instead of -inf)
+    __min = logits_arr.amin(dim=-1, keepdim=True)
+    # (B, T, V)
+    return torch.where(__mask, __min, logits_arr)
+
+def warp_topp(
+    logits_arr: object,
+    topp_val: float=1.0,
+    epsilon_val: float=EPSILON_VAL,
+) -> object:
+    # sanitize the inputs
+    __topp = 1.0 if (topp_val is None) else max(epsilon_val, float(topp_val))
+    # compute the nuclueus (B, T, V)
+    __cumsum, __mapping = torch.sort(logits_arr, descending=True)
+    __cumsum = __cumsum.softmax(dim=-1).cumsum(dim=-1)
+    # select the indices outside of the nucleus (B, T, V)
+    __mask = __cumsum > __topp
+    # map the sorted indices back the original order (B, T, V)
+    __mask = __mask.scatter(1, __mapping, __mask)
+    # replace the pruned logits with the minimum logit (instead of -inf)
+    __min = logits_arr.amin(dim=-1, keepdim=True)
+    # (B, T, V)
+    return torch.where(__mask, __min, logits_arr)
+
 def warp_scores_stepwise(
     logits_arr: object,
     indices_arr: object,
