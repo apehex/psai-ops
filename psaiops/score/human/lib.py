@@ -393,23 +393,29 @@ def compute_surprisal_metrics(
 # SAMPLING #####################################################################
 
 def build_sampling_policy(
-    topk_val: int=-1,
+    topk_val: int=0,
     topp_val: float=1.0,
     reps_val: float=1.0,
     temp_val: float=1.0,
     epsilon_val: float=EPSILON_VAL,
 ) -> list:
+    __policy = []
     # sanitize the inputs
     __topk = 0 if (topk_val is None) else max(0, int(topk_val))
     __topp = 1.0 if (topp_val is None) else max(epsilon_val, float(topp_val))
     __reps = 1.0 if (reps_val is None) else max(epsilon_val, float(reps_val))
     __temp = 1.0 if (temp_val is None) else max(epsilon_val, float(temp_val))
     # only perform postprocessing that make sense (topp == 1.0 keeps all the logits and is useless)
-    return (
-        (__reps != 1.0) * [_post.RepetitionPenaltyLogitsProcessor(penalty=__reps, prompt_ignore_length=0)]
-        + (__temp != 1.0) * [_post.TemperatureLogitsWarper(__temp)]
-        + (__topk > 0) * [_post.TopKLogitsWarper(__topk)]
-        + (__topp < 1.0) * [_post.TopPLogitsWarper(__topp)])
+    if __reps != 1.0:
+        __policy.append(_post.RepetitionPenaltyLogitsProcessor(penalty=__reps, prompt_ignore_length=0))
+    if __temp != 1.0:
+        __policy.append(_post.TemperatureLogitsWarper(__temp))
+    if __topk > 0:
+        __policy.append(_post.TopKLogitsWarper(__topk))
+    if __topp < 1.0:
+        __policy.append(_post.TopPLogitsWarper(__topp))
+    # list of logits processors, IE functions of (prefix, scores)
+    return __policy
 
 def warp_scores_stepwise(
     logits_arr: object,
