@@ -96,29 +96,36 @@ def create_app(
             queue=True,
             show_progress='hidden'
         ).then(
+        # compute the sampling scores
+            fn=_ux.update_sampling_state,
+            inputs=[__fields[__k] for __k in ['indices_state', 'logits_state', 'export_state', 'topk_block', 'topp_block', 'repp_block', 'temp_block']],
+            outputs=__fields['sampling_state'],
+            queue=True,
+            show_progress='hidden'
+        ).then(
         # then compute the scores
             fn=_ux.update_token_highlights,
-            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block', 'export_state']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'sampling_state', 'selection_block', 'window_block', 'export_state']],
             outputs=__fields['highlight_block'],
             queue=True,
             show_progress='full'
         ).then(
         # and plot the metrics
             fn=_ux.update_metric_plots,
-            inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
+            inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'sampling_state', 'selection_block', 'window_block']],
             outputs=__fields['plot_block'],
             queue=True,
             show_progress='full')
         # update the plots when the metric selection changes
         __fields['selection_block'].change(
             fn=_ux.update_token_highlights,
-            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block', 'export_state']],
+            inputs=[__fields[__k] for __k in ['tokens_state', 'unicode_state', 'surprisal_state', 'perplexity_state', 'sampling_state', 'selection_block', 'window_block', 'export_state']],
             outputs=__fields['highlight_block'],
             queue=True,
             show_progress='full'
         ).then(
             fn=_ux.update_metric_plots,
-            inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'selection_block', 'window_block']],
+            inputs=[__fields[__k] for __k in ['unicode_state', 'rank_state', 'entropy_state', 'surprisal_state', 'perplexity_state', 'sampling_state', 'selection_block', 'window_block']],
             outputs=__fields['plot_block'],
             queue=True,
             show_progress='full')

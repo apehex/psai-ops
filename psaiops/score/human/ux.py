@@ -199,6 +199,31 @@ def update_surprisal_state(
     # measures how surprising each token is, comparent to the model's predictions
     return __surprisals
 
+def update_sampling_state(
+    indices_arr: object,
+    logits_arr: object,
+    export_str: str,
+    topk_val: int=0,
+    topp_val: float=1.0,
+    repp_val: float=1.0,
+    temp_val: float=1.0,
+) -> object:
+    # exit if some values are missing
+    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
+        return None
+    # one score per token (B, T)
+    __samplings = _lib.compute_sampling_metrics(
+        indices_arr=indices_arr,
+        logits_arr=logits_arr,
+        topk_val=topk_val,
+        topp_val=topp_val,
+        repp_val=repp_val,
+        temp_val=temp_val)
+    # save the data to pre-fill the UI on startup
+    if export_str: save_to_disk(__samplings, name='samplings.pt', path=export_str)
+    # measures how surprising each token is, comparent to the model's predictions
+    return __samplings
+
 # HIGHLIGHTS ###################################################################
 
 def update_token_highlights(
@@ -206,12 +231,13 @@ def update_token_highlights(
     unicode_arr: object,
     surprisal_arr: object,
     perplexity_arr: object,
+    sampling_arr: object,
     selection_arr: list,
     window_dim: float,
     export_str: str,
 ) -> list:
     # exit if some values are missing
-    if (tokens_arr is None) or (len(tokens_arr) == 0) or (unicode_arr is None) or (len(unicode_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0) or (selection_arr is None) or (window_dim is None):
+    if (tokens_arr is None) or (len(tokens_arr) == 0) or (unicode_arr is None) or (len(unicode_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0) or (sampling_arr is None) or (len(sampling_arr == 0)) or (selection_arr is None) or (window_dim is None):
         return None
     # normalize and force an odd window size
     __window_dim = 2 * (int(window_dim) // 2) + 1
@@ -220,6 +246,7 @@ def update_token_highlights(
     # downplay the scores near the begining because the model is lacking context
     __surprisal_arr = _lib.apply_time_ramp(data_arr=surprisal_arr, **__args) if (_ui.RAMPING in selection_arr) else surprisal_arr
     __perplexity_arr = _lib.apply_time_ramp(data_arr=perplexity_arr, **__args) if (_ui.RAMPING in selection_arr) else perplexity_arr
+    __sampling_arr = _lib.apply_time_ramp(data_arr=sampling_arr, **__args) if (_ui.RAMPING in selection_arr) else sampling_arr
     # compute the scores on a sliding window
     __surprisal_arr = _lib.compute_topk_pooling(
         data_arr=__surprisal_arr,
@@ -230,12 +257,18 @@ def update_token_highlights(
         data_arr=__perplexity_arr,
         pool_dim=max(9, __window_dim),
         axis_idx=-1)
+    __sampling_arr = _lib.compute_topk_pooling(
+        data_arr=__sampling_arr,
+        pool_dim=__window_dim,
+        topk_dim=(__window_dim + 1) // 2,
+        axis_idx=-1)
     # toggle the metrics according to the selection
     __token_cls = (
         [0.5 * torch.ones_like(unicode_arr, device=unicode_arr.device, dtype=unicode_arr.dtype)]
         + (_ui.UNICODE in selection_arr) * [unicode_arr]
         + (_ui.SURPRISAL in selection_arr) * [__surprisal_arr]
-        + (_ui.PERPLEXITY in selection_arr) * [__perplexity_arr])
+        + (_ui.PERPLEXITY in selection_arr) * [__perplexity_arr]
+        + (_ui.SAMPLING in selection_arr) * [__sampling_arr])
     # there is an extra neutral score in case all other have been toggled off (so that the conflation doesn't error)
     __token_cls = _lib.compute_probability_conflation(
         metrics_arr=__token_cls,
@@ -259,11 +292,12 @@ def update_metric_plots(
     entropy_arr: object,
     surprisal_arr: object,
     perplexity_arr: object,
+    sampling_arr: object,
     selection_arr: list,
     window_dim: float,
 ) -> object:
     # exit if some values are missing
-    if (unicode_arr is None) or (len(unicode_arr) == 0) or (rank_arr is None) or (len(rank_arr) == 0) or (entropy_arr is None) or (len(entropy_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0) or (selection_arr is None) or (window_dim is None):
+    if (unicode_arr is None) or (len(unicode_arr) == 0) or (rank_arr is None) or (len(rank_arr) == 0) or (entropy_arr is None) or (len(entropy_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (sampling_arr is None) or (len(sampling_arr == 0)) or (len(perplexity_arr) == 0) or (selection_arr is None) or (window_dim is None):
         return None
     # normalize and force an odd window size
     __window_dim = 2 * (int(window_dim) // 2) + 1
@@ -286,9 +320,14 @@ def update_metric_plots(
         pool_dim=__window_dim,
         topk_dim=(__window_dim + 1) // 2,
         axis_idx=-1)
+    __ya = _lib.compute_topk_pooling(
+        data_arr=sampling_arr,
+        pool_dim=__window_dim,
+        topk_dim=(__window_dim + 1) // 2,
+        axis_idx=-1)
     # combine all the metrics into a final score
     __yf = _lib.compute_probability_conflation(
-        metrics_arr=[unicode_arr, __yp, __ys],
+        metrics_arr=[unicode_arr, __yp, __ys, __ya],
         axis_idx=-1)
     # keep only the first sample and rescale as a percentage
     __yu = 100.0 * unicode_arr.squeeze(dim=0).numpy()
@@ -296,6 +335,7 @@ def update_metric_plots(
     __ye = 100.0 * __ye.squeeze(dim=0).numpy()
     __yp = 100.0 * __yp.squeeze(dim=0).numpy()
     __ys = 100.0 * __ys.squeeze(dim=0).numpy()
+    __ya = 100.0 * __ya.squeeze(dim=0).numpy()
     __yf = 100.0 * __yf.squeeze(dim=0).numpy()
     __yt = 100.0 * __yt.squeeze(dim=0).numpy()
     # match the metrics with their token position
@@ -313,6 +353,8 @@ def update_metric_plots(
         __axes.plot(__x, __yp, linestyle='--', label='perplexity', color='#5555FF') # full blue
     if _ui.SURPRISAL in selection_arr:
         __axes.plot(__x, __ys, linestyle='--', label='surprisal', color='#550055') # deep purple
+    if _ui.SAMPLING in selection_arr:
+        __axes.plot(__x, __ys, linestyle='--', label='sampling', color='#55FF55') # electric green
     if _ui.INTERMEDIATE in selection_arr:
         __axes.plot(__x, __yr, linestyle=':', label='rank', color='#442222') # expresso
         __axes.plot(__x, __ye, linestyle=':', label='entropy', color='#222244') # indigo

@@ -32,10 +32,11 @@ SAMPLES = {
 
 # metric types
 RAMPING = 1
-UNICODE = 2
-SURPRISAL = 4
-PERPLEXITY = 8
-INTERMEDIATE = 16
+SAMPLING = 2
+UNICODE = 4
+SURPRISAL = 8
+PERPLEXITY = 16
+INTERMEDIATE = 32
 
 # IO ###########################################################################
 
@@ -79,10 +80,10 @@ def create_model_block(models: list=MODELS) -> dict:
 def create_sampling_block() -> dict:
     __reps = gradio.Slider(label='Penalty', value=1.1, minimum=0.0, maximum=2.0, step=0.05, scale=1, interactive=True)
     __temp = gradio.Slider(label='Temperature', value=0.8, minimum=0.0, maximum=2.0, step=0.05, scale=1, interactive=True)
-    __topk = gradio.Slider(label='Top K', value=24, minimum=1, maximum=2048, step=1, scale=1, interactive=True)
+    __topk = gradio.Slider(label='Top K', value=8192, minimum=0, maximum=16384, step=1, scale=1, interactive=True)
     __topp = gradio.Slider(label='Top P', value=0.95, minimum=0.0, maximum=1.0, step=0.01, scale=1, interactive=True)
     return {
-        'reps_block': __reps,
+        'repp_block': __reps,
         'temp_block': __temp,
         'topk_block': __topk,
         'topp_block': __topp,}
@@ -115,7 +116,7 @@ def create_highlight_block(label: str='Score', prefix: str='', value: list=[], c
 # REDUCTION ####################################################################
 
 def create_selection_block(label: str='Selection', prefix: str='') -> dict:
-    __metrics = gradio.CheckboxGroup(label=label, type='value', value=[UNICODE, SURPRISAL, PERPLEXITY], choices=[('Ramping', RAMPING), ('Unicode', UNICODE), ('Surprisal', SURPRISAL), ('Perplexity', PERPLEXITY), ('Intermediate', INTERMEDIATE)], interactive=True)
+    __metrics = gradio.CheckboxGroup(label=label, type='value', value=[UNICODE, SURPRISAL, PERPLEXITY], choices=[('Ramping', RAMPING), ('Sampling', SAMPLING), ('Unicode', UNICODE), ('Surprisal', SURPRISAL), ('Perplexity', PERPLEXITY), ('Intermediate', INTERMEDIATE)], interactive=True)
     return {prefix + 'selection_block': __metrics,}
 
 def create_window_block(label: str='Scope', prefix: str='', value: int=5) -> dict:
@@ -140,7 +141,8 @@ def create_state(export_str: str='') -> dict:
         'rank_state': gradio.State(load_from_disk('ranks.pt')),
         'entropy_state': gradio.State(load_from_disk('entropies.pt')),
         'perplexity_state': gradio.State(load_from_disk('perplexities.pt')),
-        'surprisal_state': gradio.State(load_from_disk('surprisals.pt')),}
+        'surprisal_state': gradio.State(load_from_disk('surprisals.pt')),
+        'sampling_state': gradio.State(load_from_disk('samplings.pt')),}
 
 # LAYOUT #######################################################################
 
