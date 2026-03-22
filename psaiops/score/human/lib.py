@@ -533,7 +533,11 @@ def postprocess_sampling_deltas(
 def compute_sampling_metrics(
     indices_arr: object,
     logits_arr: object,
-    **kwargs
+    topk_val: int=0,
+    topp_val: float=1.0,
+    repp_val: float=1.0,
+    temp_val: float=1.0,
+    epsn_val: float=EPSILON_VAL,
 ) -> object:
     # infer the vocab length from the last dimension of the logits
     __upper = float(logits_arr.shape[-1])
@@ -541,7 +545,11 @@ def compute_sampling_metrics(
     __outputs = warp_scores(
         logits_arr=logits_arr,
         indices_arr=indices_arr,
-        **kwargs)
+        topk_val=topk_val,
+        topp_val=topp_val,
+        repp_val=repp_val,
+        temp_val=temp_val,
+        epsn_val=epsn_val)
     # compute the logprob deltas
     __outputs = compute_sampling_deltas(
         indices_arr=indices_arr,
