@@ -34,8 +34,11 @@ def sample_input_text(
     type_str: str,
     samples_arr: dict=_ui.SAMPLES,
 ) -> str:
+    # exit if some values are missing
+    if (not dataset_str) or (not type_str):
+        return _ui.TUTO
     # return the documentation by default
-    __dataset = samples_arr.get(dataset_str, {}).get(type_str, [_ui.DOCS])
+    __dataset = samples_arr.get(dataset_str, {}).get(type_str, [_ui.TUTO])
     # return a single string
     return random.choice(__dataset)
 
@@ -119,6 +122,10 @@ def update_unicode_state(
     tokens_arr: list,
     export_str: str,
 ) -> object:
+    # exit if some values are missing
+    if (tokens_arr is None) or (len(tokens_arr) == 0):
+        return None
+    # one score per token (B, T)
     __unicodes = _lib.compute_unicode_metrics(
         tokens_arr=tokens_arr,)
     # save the data to pre-fill the UI on startup
@@ -131,6 +138,10 @@ def update_rank_state(
     logits_arr: object,
     export_str: str,
 ) -> object:
+    # exit if some values are missing
+    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
+        return None
+    # one score per token (B, T)
     __ranks = _lib.compute_rank_metrics(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
@@ -143,6 +154,10 @@ def update_entropy_state(
     logits_arr: object,
     export_str: str,
 ) -> object:
+    # exit if some values are missing
+    if (logits_arr is None) or (len(logits_arr) == 0):
+        return None
+    # one score per token (B, T)
     __entropies = _lib.compute_entropy_metrics(
         logits_arr=logits_arr)
     # save the data to pre-fill the UI on startup
@@ -155,6 +170,10 @@ def update_perplexity_state(
     logits_arr: object,
     export_str: str,
 ) -> object:
+    # exit if some values are missing
+    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
+        return None
+    # one score per token (B, T)
     __perplexities = _lib.compute_perplexity_metrics(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
@@ -168,6 +187,10 @@ def update_surprisal_state(
     logits_arr: object,
     export_str: str,
 ) -> object:
+    # exit if some values are missing
+    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
+        return None
+    # one score per token (B, T)
     __surprisals = _lib.compute_surprisal_metrics(
         indices_arr=indices_arr,
         logits_arr=logits_arr)
