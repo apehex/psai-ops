@@ -145,7 +145,7 @@ def compute_deviation_pooling(
     data_arr: object,
     pool_dim: int,
     axis_idx: int=1,
-    epsilon_val: float=EPSILON_VAL,
+    epsn_val: float=EPSILON_VAL,
 ) -> object:
     # use element-wise average pooling
     __u = compute_average_pooling(data_arr, pool_dim=pool_dim, axis_idx=axis_idx)
@@ -153,7 +153,7 @@ def compute_deviation_pooling(
     # variance identity
     __v = (__u2 - __u * __u).clamp(min=0.0)
     # avoid floating point precision errors
-    return torch.sqrt(__v + epsilon_val)
+    return torch.sqrt(__v + epsn_val)
 
 # SLIDING ######################################################################
 
@@ -201,7 +201,7 @@ def compute_topk_pooling(
 def compute_probability_conflation(
     metrics_arr: list,
     axis_idx: int=-1,
-    epsilon_val: float=EPSILON_VAL
+    epsn_val: float=EPSILON_VAL
 ) -> object:
     # stack all the metrics on the given axis
     __outputs = torch.stack(metrics_arr, dim=axis_idx)
@@ -209,7 +209,7 @@ def compute_probability_conflation(
     return (
         torch.prod(__outputs, dim=-1, keepdim=False)
         / (
-            epsilon_val
+            epsn_val
             + torch.prod(__outputs, dim=-1, keepdim=False)
             + torch.prod(1.0 - __outputs, dim=-1, keepdim=False)))
 
@@ -397,45 +397,45 @@ def build_seen_mask(
     vocab_dim: int,
 ) -> object:
     # match the input format (B, T, V)
-    __outputs = torch.nn.functional.one_hot(indices_arr, num_classes=vocab_size).to(device=indices_arr.device, dtype=indices_arr.dtype)
+    __outputs = torch.nn.functional.one_hot(indices_arr, num_classes=vocab_dim).to(device=indices_arr.device, dtype=indices_arr.dtype)
     # mark the tokens on all the positions after their first appearance
-    return __outputs.cumsum(dim=1) > 0
+    return (__outputs.cumsum(dim=1) > 0)
 
 def apply_repetition_penalty(
     logits_arr: object, # (B, T, V)
     seen_arr: object, # (B, T, V)
-    penalty_val: float=1.0,
+    repp_val: float=1.0,
 ) -> object:
     # logits: (B, T, V), seen_mask: (B, T, V) bool
     __positive = (logits_arr >= 0.0)
     # divide the positive logits => less probable
-    __outputs = torch.where(seen_arr & __positive, logits / penalty_val, logits_arr)
+    __outputs = torch.where(seen_arr & __positive, logits_arr / repp_val, logits_arr)
     # multiply the negative logits => also less probable
-    return torch.where(seen_arr & (~__positive), __outputs * penalty_val, __outputs)
+    return torch.where(seen_arr & (~__positive), __outputs * repp_val, __outputs)
 
 def warp_penalty(
     indices_arr: object,
     logits_arr: object,
-    penalty_val: float=1.0,
-    epsilon_val: float=EPSILON_VAL,
+    repp_val: float=1.0,
+    epsn_val: float=EPSILON_VAL,
 ) -> object:
     # sanitize the inputs
-    __repp = 1.0 if (penalty_val is None) else max(epsilon_val, float(penalty_val))
+    __repp = 1.0 if (repp_val is None) else max(epsn_val, float(repp_val))
     # mask all the token indices that were seen
-    __mask = build_seen_mask(indices_arr=indices_arr, vocab_dim=int(logits.size(-1)))
+    __mask = build_seen_mask(indices_arr=indices_arr, vocab_dim=int(logits_arr.size(-1)))
     # downscale all the logits of the tokens that were seen, both positive and negative
     return apply_repetition_penalty(
         logits_arr=logits_arr,
         seen_arr=__mask,
-        penalty_val=__repp)
+        repp_val=__repp)
 
 def warp_temperature(
     logits_arr: object,
     temp_val: float=1.0,
-    epsilon_val: float=EPSILON_VAL,
+    epsn_val: float=EPSILON_VAL,
 ) -> object:
     # sanitize the inputs
-    __temp = 1.0 if (temp_val is None) else max(epsilon_val, float(temp_val))
+    __temp = 1.0 if (temp_val is None) else max(epsn_val, float(temp_val))
     # warp the logits
     return logits_arr / __temp
 
@@ -456,17 +456,17 @@ def warp_topk(
 def warp_topp(
     logits_arr: object,
     topp_val: float=1.0,
-    epsilon_val: float=EPSILON_VAL,
+    epsn_val: float=EPSILON_VAL,
 ) -> object:
     # sanitize the inputs
-    __topp = 1.0 if (topp_val is None) else max(epsilon_val, float(topp_val))
+    __topp = 1.0 if (topp_val is None) else max(epsn_val, float(topp_val))
     # compute the nuclueus (B, T, V)
     __cumsum, __mapping = torch.sort(logits_arr, descending=True)
     __cumsum = __cumsum.softmax(dim=-1).cumsum(dim=-1)
     # select the indices outside of the nucleus (B, T, V)
     __mask = __cumsum > __topp
     # map the sorted indices back the original order (B, T, V)
-    __mask = __mask.scatter(-1, __mapping, __mask)
+    __mask = torch.zeros_like(__mask, dtype=torch.bool).scatter(-1, __mapping, __mask)
     # replace the pruned logits with the minimum logit (instead of -inf)
     __min = logits_arr.amin(dim=-1, keepdim=True)
     # (B, T, V)
@@ -479,29 +479,31 @@ def warp_scores(
     topp_val: float=1.0,
     repp_val: float=1.0,
     temp_val: float=1.0,
-    epsilon_val: float=EPSILON_VAL,
+    epsn_val: float=EPSILON_VAL,
 ) -> object:
     # always apply the temperature first, it is communitative
     __outputs = warp_temperature(
         logits_arr=logits_arr,
         temp_val=temp_val,
-        epsilon_val=epsilon_val)
+        epsn_val=epsn_val)
     # apply the other operators when it makes sense
-    if (repp_val is not None) and (float(repp_val) != 1.0):
+    if isinstance(repp_val, float) and (float(repp_val) != 1.0):
         __outputs = warp_penalty(
+            logits_arr=__outputs,
             indices_arr=indices_arr,
-            logits_arr=logits_arr,
-            penalty_val=repp_val,
-            epsilon_val=epsilon_val)
-    if (topk_val is not None) and (int(topk_val) > 0):
+            repp_val=repp_val,
+            epsn_val=epsn_val)
+    if isinstance(topk_val, int) and (int(topk_val) > 0):
         __outputs = warp_topk(
             logits_arr=__outputs,
             topk_val=topk_val)
-    if (topp_val is not None) and (float(topp_val) < 1.0):
+    if isinstance(topp_val, float) and (float(topp_val) < 1.0):
         __outputs = warp_topp(
             logits_arr=__outputs,
             topp_val=topp_val,
-            epsilon_val=epsilon_val)
+            epsn_val=epsn_val)
+    # (B, T, V)
+    return __outputs
 
 def compute_sampling_deltas(
     indices_arr: object,
@@ -535,8 +537,8 @@ def compute_sampling_metrics(
 ) -> object:
     # infer the vocab length from the last dimension of the logits
     __upper = float(logits_arr.shape[-1])
-    # compute the warped logits (B, T-1)
-    __warped = warp_scores(
+    # compute the warped logits (B, T, V)
+    __outputs = warp_scores(
         logits_arr=logits_arr,
         indices_arr=indices_arr,
         **kwargs)
@@ -544,7 +546,7 @@ def compute_sampling_metrics(
     __outputs = compute_sampling_deltas(
         indices_arr=indices_arr,
         logits_arr=logits_arr,
-        warped_arr=__warped)
+        warped_arr=__outputs)
     # and normalize them (B, T-1)
     return postprocess_sampling_deltas(
         deltas_arr=__outputs,
@@ -567,7 +569,7 @@ def compute_spectral_metrics(
     data_arr: object,
     high_rge: tuple=(1. / 8., 1. / 2.), # periods between 2 and 8 tokens
     low_rge: tuple=(1. / 1024., 1. / 32.), # periods between 32 and 1024 tokens
-    epsilon_val: float=EPSILON_VAL,
+    epsn_val: float=EPSILON_VAL,
 ) -> torch.Tensor:
     # parse the data (B, T)
     __shape = tuple(data_arr.shape)
@@ -586,7 +588,7 @@ def compute_spectral_metrics(
     __high_powers = __powers[:, __high_mask].sum(dim=-1, keepdim=True)
     __low_powers  = __powers[:, __low_mask].sum(dim=-1, keepdim=True)
     # high-frequency fraction of the FFT
-    __scores = __high_powers / (__high_powers + __low_powers + epsilon_val)
+    __scores = __high_powers / (__high_powers + __low_powers + epsn_val)
     # Optional: clamp (numerical safety)
     return __scores.clamp(min=0.0, max=1.0)
 
