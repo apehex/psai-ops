@@ -61,7 +61,7 @@ def update_window_range(
 def update_tokens_state(
     prompt_str: str,
     export_str: str,
-    tokenizer_obj: torch.Tensor,
+    tokenizer_obj: object,
 ) -> list:
     # list of token strings, without escaping
     __tokens = _tok.preprocess_token_str(
