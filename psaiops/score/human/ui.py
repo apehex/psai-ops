@@ -80,7 +80,7 @@ def create_model_block(models: list=MODELS) -> dict:
 def create_sampling_block() -> dict:
     __reps = gradio.Slider(label='Penalty', value=1.1, minimum=0.0, maximum=2.0, step=0.05, scale=1, interactive=True)
     __temp = gradio.Slider(label='Temperature', value=0.8, minimum=0.0, maximum=2.0, step=0.05, scale=1, interactive=True)
-    __topk = gradio.Slider(label='Top K', value=8192, minimum=0, maximum=16384, step=1, scale=1, interactive=True)
+    __topk = gradio.Slider(label='Top K', value=0, minimum=0, maximum=16384, step=1, scale=1, interactive=True)
     __topp = gradio.Slider(label='Top P', value=0.95, minimum=0.0, maximum=1.0, step=0.01, scale=1, interactive=True)
     return {
         'repp_block': __reps,
