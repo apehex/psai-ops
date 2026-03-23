@@ -116,7 +116,7 @@ def create_highlight_block(label: str='Score', prefix: str='', value: list=[], c
 # REDUCTION ####################################################################
 
 def create_selection_block(label: str='Selection', prefix: str='') -> dict:
-    __metrics = gradio.CheckboxGroup(label=label, type='value', value=[UNICODE, SURPRISAL, PERPLEXITY], choices=[('Ramping', RAMPING), ('Sampling', SAMPLING), ('Unicode', UNICODE), ('Surprisal', SURPRISAL), ('Perplexity', PERPLEXITY), ('Intermediate', INTERMEDIATE)], interactive=True)
+    __metrics = gradio.CheckboxGroup(label=label, type='value', value=[UNICODE, SURPRISAL, PERPLEXITY], choices=[('Ramping', RAMPING), ('Sampling', SAMPLING), ('Unicode', UNICODE), ('Surprisal', SURPRISAL), ('Perplexity', PERPLEXITY), ('Intermediate', INTERMEDIATE)], scale=3, interactive=True)
     return {prefix + 'selection_block': __metrics,}
 
 def create_window_block(label: str='Scope', prefix: str='', value: int=5) -> dict:
