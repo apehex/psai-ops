@@ -13,7 +13,7 @@ def typecheck(
     returns: object=None,
     message: bool=False,
 ) -> object:
-    __message = '`{variable}` expects `{expected}` but it is `{actual}`'
+    __message = '`{variable}` of `{function}` expects `{expected}` but it is `{actual}`'
     # ignore the `self` pointer by default
     __ignores = set(ignores) if ignores else {'self'}
     # adapts the decorator according to the arguments
@@ -40,7 +40,7 @@ def typecheck(
                     if not isinstance(__value, __type):
                         # log the issue
                         if message:
-                            logging.warning(__message.format(variable=__name, expected=__type, actual=str(type(__value))))
+                            logging.warning(__message.format(function=str(_f.__name__), variable=__name, expected=__type, actual=str(type(__value))))
                         # return the default value
                         return returns
             # actually call the function
@@ -53,7 +53,7 @@ def typecheck(
                 if not isinstance(__outputs, __type):
                     # log the issue
                     if message:
-                        logging.warning(__message.format(variable='return', expected=__type, actual=str(type(__outputs))))
+                        logging.warning(__message.format(function=str(_f.__name__), variable='return', expected=__type, actual=str(type(__outputs))))
                     # return the default value
                     return returns
             # the wrapper returns the output of its inner function
