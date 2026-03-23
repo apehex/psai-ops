@@ -10,7 +10,10 @@ def typecheck(
     outputs: bool=False,
     ignores: set=None,
     returns: object=None,
+    message: bool=False,
 ) -> object:
+    __message = '`{variable}` expects `{expected}` but it is `{actual}`'
+    # ignore the `self` pointer by default
     __ignores = set(ignores) if ignores else {'self'}
     # adapts the decorator according to the arguments
     def _decorator(_f: object) -> object:
@@ -34,6 +37,10 @@ def typecheck(
                     __type = __hints.get(__name, object)
                     # everything in python is an `object`, if the type is not specified the check succeeds
                     if not isinstance(__value, __type):
+                        # log the issue
+                        if message:
+                            print(__message.format(variable=__name, expected=__type, actual=str(type(__value))))
+                        # return the default value
                         return returns
             # actually call the function
             __outputs = _f(*args, **kwargs)
@@ -43,6 +50,10 @@ def typecheck(
                 __type = __hints.get('return', object)
                 # succeeds when the type was not specified
                 if not isinstance(__outputs, __type):
+                    # log the issue
+                    if message:
+                        print(__message.format(variable='return', expected=__type, actual=str(type(__outputs))))
+                    # return the default value
                     return returns
             # the wrapper returns the output of its inner function
             return __outputs

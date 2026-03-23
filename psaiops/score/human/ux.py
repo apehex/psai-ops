@@ -30,7 +30,7 @@ def disable_button() -> dict:
 
 # SAMPLES ######################################################################
 
-@_utils.typecheck(inputs=True, outputs=True, returns=_ui.TUTO)
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=_ui.TUTO)
 def sample_input_text(
     dataset_str: str,
     type_str: str,
@@ -43,7 +43,7 @@ def sample_input_text(
 
 # WINDOW #######################################################################
 
-@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=gradio.update())
 def update_window_range(
     current_val: float,
     indices_arr: torch.Tensor,
@@ -57,7 +57,7 @@ def update_window_range(
 
 # TOKENS #######################################################################
 
-@_utils.typecheck(inputs=True, outputs=True, returns=None)
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=None)
 def update_tokens_state(
     prompt_str: str,
     export_str: str,
@@ -74,7 +74,7 @@ def update_tokens_state(
 
 # INDICES ######################################################################
 
-@_utils.typecheck(inputs=True, outputs=True, returns=None)
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=None)
 def update_indices_state(
     prompt_str: str,
     export_str: str,
@@ -92,7 +92,7 @@ def update_indices_state(
 
 # LOGITS #######################################################################
 
-@_utils.typecheck(inputs=True, outputs=True, returns=None)
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=None)
 def update_logits_state(
     indices_arr: torch.Tensor,
     export_str: str,
@@ -109,7 +109,7 @@ def update_logits_state(
 
 # METRICS ######################################################################
 
-@_utils.typecheck(inputs=True, outputs=True, returns=None)
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=None)
 def update_unicode_state(
     tokens_arr: list,
     export_str: str,
@@ -122,7 +122,7 @@ def update_unicode_state(
     # identify rare glyphs as LLM outputs
     return __unicodes
 
-@_utils.typecheck(inputs=True, outputs=True, returns=None)
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=None)
 def update_rank_state(
     indices_arr: torch.Tensor,
     logits_arr: torch.Tensor,
@@ -137,7 +137,7 @@ def update_rank_state(
     # rank of each token in the LLM predictions, log-scaled
     return __ranks
 
-@_utils.typecheck(inputs=True, outputs=True, returns=None)
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=None)
 def update_entropy_state(
     logits_arr: torch.Tensor,
     export_str: str,
@@ -150,7 +150,7 @@ def update_entropy_state(
     # measures the spread of the predictions probabilities, over the vocabulary
     return __entropies
 
-@_utils.typecheck(inputs=True, outputs=True, returns=None)
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=None)
 def update_perplexity_state(
     indices_arr: torch.Tensor,
     logits_arr: torch.Tensor,
@@ -165,7 +165,7 @@ def update_perplexity_state(
     # measures how surprising the whole neighbordhood of each token is
     return __perplexities
 
-@_utils.typecheck(inputs=True, outputs=True, returns=None)
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=None)
 def update_surprisal_state(
     indices_arr: torch.Tensor,
     logits_arr: torch.Tensor,
@@ -180,7 +180,7 @@ def update_surprisal_state(
     # measures how surprising each token is, comparent to the model's predictions
     return __surprisals
 
-@_utils.typecheck(inputs=True, outputs=True, returns=None)
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=None)
 def update_sampling_state(
     indices_arr: torch.Tensor,
     logits_arr: torch.Tensor,
@@ -205,7 +205,7 @@ def update_sampling_state(
 
 # HIGHLIGHTS ###################################################################
 
-@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=gradio.update())
 def update_token_highlights(
     tokens_arr: list,
     unicode_arr: torch.Tensor,
@@ -263,7 +263,7 @@ def update_token_highlights(
 
 # PLOTS ########################################################################
 
-@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
+@_utils.typecheck(inputs=True, outputs=True, message=True, returns=gradio.update())
 def update_metric_plots(
     unicode_arr: torch.Tensor,
     rank_arr: torch.Tensor,
