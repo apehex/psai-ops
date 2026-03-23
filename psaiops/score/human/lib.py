@@ -5,7 +5,6 @@ import matplotlib
 import numpy
 import torch
 import torch.nn.functional
-import transformers.generation.logits_process as _post
 
 import mlable.shapes
 
