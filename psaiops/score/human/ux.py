@@ -185,7 +185,7 @@ def update_sampling_state(
     indices_arr: torch.Tensor,
     logits_arr: torch.Tensor,
     export_str: str,
-    topk_val: float=0.0,
+    topk_val: int=0,
     topp_val: float=1.0,
     repp_val: float=1.0,
     temp_val: float=1.0,
@@ -213,7 +213,7 @@ def update_token_highlights(
     perplexity_arr: torch.Tensor,
     sampling_arr: torch.Tensor,
     selection_arr: list,
-    window_dim: float,
+    window_dim: int,
     export_str: str,
 ) -> list:
     # normalize and force an odd window size
@@ -272,7 +272,7 @@ def update_metric_plots(
     perplexity_arr: torch.Tensor,
     sampling_arr: torch.Tensor,
     selection_arr: list,
-    window_dim: float,
+    window_dim: int,
 ) -> object:
     # normalize and force an odd window size
     __window_dim = 2 * (int(window_dim) // 2) + 1
@@ -329,7 +329,7 @@ def update_metric_plots(
     if _ui.SURPRISAL in selection_arr:
         __axes.plot(__x, __ys, linestyle='--', label='surprisal', color='#550055') # deep purple
     if _ui.SAMPLING in selection_arr:
-        __axes.plot(__x, __ys, linestyle='--', label='sampling', color='#55FF55') # electric green
+        __axes.plot(__x, __ya, linestyle='--', label='sampling', color='#55FF55') # electric green
     if _ui.INTERMEDIATE in selection_arr:
         __axes.plot(__x, __yr, linestyle=':', label='rank', color='#442222') # expresso
         __axes.plot(__x, __ye, linestyle=':', label='entropy', color='#222244') # indigo
