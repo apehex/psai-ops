@@ -11,7 +11,7 @@ def typecheck(
     ignores: set=None,
     returns: object=None,
 ) -> object:
-    __ignores = set(ignores) or {'self'}
+    __ignores = set(ignores) if ignores else {'self'}
     # adapts the decorator according to the arguments
     def _decorator(_f: object) -> object:
         # parse the metadata
