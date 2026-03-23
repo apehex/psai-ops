@@ -451,7 +451,7 @@ def warp_topk(
     # replace the pruned logits with the minimum logit (instead of -inf)
     __min = logits_arr.amin(dim=-1, keepdim=True)
     # (B, T, V)
-    return torch.where(__mask, __min, logits_arr)
+    return torch.where(__mask, 0.5 * (logits_arr + __min), logits_arr)
 
 def warp_topp(
     logits_arr: object,
@@ -470,7 +470,7 @@ def warp_topp(
     # replace the pruned logits with the minimum logit (instead of -inf)
     __min = logits_arr.amin(dim=-1, keepdim=True)
     # (B, T, V)
-    return torch.where(__mask, __min, logits_arr)
+    return torch.where(__mask, 0.5 * (logits_arr + __min), logits_arr)
 
 def warp_scores(
     indices_arr: object,
