@@ -1,5 +1,6 @@
 import functools
 import inspect
+import logging
 import typing
 
 # TYPE CHECKING ################################################################
@@ -39,7 +40,7 @@ def typecheck(
                     if not isinstance(__value, __type):
                         # log the issue
                         if message:
-                            print(__message.format(variable=__name, expected=__type, actual=str(type(__value))))
+                            logging.warning(__message.format(variable=__name, expected=__type, actual=str(type(__value))))
                         # return the default value
                         return returns
             # actually call the function
@@ -52,7 +53,7 @@ def typecheck(
                 if not isinstance(__outputs, __type):
                     # log the issue
                     if message:
-                        print(__message.format(variable='return', expected=__type, actual=str(type(__outputs))))
+                        logging.warning(__message.format(variable='return', expected=__type, actual=str(type(__outputs))))
                     # return the default value
                     return returns
             # the wrapper returns the output of its inner function
