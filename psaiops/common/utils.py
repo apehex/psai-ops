@@ -5,15 +5,15 @@ import typing
 # TYPE CHECKING ################################################################
 
 def typecheck(
-    func: callable=None,
+    func: object=None,
     inputs: bool=True,
     outputs: bool=False,
     ignores: set=None,
-    returns: any=None,
-) -> callable:
+    returns: object=None,
+) -> object:
     __ignores = set(ignores) or {'self'}
     # adapts the decorator according to the arguments
-    def _decorator(_f: callable) -> callable:
+    def _decorator(_f: object) -> object:
         # parse the metadata
         __sign = inspect.signature(_f)
         __hints = typing.get_type_hints(_f)
