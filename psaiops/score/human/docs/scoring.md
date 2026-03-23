@@ -122,6 +122,62 @@ PP_{t} = \frac{NLL_{t} - \log 2}{\log 800 - \log 2}
 
 This is obviously not the "canon" perplexity of information theory, just a connex function that makes sense in the context of this app.
 
+### Sampling
+
+The logits produced by a given model are usually postprocessed according to a sampling policy:
+
+- the token repetitions are penalized to push toward diversity
+- the distribution is sharpened to increase the separation between the token probabilities
+- the distribution is also restricted to a nucleus of a few thousand tokens using, top-k, top-p, min-p, etc
+
+This postprocessing step is approximated with a "typical" sampling policy that can be configured.
+The token logits can be warped with a repition penality, the temperature sharpening, top-k and top-p nucleus.
+
+Given the warped probabilities and the raw probabilities given by the model, the difference in log likelihood is computed:
+
+$$\begin{align}
+\Delta_{t}  &= - \log P_{warped}(x_{t} = X_{t} \vert X_{< t}) + \log P_{raw}(x_{t} = X_{t} \vert X_{< t}) \\
+            &= NLL_{warped, t} - NLL_{raw, t}
+\end{align}$$
+
+And scaled into the metric like so:
+
+$$\begin{align}
+\Psi_{t} = 0.5 + \frac{\Delta_{t}}{\log V}
+\end{align}$$
+
+### Interpretation
+
+The metrics may give opposing views on a given token, in particular the surpisal and sampling metrics.
+
+Indeed, the token repititions are usually penalized by the sampling policies.
+It means that token repititions are less likely to be the result of a sampling process, and are therefore scored as "more human" by the corresponding metric.
+
+On the other hand, token repitions are also more probable than average and hence unsurprising.
+So the surprising metric will score them as "LLM like" because they are very predictable.
+
+Knowing the underlying meaning of the metric, it is easy to interpret the "opinions" given by each metric in a given context.
+Having read this documentation you should be able to tell which scores are relevant and which can be ignored.
+
+The point of showing the internals of the critic model and writing this documentation is to empower the user, not to replace your judgement.
+
+To sharpen your eye, you will find examples in the "samples" tab.
+Some are AI generated, other human written and some are a mixed collaboration between the 2.
+
+For instance, the "soul document" has several layers of contributions:
+
+- the training of the Claude model, guided by humans but reduced into LLM weights
+- the system prompt and context iteratively refined by both humans and LLMs
+- the summary given by Claude when asked about it
+
+In a way, this document is 100% human and 100% AI at the same time.
+It shows the technical limits of this tool, and also how unrealistic the goal is.
+
+This tool was an interesting experiment, but in the end we will soon not be able to tell human from LLM at all.
+
+We are influenced, immersed in the AI culture, and vice-versa.
+There is no separating human from AI anymore than you can separate "innate from learnt".
+
 ---
 
 ## Notations

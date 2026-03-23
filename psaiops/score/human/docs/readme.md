@@ -21,6 +21,7 @@ The final probability score is a combination of several metrics, computed token 
 - the `unicode` metric outlines invisible or relatively rare glyphs like the infamous em-dash "—" or the curly quotes "“"
 - the `surprisal` metric measures how individual tokens diverge from the distribution estimated by the model
 - the `perplexity` metric rates how surprising a sequence of tokens is according to the model
+- the `sampling` metric evaluates how much more likely a token is under a typical sampling policy
 - the `ramping` ratio is used to dampen the scores at the begining, where the model lacks context
 
 The fixed recipe used to combine these metrics into the final score for each token is obviously insufficient to detect the ever improving outputs of LLMs.
