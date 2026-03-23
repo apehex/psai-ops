@@ -7,6 +7,7 @@ import torch
 import matplotlib.pyplot
 
 import psaiops.common.tokenizer as _tok
+import psaiops.common.utils as _utils
 import psaiops.score.human.lib as _lib
 import psaiops.score.human.ui as _ui
 
@@ -29,14 +30,12 @@ def disable_button() -> dict:
 
 # SAMPLES ######################################################################
 
+@_utils.typecheck(inputs=True, outputs=True, returns=_ui.TUTO)
 def sample_input_text(
     dataset_str: str,
     type_str: str,
     samples_arr: dict=_ui.SAMPLES,
 ) -> str:
-    # exit if some values are missing
-    if (not dataset_str) or (not type_str):
-        return _ui.TUTO
     # return the documentation by default
     __dataset = samples_arr.get(dataset_str, {}).get(type_str, [_ui.TUTO])
     # return a single string
@@ -44,13 +43,11 @@ def sample_input_text(
 
 # WINDOW #######################################################################
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_window_range(
     current_val: float,
-    indices_arr: object,
+    indices_arr: torch.Tensor,
 ) -> dict:
-    # exit if some values are missing
-    if (current_val is None) or (indices_arr is None) or (len(indices_arr) == 0):
-        return gradio.update()
     # take the generated tokens into account
     __max = max(1, int(indices_arr.shape[-1]))
     # keep the previous value if possible
@@ -60,14 +57,12 @@ def update_window_range(
 
 # TOKENS #######################################################################
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_tokens_state(
     prompt_str: str,
     export_str: str,
-    tokenizer_obj: object,
-) -> object:
-    # exit if some values are missing
-    if (prompt_str is None) or (tokenizer_obj is None):
-        return None
+    tokenizer_obj: torch.Tensor,
+) -> list:
     # list of token strings, without escaping
     __tokens = _tok.preprocess_token_str(
         tokenizer_obj=tokenizer_obj,
@@ -79,14 +74,12 @@ def update_tokens_state(
 
 # INDICES ######################################################################
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_indices_state(
     prompt_str: str,
     export_str: str,
-    tokenizer_obj: object,
-) -> object:
-    # exit if some values are missing
-    if (prompt_str is None) or (tokenizer_obj is None):
-        return None
+    tokenizer_obj: torch.Tensor,
+) -> torch.Tensor:
     # dictionary {'input_ids': _, 'attention_mask': _}
     __inputs = _tok.preprocess_token_ids(
         tokenizer_obj=tokenizer_obj,
@@ -99,14 +92,12 @@ def update_indices_state(
 
 # LOGITS #######################################################################
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_logits_state(
-    indices_arr: object,
+    indices_arr: torch.Tensor,
     export_str: str,
     model_obj: object,
-) -> object:
-    # exit if some values are missing
-    if (indices_arr is None) or (model_obj is None):
-        return None
+) -> torch.Tensor:
     # move the output back to the CPU
     __logits = _lib.compute_raw_logits(
         indices_arr=indices_arr.to(device=model_obj.device),
@@ -118,13 +109,11 @@ def update_logits_state(
 
 # METRICS ######################################################################
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_unicode_state(
     tokens_arr: list,
     export_str: str,
-) -> object:
-    # exit if some values are missing
-    if (tokens_arr is None) or (len(tokens_arr) == 0):
-        return None
+) -> torch.Tensor:
     # one score per token (B, T)
     __unicodes = _lib.compute_unicode_metrics(
         tokens_arr=tokens_arr,)
@@ -133,14 +122,12 @@ def update_unicode_state(
     # identify rare glyphs as LLM outputs
     return __unicodes
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_rank_state(
-    indices_arr: object,
-    logits_arr: object,
+    indices_arr: torch.Tensor,
+    logits_arr: torch.Tensor,
     export_str: str,
-) -> object:
-    # exit if some values are missing
-    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
-        return None
+) -> torch.Tensor:
     # one score per token (B, T)
     __ranks = _lib.compute_rank_metrics(
         indices_arr=indices_arr,
@@ -150,13 +137,11 @@ def update_rank_state(
     # rank of each token in the LLM predictions, log-scaled
     return __ranks
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_entropy_state(
-    logits_arr: object,
+    logits_arr: torch.Tensor,
     export_str: str,
-) -> object:
-    # exit if some values are missing
-    if (logits_arr is None) or (len(logits_arr) == 0):
-        return None
+) -> torch.Tensor:
     # one score per token (B, T)
     __entropies = _lib.compute_entropy_metrics(
         logits_arr=logits_arr)
@@ -165,14 +150,12 @@ def update_entropy_state(
     # measures the spread of the predictions probabilities, over the vocabulary
     return __entropies
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_perplexity_state(
-    indices_arr: object,
-    logits_arr: object,
+    indices_arr: torch.Tensor,
+    logits_arr: torch.Tensor,
     export_str: str,
-) -> object:
-    # exit if some values are missing
-    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
-        return None
+) -> torch.Tensor:
     # one score per token (B, T)
     __perplexities = _lib.compute_perplexity_metrics(
         indices_arr=indices_arr,
@@ -182,14 +165,12 @@ def update_perplexity_state(
     # measures how surprising the whole neighbordhood of each token is
     return __perplexities
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_surprisal_state(
-    indices_arr: object,
-    logits_arr: object,
+    indices_arr: torch.Tensor,
+    logits_arr: torch.Tensor,
     export_str: str,
-) -> object:
-    # exit if some values are missing
-    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
-        return None
+) -> torch.Tensor:
     # one score per token (B, T)
     __surprisals = _lib.compute_surprisal_metrics(
         indices_arr=indices_arr,
@@ -199,18 +180,16 @@ def update_surprisal_state(
     # measures how surprising each token is, comparent to the model's predictions
     return __surprisals
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_sampling_state(
-    indices_arr: object,
-    logits_arr: object,
+    indices_arr: torch.Tensor,
+    logits_arr: torch.Tensor,
     export_str: str,
-    topk_val: int=0,
+    topk_val: float=0.0,
     topp_val: float=1.0,
     repp_val: float=1.0,
     temp_val: float=1.0,
-) -> object:
-    # exit if some values are missing
-    if (indices_arr is None) or (len(indices_arr) == 0) or (logits_arr is None) or (len(logits_arr) == 0):
-        return None
+) -> torch.Tensor:
     # one score per token (B, T)
     __samplings = _lib.compute_sampling_metrics(
         indices_arr=indices_arr,
@@ -226,19 +205,17 @@ def update_sampling_state(
 
 # HIGHLIGHTS ###################################################################
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_token_highlights(
     tokens_arr: list,
-    unicode_arr: object,
-    surprisal_arr: object,
-    perplexity_arr: object,
-    sampling_arr: object,
+    unicode_arr: torch.Tensor,
+    surprisal_arr: torch.Tensor,
+    perplexity_arr: torch.Tensor,
+    sampling_arr: torch.Tensor,
     selection_arr: list,
     window_dim: float,
     export_str: str,
 ) -> list:
-    # exit if some values are missing
-    if (tokens_arr is None) or (len(tokens_arr) == 0) or (unicode_arr is None) or (len(unicode_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (len(perplexity_arr) == 0) or (sampling_arr is None) or (len(sampling_arr == 0)) or (selection_arr is None) or (window_dim is None):
-        return None
     # normalize and force an odd window size
     __window_dim = 2 * (int(window_dim) // 2) + 1
     # common arguments
@@ -286,19 +263,17 @@ def update_token_highlights(
 
 # PLOTS ########################################################################
 
+@_utils.typecheck(inputs=True, outputs=True, returns=gradio.update())
 def update_metric_plots(
-    unicode_arr: object,
-    rank_arr: object,
-    entropy_arr: object,
-    surprisal_arr: object,
-    perplexity_arr: object,
-    sampling_arr: object,
+    unicode_arr: torch.Tensor,
+    rank_arr: torch.Tensor,
+    entropy_arr: torch.Tensor,
+    surprisal_arr: torch.Tensor,
+    perplexity_arr: torch.Tensor,
+    sampling_arr: torch.Tensor,
     selection_arr: list,
     window_dim: float,
 ) -> object:
-    # exit if some values are missing
-    if (unicode_arr is None) or (len(unicode_arr) == 0) or (rank_arr is None) or (len(rank_arr) == 0) or (entropy_arr is None) or (len(entropy_arr) == 0) or (surprisal_arr is None) or (len(surprisal_arr) == 0) or (perplexity_arr is None) or (sampling_arr is None) or (len(sampling_arr == 0)) or (len(perplexity_arr) == 0) or (selection_arr is None) or (window_dim is None):
-        return None
     # normalize and force an odd window size
     __window_dim = 2 * (int(window_dim) // 2) + 1
     # time ramp to downplay the first few tokens because they have no context
