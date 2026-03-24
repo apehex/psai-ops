@@ -234,10 +234,9 @@ def update_token_highlights(
         data_arr=__perplexity_arr,
         pool_dim=max(9, __window_dim),
         axis_idx=-1)
-    __sampling_arr = _lib.compute_topk_pooling(
+    __sampling_arr = _lib.compute_average_pooling(
         data_arr=__sampling_arr,
         pool_dim=__window_dim,
-        topk_dim=(__window_dim + 1) // 2,
         axis_idx=-1)
     # toggle the metrics according to the selection
     __token_cls = (
@@ -295,10 +294,9 @@ def update_metric_plots(
         pool_dim=__window_dim,
         topk_dim=(__window_dim + 1) // 2,
         axis_idx=-1)
-    __ya = _lib.compute_topk_pooling(
+    __ya = _lib.compute_average_pooling(
         data_arr=sampling_arr,
         pool_dim=__window_dim,
-        topk_dim=(__window_dim + 1) // 2,
         axis_idx=-1)
     # combine all the metrics into a final score
     __yf = _lib.compute_probability_conflation(
