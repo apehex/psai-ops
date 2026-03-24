@@ -20,8 +20,8 @@ DOCS = open(os.path.join(_PATH, 'docs', 'scoring.md'), 'r').read()
 
 SAMPLES = {
     'degen': {
-        'readme': TUTO,
-        'documentation': DOCS,},
+        'readme': [TUTO],
+        'documentation': [DOCS],},
     'hc3': json.load(open(os.path.join(_PATH, 'data', 'samples', 'hc3.json'), 'r')),
     'jailbreak': json.load(open(os.path.join(_PATH, 'data', 'samples', 'jailbreak.json'), 'r')),
     'known': json.load(open(os.path.join(_PATH, 'data', 'samples', 'known.json'), 'r')),
