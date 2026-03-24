@@ -87,6 +87,8 @@ def update_indices_state(
         device_str='cpu')
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__inputs['input_ids'], name='indices.pt', path=export_str)
+    # give some feedback
+    gradio.Info(title='Info', message=f'Tokenized the input text.', duration=2)
     # discard the mask, which is all ones
     return __inputs['input_ids'].cpu()
 
@@ -104,6 +106,8 @@ def update_logits_state(
         model_obj=model_obj).cpu()
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__logits, name='logits.pt', path=export_str)
+    # give some feedback
+    gradio.Info(title='Info', message=f'Computed the raw logits.', duration=2)
     # used to compute all the indicators from the critic LLM
     return __logits
 
@@ -200,6 +204,8 @@ def update_sampling_state(
         temp_val=temp_val)
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__samplings, name='samplings.pt', path=export_str)
+    # give some feedback
+    gradio.Info(title='Info', message=f'Computed all the indicators.', duration=2)
     # measures how surprising each token is, comparent to the model's predictions
     return __samplings
 
@@ -257,6 +263,8 @@ def update_token_highlights(
     __labels = list(zip(tokens_arr, __token_cls))
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__labels, name='labels.pt', path=export_str)
+    # give some feedback
+    gradio.Info(title='Info', message=f'Updated all the token scores.', duration=2)
     # list of (token, label), where each label is mapped to a color
     return __labels
 
@@ -336,5 +344,7 @@ def update_metric_plots(
     __figure.tight_layout()
     # remove the figure for the pyplot register for garbage collection
     matplotlib.pyplot.close(__figure)
+    # give some feedback
+    gradio.Info(title='Info', message=f'Updated the metric plots.', duration=2)
     # update each component => (highlight, plot) states
     return __figure
