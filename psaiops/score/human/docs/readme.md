@@ -1,12 +1,13 @@
-This app is essentially asking a LLM "would you have generated the same response?".
+This app is essentially asking a LLM "would you have generated the same text?".
 Then it probes the internals of the model for its opinion.
-The more surprised the LLM is the more "human" the text is scored.
+The more surprised the LLM is the more "human" the snippet is scored.
 
 Some texts that were originally human written are considered "AI" here:
-- very well-know samples like Wikipedia articles, classic books in the public domain, etc
-- generic and predictable phrases like idioms, formal style, etc; so "take this with a grain of salt"!
+- very well-known samples like Wikipedia articles, classic books in the public domain, etc
+- generic phrases like idioms, formal style, etc; so "take this with a grain of salt"!
 
-IE anything that is highly predictable is deemed "AI": more precisely, this app asks the question "what is *original* human work in this text?".
+IE anything that is highly predictable is deemed "AI":
+more precisely, this app asks the question "what is *original* human work in this text?".
 
 Believe it or not this entire introduction was written by hand, so you can see the limits of my tool!
 
