@@ -15,6 +15,35 @@ import psaiops.score.human.ui as _ui
 
 _PATH = os.path.dirname(__file__)
 
+MESSAGES = {
+    'degen': {
+        'documentation': 'Replaced the input text with the documentation from the de-generate app.',
+        'readme': 'Replaced the input text with the README from the de-generate app.',
+        'default': 'Left the input text unchanged.',},
+    'hc3': {
+        'ai': 'Changed the input text with a random AI sample from the HC3 dataset.',
+        'human': 'Changed the input text with a random human sample from the HC3 dataset.',},
+    'jailbreak': {
+        'chatgpt': 'Replaced the input text with a random jailbreak for the model ChatGPT.',
+        'claude': 'Replaced the input text with a random jailbreak for the model Claude.',
+        'gemini': 'Replaced the input text with a random jailbreak for the model Gemini.',
+        'grok': 'Replaced the input text with a random jailbreak for the model Grok.',},
+    'known': {
+        'contract': 'Replaced the input text with a random section of contract.',
+        'cookies': 'Replaced the input text with a random privacy notice.',
+        'license': 'Replaced the input text with a random license contract.',
+        'wikipedia': 'Replaced the input text with a random section of Wikipedia.',
+    },
+    'system': {
+        'chatgpt': 'Replaced the input text with a random system prompt for the model ChatGPT.',
+        'claude': 'Replaced the input text with a random system prompt for the model Claude.',
+        'gemini': 'Replaced the input text with a random system prompt for the model Gemini.',
+        'grok': 'Replaced the input text with a random system prompt for the model Grok.',
+        'soul': 'Replaced the input text with a random section of the document `SOUL.md`.',},
+    'trace': {
+        'ai': 'Changed the input text with a random AI sample from the LLMTrace dataset.',
+        'human': 'Changed the input text with a random human sample from the LLMTrace dataset.',},}
+
 # IO ###########################################################################
 
 def save_to_disk(data: object, name: str, path: str=os.path.join(_PATH, 'data', 'state')) -> None:
@@ -35,9 +64,14 @@ def sample_input_text(
     dataset_str: str,
     type_str: str,
     samples_arr: dict=_ui.SAMPLES,
+    messages_arr: dict=MESSAGES,
 ) -> str:
     # return the documentation by default
     __dataset = samples_arr.get(dataset_str, {}).get(type_str, [_ui.TUTO])
+    # pick the associated notification message
+    __message = messages_arr.get(dataset_str, {}).get(type_str, messages_arr['degen']['default'])
+    # give some feedback
+    gradio.Info(title='Info', message=__message, duration=2)
     # return a single string
     return random.choice(__dataset)
 
