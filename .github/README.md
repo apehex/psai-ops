@@ -9,7 +9,7 @@ It is a WIP, some apps are not fully functional yet.
 
 The [human / LLM detector][hface-human] is improving though:
 
-![Screenshot de-generate][image-degen]
+![Screenshot de-generate][image-scores]
 
 ## Installation
 
@@ -93,7 +93,8 @@ Licensed under the [AGPLv3][github-license].
 [github-soul]: https://gist.github.com/Richard-Weiss/efe157692991535403bd7e7fb20b6695
 [github-system]: https://github.com/asgeirtj/system_prompts_leaks
 
-[image-degen]: images/degen.png
+[image-scores]: images/scores.png
+[image-graphs]: images/graphs.png
 
 [shield-license]: https://img.shields.io/badge/license-aGPLv3-green?style=flat-square
 [shield-release]: https://img.shields.io/github/release/apehex/psai-ops.svg?style=flat-square
