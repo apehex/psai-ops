@@ -103,6 +103,8 @@ def update_tokens_state(
         prompt_str=prompt_str.strip(),)
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__tokens, name='tokens.pt', path=export_str)
+    # give some feedback
+    gradio.Info(title='Info', message='Split the input text into tokens.', duration=2)
     # the token partition is used to highlight the sample token by token
     return __tokens
 
@@ -122,7 +124,7 @@ def update_indices_state(
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__inputs['input_ids'], name='indices.pt', path=export_str)
     # give some feedback
-    gradio.Info(title='Info', message=f'Tokenized the input text.', duration=2)
+    gradio.Info(title='Info', message=f'Translated the input text into token IDs.', duration=2)
     # discard the mask, which is all ones
     return __inputs['input_ids'].cpu()
 
@@ -157,6 +159,8 @@ def update_unicode_state(
         tokens_arr=tokens_arr,)
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__unicodes, name='unicodes.pt', path=export_str)
+    # give some feedback
+    gradio.Info(title='Info', message='Computed the Unicode indicators.', duration=2)
     # identify rare glyphs as LLM outputs
     return __unicodes
 
@@ -172,6 +176,8 @@ def update_rank_state(
         logits_arr=logits_arr)
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__ranks, name='ranks.pt', path=export_str)
+    # give some feedback
+    gradio.Info(title='Info', message='Computed the rank indicators.', duration=2)
     # rank of each token in the LLM predictions, log-scaled
     return __ranks
 
@@ -185,6 +191,8 @@ def update_entropy_state(
         logits_arr=logits_arr)
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__entropies, name='entropies.pt', path=export_str)
+    # give some feedback
+    gradio.Info(title='Info', message='Computed the entropy indicators.', duration=2)
     # measures the spread of the predictions probabilities, over the vocabulary
     return __entropies
 
@@ -200,6 +208,8 @@ def update_perplexity_state(
         logits_arr=logits_arr)
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__perplexities, name='perplexities.pt', path=export_str)
+    # give some feedback
+    gradio.Info(title='Info', message='Computed the perplexity indicators.', duration=2)
     # measures how surprising the whole neighbordhood of each token is
     return __perplexities
 
@@ -215,6 +225,8 @@ def update_surprisal_state(
         logits_arr=logits_arr)
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__surprisals, name='surprisals.pt', path=export_str)
+    # give some feedback
+    gradio.Info(title='Info', message='Computed the surprisal indicators.', duration=2)
     # measures how surprising each token is, comparent to the model's predictions
     return __surprisals
 
@@ -239,7 +251,7 @@ def update_sampling_state(
     # save the data to pre-fill the UI on startup
     if export_str: save_to_disk(__samplings, name='samplings.pt', path=export_str)
     # give some feedback
-    gradio.Info(title='Info', message=f'Computed all the indicators.', duration=2)
+    gradio.Info(title='Info', message=f'Computed the sampling indicators.', duration=2)
     # measures how surprising each token is, comparent to the model's predictions
     return __samplings
 
